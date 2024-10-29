@@ -180,7 +180,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=args.log_level.upper())
 
     app = web.Application()
-    app["media_ports"] = args.media_ports.spli(",") if args.media_ports else None
+    app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
     app["workspace"] = args.workspace
 
     app.on_startup.append(on_startup)
