@@ -1,10 +1,11 @@
 import torch
 import asyncio
 
-from comfy.api.components.schema.prompt import Prompt, PromptDictInput
+from comfy.api.components.schema.prompt import PromptDictInput
 from comfy.cli_args_types import Configuration
 from comfy.client.embedded_comfy_client import EmbeddedComfyClient
 from comfystream import tensor_cache
+from comfystream.utils import convert_prompt
 
 
 class ComfyStreamClient:
@@ -15,7 +16,7 @@ class ComfyStreamClient:
         self.prompt = None
 
     def set_prompt(self, prompt: PromptDictInput):
-        self.prompt = Prompt.validate(prompt)
+        self.prompt = convert_prompt(prompt)
 
     async def queue_prompt(self, input: torch.Tensor) -> torch.Tensor:
         tensor_cache.inputs.append(input)

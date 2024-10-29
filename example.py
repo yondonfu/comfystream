@@ -9,7 +9,7 @@ async def main():
     cwd = "/home/user/comfy-hiddenswitch"
     client = ComfyStreamClient(cwd=cwd)
 
-    with open("./examples/tensor-utils-example-workflow.json", "r") as f:
+    with open("./workflows/tensor-utils-example-workflow.json", "r") as f:
         prompt = json.load(f)
 
     client.set_prompt(prompt)
