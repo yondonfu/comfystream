@@ -5,6 +5,7 @@
   - [Custom Nodes](#custom-nodes)
   - [Usage](#usage)
 - [Run server](#run-server)
+- [Run UI](#run-ui)
 
 # Install package 
 
@@ -60,4 +61,15 @@ pip install -r requirements.txt
 
 ```
 python server/app.py --workspace <COMFY_WORKSPACE>
+```
+
+# Run UI
+
+```
+cd ui
+npm install
+```
+
+```
+npm run dev
 ```
