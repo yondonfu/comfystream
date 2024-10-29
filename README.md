@@ -1,6 +1,12 @@
 # comfystream
 
-# Install
+- [comfystream](#comfystream)
+- [Install package](#install-package)
+  - [Custom Nodes](#custom-nodes)
+  - [Usage](#usage)
+- [Run server](#run-server)
+
+# Install package 
 
 Install PyTorch (optional):
 
@@ -42,6 +48,16 @@ cp -r nodes/tensor_utils /home/user/ComfyUI/custom_nodes
 
 In order to run workflows that involve other custom nodes, you will need to [install them](https://github.com/hiddenswitch/ComfyUI/tree/master?tab=readme-ov-file#custom-nodes).
 
-# Usage
+## Usage
 
 See `example.py`.
+
+# Run server
+
+```
+pip install -r requirements.txt
+```
+
+```
+python server/app.py --workspace <COMFY_WORKSPACE>
+```
