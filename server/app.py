@@ -189,4 +189,4 @@ if __name__ == "__main__":
     app.router.add_post("/offer", offer)
     app.router.add_get("/", health)
 
-    web.run_app(app, host=args.host, port=args.port)
+    web.run_app(app, host=args.host, port=int(args.port))
