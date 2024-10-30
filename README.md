@@ -26,7 +26,7 @@ The above installation commands are from [hiddenswitch/ComfyUI](https://github.c
 Install `comfystream`:
 
 ```
-pip install git+git@github.com:yondonfu/comfystream.git
+pip install git+https://github.com/yondonfu/comfystream.git
 ```
 
 ## Custom Nodes
