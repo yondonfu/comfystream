@@ -1,5 +1,11 @@
 # comfystream
 
+comfystream is a package for running img2img [Comfy](https://www.comfy.org/) workflows on video streams.
+
+This repo also includes a WebRTC server and UI that uses comfystream to support streaming from a webcam and processing the stream with a workflow JSON file (API format) created in ComfyUI. If you have an existing ComfyUI installation, the same custom nodes used to create the workflow in ComfyUI will be re-used when processing the video stream.
+
+This project has only been tested locally with Linux + Nvidia GPUs.
+
 - [comfystream](#comfystream)
 - [Install package](#install-package)
   - [Custom Nodes](#custom-nodes)
@@ -9,24 +15,34 @@
 
 # Install package 
 
-Install PyTorch (optional):
+**Prerequisites**
+
+- [Miniconda](https://docs.anaconda.com/miniconda/index.html#latest-miniconda-installer-links)
+- [PyTorch](https://pytorch.org/get-started/locally/)
+
+A separate environment can be used to avoid any dependency issues with an existing ComfyUI installation.
+
+Create the environment:
 
 ```
-pip install torch==2.4.1+cu121 torchvision torchaudio==2.4.1+cu121 --index-url https://download.pytorch.org/whl/cu121
+conda create -n comfystream python=3.11
 ```
 
-Install xformers (optional):
+Activate the environment:
 
 ```
-pip install --no-build-isolation --no-deps xformers==0.0.28.post1 --index-url https://download.pytorch.org/whl/
+conda activate comfystream
 ```
-
-The above installation commands are from [hiddenswitch/ComfyUI](https://github.com/hiddenswitch/ComfyUI/tree/master) and are marked optional because it should be possible to use an existing PyTorch installation as well.
 
 Install `comfystream`:
 
 ```
 pip install git+https://github.com/yondonfu/comfystream.git
+
+# This can be used to install from a local repo
+# pip install .
+# This can be used to install from a local repo in edit mode
+# pip install -e .
 ```
 
 ## Custom Nodes
@@ -45,31 +61,72 @@ For example, if you ComfyUI workspace is under `/home/user/ComfyUI`:
 cp -r nodes/tensor_utils /home/user/ComfyUI/custom_nodes
 ```
 
-**Other**
-
-In order to run workflows that involve other custom nodes, you will need to [install them](https://github.com/hiddenswitch/ComfyUI/tree/master?tab=readme-ov-file#custom-nodes).
-
 ## Usage
 
 See `example.py`.
 
 # Run server
 
+Install dependencies:
+
 ```
 pip install -r requirements.txt
 ```
+
+If you have existing custom nodes in your ComfyUI workspace, you will need to install their requirements in your current environment:
+
+```
+python install.py --workspace <COMFY_WORKSPACE>
+```
+
+Run the server:
 
 ```
 python server/app.py --workspace <COMFY_WORKSPACE>
 ```
 
+**Remote Setup**
+
+A local server should connect with a local UI out-of-the-box. It is also possible to run a local UI and connect with a remote server, but there may be additional dependencies.
+
+In order for the remote server to connect with another peer (i.e. a browser) without any additional dependencies you will need to allow inbound/outbound UDP traffic on ports 1024-65535 ([source](https://github.com/aiortc/aiortc/issues/490#issuecomment-788807118)). 
+
+If you only have a subset of those UDP ports available, you can use the `--media-ports` flag to specify a comma delimited list of ports to use:
+
+```
+python server/app.py --workspace <COMFY_WORKSPACE> --media-ports 1024,1025,...
+```
+
+If you are running the server in a restrictive network environment where this is not possible, you will need to use a TURN server.
+
+At the moment, the server supports using Twilio's TURN servers (although it is easy to make the update to support arbitrary TURN servers):
+
+1. Sign up for a [Twilio](https://www.twilio.com/en-us) account.
+2. Copy the Account SID and Auth Token from https://console.twilio.com/.
+3. Set the `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` environment variables.
+
+````
+export TWILIO_ACCOUNT_SID=...
+export TWILIO_AUTH_TOKEN=...
+````
+
 # Run UI
+
+**Prerequisities**
+
+- [Node.js](https://nodejs.org/en/download/package-manager)
+
+Install dependencies
 
 ```
 cd ui
-npm install
+npm install --legacy-peer-deps
 ```
+
+Run local dev server:
 
 ```
 npm run dev
 ```
+
+By default the app will be available at http://localhost:3000.
