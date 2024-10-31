@@ -12,6 +12,7 @@ This project has only been tested locally with Linux + Nvidia GPUs.
   - [Usage](#usage)
 - [Run server](#run-server)
 - [Run UI](#run-ui)
+- [Limitations](#limitations)
 
 # Install package 
 
@@ -130,3 +131,12 @@ npm run dev
 ```
 
 By default the app will be available at http://localhost:3000.
+
+# Limitations
+
+At the moment, a workflow must fufill the following requirements:
+
+- Single input using the LoadImage node
+  - At runtime, this node is replaced with a LoadTensor node
+- Single output using a PreviewImage or SaveImage node
+  - At runtime, this node is replaced with a SaveTensor node
