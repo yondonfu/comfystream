@@ -4,8 +4,6 @@ comfystream is a package for running img2img [Comfy](https://www.comfy.org/) wor
 
 This repo also includes a WebRTC server and UI that uses comfystream to support streaming from a webcam and processing the stream with a workflow JSON file (API format) created in ComfyUI. If you have an existing ComfyUI installation, the same custom nodes used to create the workflow in ComfyUI will be re-used when processing the video stream.
 
-This project has only been tested locally with Linux + Nvidia GPUs.
-
 - [comfystream](#comfystream)
 - [Install package](#install-package)
   - [Custom Nodes](#custom-nodes)
@@ -13,13 +11,13 @@ This project has only been tested locally with Linux + Nvidia GPUs.
 - [Run server](#run-server)
 - [Run UI](#run-ui)
 - [Limitations](#limitations)
+- [Troubleshoot](#troubleshoot)
 
 # Install package 
 
 **Prerequisites**
 
 - [Miniconda](https://docs.anaconda.com/miniconda/index.html#latest-miniconda-installer-links)
-- [PyTorch](https://pytorch.org/get-started/locally/)
 
 A separate environment can be used to avoid any dependency issues with an existing ComfyUI installation.
 
@@ -34,6 +32,8 @@ Activate the environment:
 ```
 conda activate comfystream
 ```
+
+Make sure you have [PyTorch](https://pytorch.org/get-started/locally/) installed.
 
 Install `comfystream`:
 
@@ -140,3 +140,13 @@ At the moment, a workflow must fufill the following requirements:
   - At runtime, this node is replaced with a LoadTensor node
 - Single output using a PreviewImage or SaveImage node
   - At runtime, this node is replaced with a SaveTensor node
+
+# Troubleshoot
+
+This project has been tested locally successfully with the following setup:
+
+- OS: Ubuntu
+- GPU: Nvidia RTX 4090
+- Driver: 550.127.05
+- CUDA: 12.5
+- torch: 2.5.1+cu121
