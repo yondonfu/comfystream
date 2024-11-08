@@ -86,6 +86,12 @@ Run the server:
 python server/app.py --workspace <COMFY_WORKSPACE>
 ```
 
+Show additional options for configuring the server:
+
+```
+python server/app.py -h
+```
+
 **Remote Setup**
 
 A local server should connect with a local UI out-of-the-box. It is also possible to run a local UI and connect with a remote server, but there may be additional dependencies.
@@ -131,6 +137,8 @@ npm run dev
 ```
 
 By default the app will be available at http://localhost:3000.
+
+The Stream URL is the URL of the [server](#run-server) which defaults to http://127.0.0.1:8888.
 
 # Limitations
 
