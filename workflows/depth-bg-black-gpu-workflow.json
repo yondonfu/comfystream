@@ -1,0 +1,97 @@
+{
+  "1": {
+    "inputs": {
+      "image": "arcane2.jpeg",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "5": {
+    "inputs": {
+      "mode": "cuda",
+      "foregrounds": [
+        "1",
+        0
+      ],
+      "backgrounds": [
+        "21",
+        0
+      ],
+      "foreground_masks": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "Composite",
+    "_meta": {
+      "title": "Composite"
+    }
+  },
+  "6": {
+    "inputs": {
+      "channel": "red",
+      "image": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "ImageToMask",
+    "_meta": {
+      "title": "Convert Image to Mask"
+    }
+  },
+  "8": {
+    "inputs": {
+      "value": 0.5,
+      "mask": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "ThresholdMask",
+    "_meta": {
+      "title": "ThresholdMask"
+    }
+  },
+  "9": {
+    "inputs": {
+      "images": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "15": {
+    "inputs": {
+      "engine": "depth_anything_v2_vitb-fp16.engine",
+      "images": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "DepthAnythingTensorrt",
+    "_meta": {
+      "title": "Depth Anything Tensorrt"
+    }
+  },
+  "21": {
+    "inputs": {
+      "color": "black",
+      "images": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "BackgroundColor",
+    "_meta": {
+      "title": "BackgroundColor"
+    }
+  }
+}
