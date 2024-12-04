@@ -115,13 +115,13 @@ export function Webcam({ onStreamReady }: WebcamProps) {
       {error && (
         <div className="text-red-500 text-sm">{error}</div>
       )}
-      <div className="relative">
+      <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="rounded-lg w-[512px] h-[512px] object-cover bg-black"
+          className="w-[512px] h-[512px] object-cover bg-black"
         />
         {videoDevices.length > 1 && (
           <div className="absolute inset-0 flex items-end justify-center pb-4">
