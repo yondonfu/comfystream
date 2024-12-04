@@ -1,5 +1,5 @@
-import { Peer } from "@/lib/peer";
 import { PeerProps } from "@/components/peer";
+import { Peer } from "@/lib/peer";
 import * as React from "react";
 
 const MAX_OFFER_RETRIES = 5;
@@ -19,6 +19,7 @@ export function usePeer(props: PeerProps): Peer {
   );
 
   const connectionStateTimeoutRef = React.useRef(null);
+  const currentTracksRef = React.useRef<MediaStreamTrack[]>([]);
 
   const sendOffer = async (
     url: string,
@@ -67,6 +68,27 @@ export function usePeer(props: PeerProps): Peer {
     }
   };
 
+  const updateTracks = React.useCallback((pc: RTCPeerConnection, newStream: MediaStream) => {
+    currentTracksRef.current.forEach(track => {
+      const sender = pc.getSenders().find(s => s.track?.id === track.id);
+      if (sender) {
+        pc.removeTrack(sender);
+      }
+    });
+
+    const tracks = newStream.getTracks();
+    tracks.forEach((track) => {
+      pc.addTrack(track, newStream);
+    });
+    currentTracksRef.current = tracks;
+  }, []);
+
+  React.useEffect(() => {
+    if (!peerConnection || !localStream) return;
+
+    updateTracks(peerConnection, localStream);
+  }, [localStream, peerConnection, updateTracks]);
+
   React.useEffect(() => {
     if (connect) {
       if (peerConnection) return;
@@ -85,19 +107,11 @@ export function usePeer(props: PeerProps): Peer {
 
       pc.addTransceiver("video");
 
-      localStream.getTracks().forEach((track) => {
+      const tracks = localStream.getTracks();
+      tracks.forEach((track) => {
         pc.addTrack(track, localStream);
-
-        // const sender = pc.addTrack(track, localStream);
-        // const params = sender.getParameters();
-        // if (!params.encodings) {
-        //   params.encodings = [{}];
-        // }
-
-        // params.encodings[0].maxBitrate = 300000;
-        // params.encodings[0].maxFramerate = 30;
-        // sender.setParameters(params);
       });
+      currentTracksRef.current = tracks;
 
       const dataChannel = pc.createDataChannel("config");
       setDataChannel(dataChannel);
@@ -120,17 +134,28 @@ export function usePeer(props: PeerProps): Peer {
       };
 
       const createOffer = async () => {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          // onicecandidate will handle sending the offer once ICE gathering is complete
+        } catch (error) {
+          console.error("Error during negotiation:", error);
+        }
       };
 
-      createOffer().catch(console.error);
+      pc.onnegotiationneeded = createOffer;
+
+      createOffer()
     } else {
       if (connectionStateTimeoutRef.current) {
         clearTimeout(connectionStateTimeoutRef.current);
       }
       if (peerConnection) {
         peerConnection.close();
+        setPeerConnection(null);
+        setRemoteStream(null);
+        setDataChannel(null);
+        currentTracksRef.current = [];
       }
     }
   }, [connect, localStream]);
