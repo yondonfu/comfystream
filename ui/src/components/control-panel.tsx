@@ -5,9 +5,9 @@ import { usePeerContext } from "@/context/peer-context";
 
 export const ControlPanel = () => {
   const { controlChannel } = usePeerContext();
-  const [nodeId, setNodeId] = useState("");
-  const [fieldName, setFieldName] = useState("");
-  const [value, setValue] = useState("");
+  const [nodeId, setNodeId] = useState("46"); // Default node ID
+  const [fieldName, setFieldName] = useState("hue_shift"); // Default field name
+  const [value, setValue] = useState("0"); // Default value
 
   const handleUpdate = () => {
     if (controlChannel) {

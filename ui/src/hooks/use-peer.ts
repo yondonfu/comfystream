@@ -156,6 +156,6 @@ export function usePeer(props: PeerProps): Peer {
     peerConnection,
     remoteStream,
     dataChannel,
-    // controlChannel,
+    controlChannel,
   };
 }

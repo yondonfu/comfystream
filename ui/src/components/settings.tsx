@@ -34,7 +34,7 @@ export interface StreamConfig {
 
 const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
-    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:3000",
+    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8889",
 };
 
 interface StreamSettingsProps {
