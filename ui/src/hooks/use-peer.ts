@@ -123,15 +123,15 @@ export function usePeer(props: PeerProps): Peer {
       pc.ondatachannel = (event) => {
         const channel = event.channel;
         if (channel.label === "control") {
-          console.log("Received control channel");
+          console.log("[usePeer] Received control channel, readyState:", channel.readyState);
           
           channel.onopen = () => {
-            console.log("Control channel state:", channel.readyState);
+            console.log("[usePeer] Control channel opened, readyState:", channel.readyState);
             setControlChannel(channel);
           };
 
           channel.onclose = () => {
-            console.log("Control channel closed");
+            console.log("[usePeer] Control channel closed");
             setControlChannel(null);
           };
 

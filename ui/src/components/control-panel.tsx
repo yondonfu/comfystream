@@ -5,6 +5,11 @@ import { usePeerContext } from "@/context/peer-context";
 
 export const ControlPanel = () => {
   const { controlChannel } = usePeerContext();
+  console.log("[ControlPanel] Control channel:", {
+    exists: !!controlChannel,
+    readyState: controlChannel?.readyState
+  });
+
   const [nodeId, setNodeId] = useState("46"); // Default node ID
   const [fieldName, setFieldName] = useState("hue_shift"); // Default field name
   const [value, setValue] = useState("0"); // Default value
@@ -16,7 +21,10 @@ export const ControlPanel = () => {
         field_name: fieldName,
         value: value,
       });
+      console.log("[ControlPanel] Sending message:", message);
       controlChannel.send(message);
+    } else {
+      console.warn("[ControlPanel] Attempted to send message but controlChannel is null");
     }
   };
 
@@ -40,8 +48,19 @@ export const ControlPanel = () => {
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
-      <button onClick={handleUpdate} disabled={!controlChannel}>
-        Update Parameter
+      <button 
+        onClick={handleUpdate} 
+        disabled={!controlChannel}
+        style={{
+          backgroundColor: controlChannel ? '#4CAF50' : '#cccccc',
+          color: controlChannel ? 'white' : '#666666',
+          padding: '8px 16px',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: controlChannel ? 'pointer' : 'not-allowed'
+        }}
+      >
+        Update Parameter {controlChannel ? '(Ready)' : '(Not Connected)'}
       </button>
     </div>
   );

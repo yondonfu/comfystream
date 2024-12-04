@@ -106,12 +106,15 @@ async def offer(request):
 
     # Add control channel
     control_channel = pc.createDataChannel("control")
+    logger.info("Created control channel")
     
     @control_channel.on("message")
     async def on_message(message):
         try:
+            logger.info(f"Received message on control channel: {message}")
             params = json.loads(message)
             if all(k in params for k in ["node_id", "field_name", "value"]):
+                logger.info(f"Updating parameters: {params}")
                 await pipeline.update_parameters(params)
             else:
                 logger.warning("Invalid update message format - required fields: node_id, field_name, value")
