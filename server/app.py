@@ -18,7 +18,11 @@ from aiortc.rtcrtpsender import RTCRtpSender
 from pipeline import Pipeline
 from utils import patch_loop_datagram
 
-logger = logging.getLogger(__name__)
+# Configure logging to ignore aiortc packet messages
+logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
+
+logger = logging.getLogger("comfystream")  # Use a specific logger for our app
 
 
 class VideoStreamTrack(MediaStreamTrack):
@@ -106,22 +110,22 @@ async def offer(request):
 
     # Add control channel
     control_channel = pc.createDataChannel("control")
-    logger.info("Created control channel")
+    logger.info("[Server] Created control channel")
     
     @control_channel.on("message")
     async def on_message(message):
         try:
-            logger.info(f"Received message on control channel: {message}")
+            logger.info(f"[Server] Control message received: {message}")
             params = json.loads(message)
             if all(k in params for k in ["node_id", "field_name", "value"]):
-                logger.info(f"Updating parameters: {params}")
+                logger.info(f"[Server] Updating parameters: {params}")
                 await pipeline.update_parameters(params)
             else:
-                logger.warning("Invalid update message format - required fields: node_id, field_name, value")
+                logger.warning("[Server] Invalid message format - missing required fields")
         except json.JSONDecodeError:
-            logger.error("Invalid JSON received on control channel")
+            logger.error("[Server] Invalid JSON received")
         except Exception as e:
-            logger.error(f"Error processing control message: {str(e)}")
+            logger.error(f"[Server] Error processing message: {str(e)}")
 
     @pc.on("track")
     def on_track(track):
@@ -197,7 +201,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    logging.basicConfig(level=args.log_level.upper())
+    logging.basicConfig(
+        level=args.log_level.upper(),
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%H:%M:%S'
+    )
 
     app = web.Application()
     app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
