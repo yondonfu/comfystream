@@ -120,6 +120,22 @@ export function usePeer(props: PeerProps): Peer {
         handleConnectionStateChange(pc.connectionState);
       };
 
+      pc.ondatachannel = (event) => {
+        const channel = event.channel;
+        if (channel.label === "control") {
+          setControlChannel(channel);
+
+          channel.onopen = () => {
+            console.log("Control channel is open");
+          };
+
+          channel.onmessage = (event) => {
+            // Handle incoming messages if needed
+            console.log("Received message on control channel:", event.data);
+          };
+        }
+      };
+
       const createOffer = async () => {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -136,21 +152,10 @@ export function usePeer(props: PeerProps): Peer {
     }
   }, [connect, localStream]);
 
-  React.useEffect(() => {
-    if (!peerConnection) return;
-
-    const channel = peerConnection.createDataChannel("control");
-    setControlChannel(channel);
-
-    return () => {
-      peerConnection.close();
-    };
-  }, [peerConnection]);
-
   return {
     peerConnection,
     remoteStream,
     dataChannel,
-    controlChannel,
+    // controlChannel,
   };
 }
