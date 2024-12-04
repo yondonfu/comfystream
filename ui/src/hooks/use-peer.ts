@@ -158,7 +158,7 @@ export function usePeer(props: PeerProps): Peer {
         currentTracksRef.current = [];
       }
     }
-  }, [connect, localStream]);
+  }, [connect, peerConnection, localStream]);
 
   React.useEffect(() => {
     if (!peerConnection) return;
