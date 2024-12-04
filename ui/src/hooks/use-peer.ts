@@ -123,14 +123,23 @@ export function usePeer(props: PeerProps): Peer {
       pc.ondatachannel = (event) => {
         const channel = event.channel;
         if (channel.label === "control") {
-          setControlChannel(channel);
-
+          console.log("Received control channel");
+          
           channel.onopen = () => {
-            console.log("Control channel is open");
+            console.log("Control channel state:", channel.readyState);
+            setControlChannel(channel);
+          };
+
+          channel.onclose = () => {
+            console.log("Control channel closed");
+            setControlChannel(null);
+          };
+
+          channel.onerror = (error) => {
+            console.error("Control channel error:", error);
           };
 
           channel.onmessage = (event) => {
-            // Handle incoming messages if needed
             console.log("Received message on control channel:", event.data);
           };
         }
@@ -149,6 +158,10 @@ export function usePeer(props: PeerProps): Peer {
       if (peerConnection) {
         peerConnection.close();
       }
+      setControlChannel(null);
+      setDataChannel(null);
+      setRemoteStream(null);
+      setPeerConnection(null);
     }
   }, [connect, localStream]);
 
