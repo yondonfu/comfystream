@@ -111,34 +111,38 @@ export function Webcam({ onStreamReady }: WebcamProps) {
   }, [selectedDevice, startWebcam]);
 
   return (
-    <div className="space-y-4">
+    <div className="relative">
       {error && (
         <div className="text-red-500 text-sm">{error}</div>
       )}
-      {videoDevices.length > 1 && (
-        <Select
-          value={selectedDevice}
-          onValueChange={setSelectedDevice}
-        >
-          <Select.Trigger className="w-[200px]">
-            {videoDevices.find(d => d.deviceId === selectedDevice)?.label || 'Select camera'}
-          </Select.Trigger>
-          <Select.Content>
-            {videoDevices.map((device) => (
-              <Select.Option key={device.deviceId} value={device.deviceId}>
-                {device.label}
-              </Select.Option>
-            ))}
-          </Select.Content>
-        </Select>
-      )}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="rounded-lg w-[512px] h-[512px] object-cover bg-black"
-      />
+      <div className="relative">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="rounded-lg w-[512px] h-[512px] object-cover bg-black"
+        />
+        {videoDevices.length > 1 && (
+          <div className="absolute inset-0 flex items-end justify-center pb-4">
+            <Select
+              value={selectedDevice}
+              onValueChange={setSelectedDevice}
+            >
+              <Select.Trigger className="w-[200px]">
+                {videoDevices.find(d => d.deviceId === selectedDevice)?.label || 'Select camera'}
+              </Select.Trigger>
+              <Select.Content>
+                {videoDevices.map((device) => (
+                  <Select.Option key={device.deviceId} value={device.deviceId}>
+                    {device.label}
+                  </Select.Option>
+                ))}
+              </Select.Content>
+            </Select>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
