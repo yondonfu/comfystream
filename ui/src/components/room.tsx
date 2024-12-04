@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
 import { PeerConnector } from "@/components/peer";
+import { StreamConfig, StreamSettings } from "@/components/settings";
 import { Webcam } from "@/components/webcam";
-import { StreamSettings, StreamConfig } from "@/components/settings";
 import { usePeerContext } from "@/context/peer-context";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface MediaStreamPlayerProps {
@@ -79,19 +79,19 @@ export function Room() {
 
   const connectingRef = useRef(false);
 
-  const onStreamReady = (stream: MediaStream) => {
+  const onStreamReady = useCallback((stream: MediaStream) => {
     setLocalStream(stream);
-  };
+  }, []);
 
-  const onRemoteStreamReady = () => {
+  const onRemoteStreamReady = useCallback(() => {
     toast.success("Started stream!", { id: loadingToastId });
     setLoadingToastId(undefined);
-  };
+  }, [loadingToastId]);
 
-  const onStreamConfigSave = async (config: StreamConfig) => {
+  const onStreamConfigSave = useCallback((config: StreamConfig) => {
     setStreamUrl(config.streamUrl);
     setPrompt(config.prompt);
-  };
+  }, []);
 
   useEffect(() => {
     if (connectingRef.current) return;
@@ -108,19 +108,19 @@ export function Room() {
     }
   }, [streamUrl]);
 
-  const handleConnected = () => {
+  const handleConnected = useCallback(() => {
     setIsConnected(true);
 
     console.debug("Connected!");
 
     connectingRef.current = false;
-  };
+  }, []);
 
-  const handleDisconnected = () => {
+  const handleDisconnected = useCallback(() => {
     setIsConnected(false);
 
     console.debug("Disconnected!");
-  };
+  }, []);
 
   return (
     <main className="fixed inset-0 overflow-hidden overscroll-none">
