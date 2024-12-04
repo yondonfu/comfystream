@@ -6,6 +6,7 @@ import { Webcam } from "@/components/webcam";
 import { StreamSettings, StreamConfig } from "@/components/settings";
 import { usePeerContext } from "@/context/peer-context";
 import { toast } from "sonner";
+import { ControlPanel } from "@/components/control-panel";
 
 interface MediaStreamPlayerProps {
   stream: MediaStream;
@@ -149,6 +150,8 @@ export function Room() {
                 <Webcam onStreamReady={onStreamReady} />
               </div>
             </div>
+
+            {isConnected && <ControlPanel />}
 
             <StreamSettings
               open={isStreamSettingsOpen}

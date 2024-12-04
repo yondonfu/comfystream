@@ -17,6 +17,7 @@ export function usePeer(props: PeerProps): Peer {
   const [dataChannel, setDataChannel] = React.useState<RTCDataChannel | null>(
     null
   );
+  const [controlChannel, setControlChannel] = React.useState<RTCDataChannel | null>(null);
 
   const connectionStateTimeoutRef = React.useRef(null);
 
@@ -138,6 +139,9 @@ export function usePeer(props: PeerProps): Peer {
   React.useEffect(() => {
     if (!peerConnection) return;
 
+    const channel = peerConnection.createDataChannel("control");
+    setControlChannel(channel);
+
     return () => {
       peerConnection.close();
     };
@@ -147,5 +151,6 @@ export function usePeer(props: PeerProps): Peer {
     peerConnection,
     remoteStream,
     dataChannel,
+    controlChannel,
   };
 }

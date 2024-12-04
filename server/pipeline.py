@@ -11,6 +11,22 @@ class Pipeline:
         self.client = ComfyStreamClient(**kwargs)
         self.client.set_prompt(prompt)
 
+    async def update_parameters(self, params: Dict[Any, Any]):
+        """Update workflow parameters dynamically
+        
+        params format:
+        {
+            "node_id": str,            # ID of the node to update
+            "field_name": str,         # Name of the input field
+            "value": Any              # New value for the field
+        }
+        """
+        await self.client.update_node_input(
+            params["node_id"],
+            params["field_name"],
+            params["value"]
+        )
+
     async def warm(self):
         frame = torch.randn(1, 512, 512, 3)
         await self.predict(frame)

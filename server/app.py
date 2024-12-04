@@ -12,6 +12,7 @@ from aiortc import (
     RTCConfiguration,
     RTCIceServer,
     MediaStreamTrack,
+    RTCDataChannel,
 )
 from aiortc.rtcrtpsender import RTCRtpSender
 from pipeline import Pipeline
@@ -102,6 +103,22 @@ async def offer(request):
     caps = RTCRtpSender.getCapabilities("video")
     prefs = list(filter(lambda x: x.name == "H264", caps.codecs))
     transceiver.setCodecPreferences(prefs)
+
+    # Add control channel
+    control_channel = pc.createDataChannel("control")
+    
+    @control_channel.on("message")
+    async def on_message(message):
+        try:
+            params = json.loads(message)
+            if all(k in params for k in ["node_id", "field_name", "value"]):
+                await pipeline.update_parameters(params)
+            else:
+                logger.warning("Invalid update message format - required fields: node_id, field_name, value")
+        except json.JSONDecodeError:
+            logger.error("Invalid JSON received on control channel")
+        except Exception as e:
+            logger.error(f"Error processing control message: {str(e)}")
 
     @pc.on("track")
     def on_track(track):
