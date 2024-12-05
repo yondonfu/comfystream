@@ -1,11 +1,12 @@
 import { Room } from "@/components/room";
-import { ControlPanel } from "@/components/control-panel";
+import { ControlPanelsContainer } from "@/components/control-panels-container";
 
-export default async function Page() {
+export default function Page() {
   return (
-    <>
-      <Room />
-      <ControlPanel />
-    </>
+    <div className="flex flex-col">
+      <div className="w-full">
+        <Room />
+      </div>
+    </div>
   );
 }

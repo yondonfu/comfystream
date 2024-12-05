@@ -7,6 +7,7 @@ import { StreamSettings, StreamConfig } from "@/components/settings";
 import { usePeerContext } from "@/context/peer-context";
 import { toast } from "sonner";
 import { ControlPanel } from "@/components/control-panel";
+import { ControlPanelsContainer } from "./control-panels-container";
 
 interface MediaStreamPlayerProps {
   stream: MediaStream;
@@ -151,7 +152,7 @@ export function Room() {
               </div>
             </div>
 
-            {isConnected && <ControlPanel />}
+            {isConnected && <ControlPanelsContainer />}
 
             <StreamSettings
               open={isStreamSettingsOpen}
