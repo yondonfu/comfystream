@@ -27,17 +27,19 @@ export const ControlPanel = () => {
   // Request available nodes when control channel is established
   useEffect(() => {
     if (controlChannel) {
+      console.log("[ControlPanel] Sending get_nodes request");
       controlChannel.send(JSON.stringify({ type: "get_nodes" }));
       
-      // Set up listener for node information
       controlChannel.addEventListener("message", (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log("[ControlPanel] Received message:", data);
           if (data.type === "nodes_info") {
+            console.log("[ControlPanel] Setting available nodes:", data.nodes);
             setAvailableNodes(data.nodes);
           }
         } catch (error) {
-          console.error("Error parsing node info:", error);
+          console.error("[ControlPanel] Error parsing node info:", error);
         }
       });
     }

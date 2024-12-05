@@ -1,6 +1,7 @@
 import torch
 import asyncio
 from typing import Any
+import json
 
 from comfy.api.components.schema.prompt import PromptDictInput
 from comfy.cli_args_types import Configuration
@@ -81,10 +82,13 @@ class ComfyStreamClient:
         async with self._lock:
             if self.prompt:
                 nodes_info = {}
+                print("[ComfyStreamClient] Getting node metadata...")
                 node_metadata = await self.get_node_metadata()
+                print(f"[ComfyStreamClient] Retrieved metadata: {json.dumps(node_metadata, indent=2)}")
                 
                 for node_id, node in self.prompt.items():
                     class_type = node.get('class_type')
+                    print(f"[ComfyStreamClient] Processing node {node_id} of type {class_type}")
                     node_info = {
                         'class_type': class_type,
                         'inputs': {}
@@ -93,24 +97,31 @@ class ComfyStreamClient:
                     if 'inputs' in node:
                         node_info['inputs'] = {}
                         for input_name, input_value in node['inputs'].items():
+                            print(f"[ComfyStreamClient] Processing input {input_name} for node {node_id}")
                             input_info = {
                                 'value': input_value,
                                 'type': 'unknown'
                             }
                             
-                            # Get metadata for this input if available
                             if class_type in node_metadata:
+                                print(f"[ComfyStreamClient] Found metadata for {class_type}")
                                 input_meta = node_metadata[class_type]['input'].get(input_name, {})
+                                print(f"[ComfyStreamClient] Input metadata for {input_name}: {input_meta}")
                                 input_info.update({
                                     'type': input_meta.get('type', 'unknown'),
                                     'min': input_meta.get('min', None),
                                     'max': input_meta.get('max', None),
                                     'widget': input_meta.get('widget', None)
                                 })
+                            else:
+                                print(f"[ComfyStreamClient] No metadata found for {class_type}")
                                 
+                            print(f"[ComfyStreamClient] Final input info for {input_name}: {input_info}")
                             node_info['inputs'][input_name] = input_info
                     
                     nodes_info[node_id] = node_info
+                
+                print(f"[ComfyStreamClient] Final nodes info: {json.dumps(nodes_info, indent=2)}")
                 return nodes_info
             return {}
 

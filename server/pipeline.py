@@ -1,6 +1,7 @@
 import torch
 import av
 import numpy as np
+import json
 
 from typing import Any, Dict
 from comfystream.client import ComfyStreamClient
@@ -55,4 +56,7 @@ class Pipeline:
 
     async def get_nodes_info(self) -> Dict[str, Any]:
         """Get information about all nodes in the current prompt including metadata."""
-        return await self.client.get_available_nodes()
+        print("[Pipeline] Requesting nodes info from client...")
+        nodes_info = await self.client.get_available_nodes()
+        print(f"[Pipeline] Received nodes info: {json.dumps(nodes_info, indent=2)}")
+        return nodes_info
