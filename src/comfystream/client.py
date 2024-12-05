@@ -76,3 +76,16 @@ class ComfyStreamClient:
                 print(f"[ComfyStreamClient] Error type: {type(e)}")
                 raise
             return await output_fut
+
+    async def get_available_nodes(self):
+        async with self._lock:
+            if self.prompt:
+                nodes_info = {}
+                for node_id, node in self.prompt.items():
+                    if 'inputs' in node:
+                        nodes_info[node_id] = {
+                            'class_type': node.get('class_type'),
+                            'inputs': node['inputs']
+                        }
+                return nodes_info
+            return {}

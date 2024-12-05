@@ -1,21 +1,47 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePeerContext } from "@/context/peer-context";
+
+interface NodeInfo {
+  class_type: string;
+  inputs: Record<string, any>;
+}
 
 export const ControlPanel = () => {
   const { controlChannel } = usePeerContext();
-  console.log("[ControlPanel] Control channel:", {
-    exists: !!controlChannel,
-    readyState: controlChannel?.readyState
-  });
+  const [nodeId, setNodeId] = useState("");
+  const [fieldName, setFieldName] = useState("");
+  const [value, setValue] = useState("0");
+  const [isAutoUpdateEnabled, setIsAutoUpdateEnabled] = useState(false);
+  const [availableNodes, setAvailableNodes] = useState<Record<string, NodeInfo>>({});
 
-  const [nodeId, setNodeId] = useState("46"); // Default node ID
-  const [fieldName, setFieldName] = useState("hue_shift"); // Default field name
-  const [value, setValue] = useState("0"); // Default value
-
-  const handleUpdate = () => {
+  // Request available nodes when control channel is established
+  useEffect(() => {
     if (controlChannel) {
+      controlChannel.send(JSON.stringify({ type: "get_nodes" }));
+      
+      // Set up listener for node information
+      controlChannel.addEventListener("message", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "nodes_info") {
+            setAvailableNodes(data.nodes);
+          }
+        } catch (error) {
+          console.error("Error parsing node info:", error);
+        }
+      });
+    }
+  }, [controlChannel]);
+
+  // Validate and send update when value changes and auto-update is enabled
+  useEffect(() => {
+    // Check if value is a valid integer and required fields are not empty
+    const isValidInteger = /^-?\d+$/.test(value);
+    const hasRequiredFields = nodeId.trim() !== "" && fieldName.trim() !== "";
+    
+    if (controlChannel && isAutoUpdateEnabled && isValidInteger && hasRequiredFields) {
       const message = JSON.stringify({
         node_id: nodeId,
         field_name: fieldName,
@@ -23,36 +49,69 @@ export const ControlPanel = () => {
       });
       console.log("[ControlPanel] Sending message:", message);
       controlChannel.send(message);
-    } else {
-      console.warn("[ControlPanel] Attempted to send message but controlChannel is null");
+    }
+  }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled]);
+
+  const toggleAutoUpdate = () => {
+    setIsAutoUpdateEnabled(!isAutoUpdateEnabled);
+  };
+
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    // Allow empty string or valid integers (including negative)
+    if (newValue === "" || /^-?\d+$/.test(newValue)) {
+      setValue(newValue);
     }
   };
 
   return (
     <div>
-      <input
-        type="text"
-        placeholder="Node ID"
+      <select
         value={nodeId}
-        onChange={(e) => setNodeId(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="Field Name"
+        onChange={(e) => {
+          setNodeId(e.target.value);
+          setFieldName(""); // Reset field name when node changes
+        }}
+      >
+        <option value="">Select Node</option>
+        {Object.entries(availableNodes).map(([id, info]) => (
+          <option key={id} value={id}>
+            {id} ({info.class_type})
+          </option>
+        ))}
+      </select>
+
+      <select
         value={fieldName}
         onChange={(e) => setFieldName(e.target.value)}
-      />
+        disabled={!nodeId}
+      >
+        <option value="">Select Field</option>
+        {nodeId && availableNodes[nodeId]?.inputs && 
+          Object.keys(availableNodes[nodeId].inputs).map((field) => (
+            <option key={field} value={field}>
+              {field}
+            </option>
+          ))
+        }
+      </select>
+
       <input
-        type="text"
+        type="number"
         placeholder="Value"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={handleValueChange}
+        style={{
+          width: '100px'
+        }}
       />
       <button 
-        onClick={handleUpdate} 
+        onClick={toggleAutoUpdate} 
         disabled={!controlChannel}
         style={{
-          backgroundColor: controlChannel ? '#4CAF50' : '#cccccc',
+          backgroundColor: controlChannel 
+            ? (isAutoUpdateEnabled ? '#4CAF50' : '#ff6b6b') 
+            : '#cccccc',
           color: controlChannel ? 'white' : '#666666',
           padding: '8px 16px',
           border: 'none',
@@ -60,7 +119,9 @@ export const ControlPanel = () => {
           cursor: controlChannel ? 'pointer' : 'not-allowed'
         }}
       >
-        Update Parameter {controlChannel ? '(Ready)' : '(Not Connected)'}
+        Auto-Update {controlChannel 
+          ? (isAutoUpdateEnabled ? '(ON)' : '(OFF)') 
+          : '(Not Connected)'}
       </button>
     </div>
   );

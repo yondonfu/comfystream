@@ -117,7 +117,16 @@ async def offer(request):
         try:
             logger.info(f"[Server] Control message received: {message}")
             params = json.loads(message)
-            if all(k in params for k in ["node_id", "field_name", "value"]):
+            
+            if params.get("type") == "get_nodes":
+                # Get nodes info from pipeline
+                nodes_info = await pipeline.get_nodes_info()
+                response = {
+                    "type": "nodes_info",
+                    "nodes": nodes_info
+                }
+                control_channel.send(json.dumps(response))
+            elif all(k in params for k in ["node_id", "field_name", "value"]):
                 logger.info(f"[Server] Updating parameters: {params}")
                 await pipeline.update_parameters(params)
             else:
