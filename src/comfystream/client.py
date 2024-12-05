@@ -64,8 +64,8 @@ class ComfyStreamClient:
                 print(f"[Client] New prompt structure: {self.prompt}")
 
     async def queue_prompt(self, input: torch.Tensor) -> torch.Tensor:
-        print("[ComfyStreamClient] Queueing prompt with input shape:", input.shape)
-        print("[ComfyStreamClient] Current prompt structure:", self.prompt)
+       # print("[ComfyStreamClient] Queueing prompt with input shape:", input.shape)
+       # print("[ComfyStreamClient] Current prompt structure:", self.prompt)
         async with self._lock:
             tensor_cache.inputs.append(input)
             output_fut = asyncio.Future()
