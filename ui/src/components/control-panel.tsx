@@ -3,9 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { usePeerContext } from "@/context/peer-context";
 
+interface InputInfo {
+  value: any;
+  type: string;
+  min?: number;
+  max?: number;
+  widget?: string;
+}
+
 interface NodeInfo {
   class_type: string;
-  inputs: Record<string, any>;
+  inputs: Record<string, InputInfo>;
 }
 
 export const ControlPanel = () => {
@@ -35,43 +43,58 @@ export const ControlPanel = () => {
     }
   }, [controlChannel]);
 
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
+    
+    if (currentInput) {
+      // Validate against min/max if they exist
+      const numValue = parseFloat(newValue);
+      if (!isNaN(numValue)) {
+        if (currentInput.min !== undefined && numValue < currentInput.min) return;
+        if (currentInput.max !== undefined && numValue > currentInput.max) return;
+      }
+    }
+    
+    setValue(newValue);
+  };
+
   // Validate and send update when value changes and auto-update is enabled
   useEffect(() => {
-    // Check if value is a valid integer and required fields are not empty
-    const isValidInteger = /^-?\d+$/.test(value);
+    const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
+    if (!currentInput) return;
+
+    const isValidValue = currentInput.type === 'number' 
+      ? /^-?\d*\.?\d*$/.test(value)  // Allow decimals for number type
+      : /^-?\d+$/.test(value);       // Only integers for other types
+    
     const hasRequiredFields = nodeId.trim() !== "" && fieldName.trim() !== "";
     
-    if (controlChannel && isAutoUpdateEnabled && isValidInteger && hasRequiredFields) {
+    if (controlChannel && isAutoUpdateEnabled && isValidValue && hasRequiredFields) {
       const message = JSON.stringify({
         node_id: nodeId,
         field_name: fieldName,
-        value: value,
+        value: currentInput.type === 'number' ? parseFloat(value) : parseInt(value),
       });
       console.log("[ControlPanel] Sending message:", message);
       controlChannel.send(message);
     }
-  }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled]);
+  }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled, availableNodes]);
 
   const toggleAutoUpdate = () => {
     setIsAutoUpdateEnabled(!isAutoUpdateEnabled);
   };
 
-  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    // Allow empty string or valid integers (including negative)
-    if (newValue === "" || /^-?\d+$/.test(newValue)) {
-      setValue(newValue);
-    }
-  };
-
   return (
-    <div>
+    <div className="flex flex-col gap-4 p-4">
       <select
         value={nodeId}
         onChange={(e) => {
           setNodeId(e.target.value);
           setFieldName(""); // Reset field name when node changes
+          setValue("0");    // Reset value when node changes
         }}
+        className="p-2 border rounded"
       >
         <option value="">Select Node</option>
         {Object.entries(availableNodes).map(([id, info]) => (
@@ -83,41 +106,56 @@ export const ControlPanel = () => {
 
       <select
         value={fieldName}
-        onChange={(e) => setFieldName(e.target.value)}
+        onChange={(e) => {
+          setFieldName(e.target.value);
+          // Set initial value based on current input value or default to 0
+          const input = availableNodes[nodeId]?.inputs[e.target.value];
+          setValue(input?.value?.toString() || "0");
+        }}
         disabled={!nodeId}
+        className="p-2 border rounded"
       >
         <option value="">Select Field</option>
         {nodeId && availableNodes[nodeId]?.inputs && 
-          Object.keys(availableNodes[nodeId].inputs).map((field) => (
+          Object.entries(availableNodes[nodeId].inputs).map(([field, info]) => (
             <option key={field} value={field}>
-              {field}
+              {field} ({info.type}{info.widget ? ` - ${info.widget}` : ''})
             </option>
           ))
         }
       </select>
 
-      <input
-        type="number"
-        placeholder="Value"
-        value={value}
-        onChange={handleValueChange}
-        style={{
-          width: '100px'
-        }}
-      />
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          onChange={handleValueChange}
+          min={nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName]?.min : undefined}
+          max={nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName]?.max : undefined}
+          step={nodeId && fieldName && availableNodes[nodeId]?.inputs[fieldName]?.type === 'number' ? 'any' : '1'}
+          className="p-2 border rounded w-32"
+        />
+        
+        {nodeId && fieldName && (
+          <span className="text-sm text-gray-600">
+            {availableNodes[nodeId]?.inputs[fieldName]?.min !== undefined && 
+             availableNodes[nodeId]?.inputs[fieldName]?.max !== undefined && 
+              `(${availableNodes[nodeId]?.inputs[fieldName]?.min} - ${availableNodes[nodeId]?.inputs[fieldName]?.max})`
+            }
+          </span>
+        )}
+      </div>
+
       <button 
         onClick={toggleAutoUpdate} 
         disabled={!controlChannel}
-        style={{
-          backgroundColor: controlChannel 
-            ? (isAutoUpdateEnabled ? '#4CAF50' : '#ff6b6b') 
-            : '#cccccc',
-          color: controlChannel ? 'white' : '#666666',
-          padding: '8px 16px',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: controlChannel ? 'pointer' : 'not-allowed'
-        }}
+        className={`p-2 rounded ${
+          !controlChannel 
+            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+            : isAutoUpdateEnabled 
+              ? 'bg-green-500 text-white'
+              : 'bg-red-500 text-white'
+        }`}
       >
         Auto-Update {controlChannel 
           ? (isAutoUpdateEnabled ? '(ON)' : '(OFF)') 

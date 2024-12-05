@@ -81,11 +81,45 @@ class ComfyStreamClient:
         async with self._lock:
             if self.prompt:
                 nodes_info = {}
+                node_metadata = await self.get_node_metadata()
+                
                 for node_id, node in self.prompt.items():
+                    class_type = node.get('class_type')
+                    node_info = {
+                        'class_type': class_type,
+                        'inputs': {}
+                    }
+                    
                     if 'inputs' in node:
-                        nodes_info[node_id] = {
-                            'class_type': node.get('class_type'),
-                            'inputs': node['inputs']
-                        }
+                        node_info['inputs'] = {}
+                        for input_name, input_value in node['inputs'].items():
+                            input_info = {
+                                'value': input_value,
+                                'type': 'unknown'
+                            }
+                            
+                            # Get metadata for this input if available
+                            if class_type in node_metadata:
+                                input_meta = node_metadata[class_type]['input'].get(input_name, {})
+                                input_info.update({
+                                    'type': input_meta.get('type', 'unknown'),
+                                    'min': input_meta.get('min', None),
+                                    'max': input_meta.get('max', None),
+                                    'widget': input_meta.get('widget', None)
+                                })
+                                
+                            node_info['inputs'][input_name] = input_info
+                    
+                    nodes_info[node_id] = node_info
                 return nodes_info
+            return {}
+
+    async def get_node_metadata(self):
+        """Get metadata about node types from ComfyUI"""
+        try:
+            # ComfyUI exposes node information through the API
+            object_info = await self.comfy_client.get_object_info()
+            return object_info
+        except Exception as e:
+            print(f"[ComfyStreamClient] Error getting node metadata: {str(e)}")
             return {}

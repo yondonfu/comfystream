@@ -52,3 +52,7 @@ class Pipeline:
         post_output.time_base = frame.time_base
 
         return post_output
+
+    async def get_nodes_info(self) -> Dict[str, Any]:
+        """Get information about all nodes in the current prompt including metadata."""
+        return await self.client.get_available_nodes()
