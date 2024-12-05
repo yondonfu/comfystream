@@ -128,9 +128,44 @@ class ComfyStreamClient:
     async def get_node_metadata(self):
         """Get metadata about node types from ComfyUI"""
         try:
-            # ComfyUI exposes node information through the API
-            object_info = await self.comfy_client.get_object_info()
-            return object_info
+            # Access the node mappings directly from the ComfyUI nodes module
+            from comfy.nodes.package import import_all_nodes_in_workspace
+            nodes = import_all_nodes_in_workspace()
+            
+            node_info = {}
+            for class_type, node_class in nodes.NODE_CLASS_MAPPINGS.items():
+                input_data = node_class.INPUT_TYPES() if hasattr(node_class, 'INPUT_TYPES') else {}
+                
+                # Extract input metadata including types, min/max values, and widgets
+                input_info = {}
+                if 'required' in input_data:
+                    for name, (input_type, config) in input_data['required'].items():
+                        input_info[name] = {
+                            'type': input_type,
+                            'required': True,
+                            'min': config.get('min', None),
+                            'max': config.get('max', None),
+                            'widget': config.get('widget', None)
+                        }
+                
+                if 'optional' in input_data:
+                    for name, (input_type, config) in input_data['optional'].items():
+                        input_info[name] = {
+                            'type': input_type,
+                            'required': False,
+                            'min': config.get('min', None),
+                            'max': config.get('max', None),
+                            'widget': config.get('widget', None)
+                        }
+
+                node_info[class_type] = {
+                    'input': input_info,
+                    'output': node_class.RETURN_TYPES if hasattr(node_class, 'RETURN_TYPES') else [],
+                    'output_is_list': node_class.OUTPUT_IS_LIST if hasattr(node_class, 'OUTPUT_IS_LIST') else [],
+                    'output_node': getattr(node_class, 'OUTPUT_NODE', False)
+                }
+                
+            return node_info
         except Exception as e:
             print(f"[ComfyStreamClient] Error getting node metadata: {str(e)}")
             return {}
