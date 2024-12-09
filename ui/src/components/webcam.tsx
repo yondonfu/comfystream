@@ -11,9 +11,12 @@ export function Webcam({ onStreamReady, deviceId }: WebcamProps) {
 
   const captureStream = useCallback(() => {
     if (videoRef.current && !streamRef.current) {
+      // cast to any because captureStream() not recognized
       const video = videoRef.current as any;
       const stream = video.captureStream(30);
+
       streamRef.current = stream;
+
       onStreamReady(stream);
     }
   }, [onStreamReady]);
@@ -33,19 +36,15 @@ export function Webcam({ onStreamReady, deviceId }: WebcamProps) {
 
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
-        deviceId: { exact: deviceId },
-        width: { ideal: 512 },
-        height: { ideal: 512 },
+        ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+        width: { exact: 512 },
+        height: { exact: 512 },
       },
-      audio: false
     });
 
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
-      videoRef.current.onloadedmetadata = () => {
-        videoRef.current?.play().catch(console.error);
-        captureStream();
-      };
+      captureStream();
     }
   }, [deviceId, captureStream]);
 
