@@ -76,6 +76,7 @@ export function Room() {
 
   const [streamUrl, setStreamUrl] = useState<string>("");
   const [prompt, setPrompt] = useState<any>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
 
   const connectingRef = useRef(false);
 
@@ -91,6 +92,7 @@ export function Room() {
   const onStreamConfigSave = useCallback((config: StreamConfig) => {
     setStreamUrl(config.streamUrl);
     setPrompt(config.prompt);
+    setSelectedDeviceId(config.selectedDeviceId || "");
   }, []);
 
   useEffect(() => {
@@ -146,13 +148,14 @@ export function Room() {
                 />
               </div>
               <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square flex justify-center items-center lg:border-2 lg:rounded-md">
-                <Webcam onStreamReady={onStreamReady} />
+                <Webcam onStreamReady={onStreamReady} deviceId={selectedDeviceId} />
               </div>
             </div>
 
             <StreamSettings
               open={isStreamSettingsOpen}
               onOpenChange={setIsStreamSettingsOpen}
+              onDeviceChange={setSelectedDeviceId}
               onSave={onStreamConfigSave}
             />
           </div>
