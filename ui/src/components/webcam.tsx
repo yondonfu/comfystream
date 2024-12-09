@@ -37,8 +37,8 @@ export function Webcam({ onStreamReady, deviceId }: WebcamProps) {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
-        width: { exact: 512 },
-        height: { exact: 512 },
+        width: { ideal: 512 },
+        height: { ideal: 512 },
       },
     });
 
