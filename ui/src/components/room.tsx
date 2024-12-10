@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
 import { PeerConnector } from "@/components/peer";
+import { StreamConfig, StreamSettings } from "@/components/settings";
 import { Webcam } from "@/components/webcam";
-import { StreamSettings, StreamConfig } from "@/components/settings";
 import { usePeerContext } from "@/context/peer-context";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface MediaStreamPlayerProps {
@@ -76,22 +76,24 @@ export function Room() {
 
   const [streamUrl, setStreamUrl] = useState<string>("");
   const [prompt, setPrompt] = useState<any>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
 
   const connectingRef = useRef(false);
 
-  const onStreamReady = (stream: MediaStream) => {
+  const onStreamReady = useCallback((stream: MediaStream) => {
     setLocalStream(stream);
-  };
+  }, []);
 
-  const onRemoteStreamReady = () => {
+  const onRemoteStreamReady = useCallback(() => {
     toast.success("Started stream!", { id: loadingToastId });
     setLoadingToastId(undefined);
-  };
+  }, [loadingToastId]);
 
-  const onStreamConfigSave = async (config: StreamConfig) => {
+  const onStreamConfigSave = useCallback((config: StreamConfig) => {
     setStreamUrl(config.streamUrl);
     setPrompt(config.prompt);
-  };
+    setSelectedDeviceId(config.selectedDeviceId || "");
+  }, []);
 
   useEffect(() => {
     if (connectingRef.current) return;
@@ -108,19 +110,19 @@ export function Room() {
     }
   }, [streamUrl]);
 
-  const handleConnected = () => {
+  const handleConnected = useCallback(() => {
     setIsConnected(true);
 
     console.debug("Connected!");
 
     connectingRef.current = false;
-  };
+  }, []);
 
-  const handleDisconnected = () => {
+  const handleDisconnected = useCallback(() => {
     setIsConnected(false);
 
     console.debug("Disconnected!");
-  };
+  }, []);
 
   return (
     <main className="fixed inset-0 overflow-hidden overscroll-none">
@@ -146,13 +148,14 @@ export function Room() {
                 />
               </div>
               <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square flex justify-center items-center lg:border-2 lg:rounded-md">
-                <Webcam onStreamReady={onStreamReady} />
+                <Webcam onStreamReady={onStreamReady} deviceId={selectedDeviceId} />
               </div>
             </div>
 
             <StreamSettings
               open={isStreamSettingsOpen}
               onOpenChange={setIsStreamSettingsOpen}
+              onDeviceChange={setSelectedDeviceId}
               onSave={onStreamConfigSave}
             />
           </div>
