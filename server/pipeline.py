@@ -5,6 +5,8 @@ import numpy as np
 from typing import Any, Dict
 from comfystream.client import ComfyStreamClient
 
+WARMUP_RUNS = 5
+
 
 class Pipeline:
     def __init__(self, prompt: Dict[Any, Any], **kwargs):
@@ -13,7 +15,9 @@ class Pipeline:
 
     async def warm(self):
         frame = torch.randn(1, 512, 512, 3)
-        await self.predict(frame)
+
+        for _ in range(WARMUP_RUNS):
+            await self.predict(frame)
 
     def preprocess(self, frame: av.VideoFrame) -> torch.Tensor:
         frame_np = frame.to_ndarray(format="rgb24").astype(np.float32) / 255.0
