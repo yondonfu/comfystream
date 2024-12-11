@@ -16,6 +16,82 @@ interface NodeInfo {
   inputs: Record<string, InputInfo>;
 }
 
+const InputControl = ({ 
+  input, 
+  value, 
+  onChange 
+}: { 
+  input: InputInfo, 
+  value: string, 
+  onChange: (value: string) => void 
+}) => {
+  console.log("InputControl rendered with:", { input, value }); // Debug log
+
+  if (input.widget === "combo") {
+    return (
+      <select 
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="p-2 border rounded w-full"
+      >
+        {Array.isArray(input.value) && input.value.map((option: string) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  // Convert type to lowercase for consistent comparison
+  const inputType = input.type.toLowerCase();
+
+  switch (inputType) {
+    case "boolean":
+      return (
+        <input
+          type="checkbox"
+          checked={value === "true"}
+          onChange={(e) => onChange(e.target.checked.toString())}
+          className="w-5 h-5"
+        />
+      );
+    case "number":
+    case "float":
+    case "int":
+      return (
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          min={input.min}
+          max={input.max}
+          step={inputType === "int" ? "1" : "any"}
+          className="p-2 border rounded w-32"
+        />
+      );
+    case "string":
+      return (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="p-2 border rounded w-full"
+        />
+      );
+    default:
+      console.warn(`Unhandled input type: ${input.type}`); // Debug log
+      return (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="p-2 border rounded w-full"
+        />
+      );
+  }
+};
+
 export const ControlPanel = () => {
   const { controlChannel } = usePeerContext();
   const [nodeId, setNodeId] = useState("");
@@ -45,30 +121,51 @@ export const ControlPanel = () => {
     }
   }, [controlChannel]);
 
-  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+  const handleValueChange = (newValue: string) => {
     const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
     
     if (currentInput) {
-      // Validate against min/max if they exist
-      const numValue = parseFloat(newValue);
-      if (!isNaN(numValue)) {
-        if (currentInput.min !== undefined && numValue < currentInput.min) return;
-        if (currentInput.max !== undefined && numValue > currentInput.max) return;
+      // Validate against min/max if they exist for number types
+      if (currentInput.type === 'number') {
+        const numValue = parseFloat(newValue);
+        if (!isNaN(numValue)) {
+          if (currentInput.min !== undefined && numValue < currentInput.min) return;
+          if (currentInput.max !== undefined && numValue > currentInput.max) return;
+        }
       }
     }
     
     setValue(newValue);
   };
 
-  // Validate and send update when value changes and auto-update is enabled
+  // Modify the effect that sends updates
   useEffect(() => {
     const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
     if (!currentInput) return;
 
-    const isValidValue = currentInput.type === 'number' 
-      ? /^-?\d*\.?\d*$/.test(value)  // Allow decimals for number type
-      : /^-?\d+$/.test(value);       // Only integers for other types
+    let isValidValue = true;
+    let processedValue: any = value;
+
+    // Validate and process value based on type
+    switch (currentInput.type) {
+      case 'number':
+        isValidValue = /^-?\d*\.?\d*$/.test(value);
+        processedValue = parseFloat(value);
+        break;
+      case 'boolean':
+        processedValue = value === 'true';
+        break;
+      case 'string':
+        processedValue = value;
+        break;
+      default:
+        if (currentInput.widget === 'combo') {
+          processedValue = value;
+        } else {
+          isValidValue = true;
+          processedValue = value;
+        }
+    }
     
     const hasRequiredFields = nodeId.trim() !== "" && fieldName.trim() !== "";
     
@@ -76,7 +173,7 @@ export const ControlPanel = () => {
       const message = JSON.stringify({
         node_id: nodeId,
         field_name: fieldName,
-        value: currentInput.type === 'number' ? parseFloat(value) : parseInt(value),
+        value: processedValue,
       });
       console.log("[ControlPanel] Sending message:", message);
       controlChannel.send(message);
@@ -85,6 +182,30 @@ export const ControlPanel = () => {
 
   const toggleAutoUpdate = () => {
     setIsAutoUpdateEnabled(!isAutoUpdateEnabled);
+  };
+
+  // Modified to handle initial values better
+  const getInitialValue = (input: InputInfo): string => {
+    if (input.type.toLowerCase() === "boolean") {
+      return (!!input.value).toString();
+    }
+    if (input.widget === "combo" && Array.isArray(input.value)) {
+      return input.value[0]?.toString() || "";
+    }
+    return input.value?.toString() || "0";
+  };
+
+  // Update the field selection handler
+  const handleFieldSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedField = e.target.value;
+    setFieldName(selectedField);
+    
+    const input = availableNodes[nodeId]?.inputs[selectedField];
+    if (input) {
+      const initialValue = getInitialValue(input);
+      console.log("Setting initial value:", { field: selectedField, input, initialValue }); // Debug log
+      setValue(initialValue);
+    }
   };
 
   return (
@@ -108,12 +229,7 @@ export const ControlPanel = () => {
 
       <select
         value={fieldName}
-        onChange={(e) => {
-          setFieldName(e.target.value);
-          // Set initial value based on current input value or default to 0
-          const input = availableNodes[nodeId]?.inputs[e.target.value];
-          setValue(input?.value?.toString() || "0");
-        }}
+        onChange={handleFieldSelect}
         disabled={!nodeId}
         className="p-2 border rounded"
       >
@@ -128,17 +244,15 @@ export const ControlPanel = () => {
       </select>
 
       <div className="flex items-center gap-2">
-        <input
-          type="number"
-          value={value}
-          onChange={handleValueChange}
-          min={nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName]?.min : undefined}
-          max={nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName]?.max : undefined}
-          step={nodeId && fieldName && availableNodes[nodeId]?.inputs[fieldName]?.type === 'number' ? 'any' : '1'}
-          className="p-2 border rounded w-32"
-        />
+        {nodeId && fieldName && availableNodes[nodeId]?.inputs[fieldName] && (
+          <InputControl
+            input={availableNodes[nodeId].inputs[fieldName]}
+            value={value}
+            onChange={handleValueChange}
+          />
+        )}
         
-        {nodeId && fieldName && (
+        {nodeId && fieldName && availableNodes[nodeId]?.inputs[fieldName]?.type === 'number' && (
           <span className="text-sm text-gray-600">
             {availableNodes[nodeId]?.inputs[fieldName]?.min !== undefined && 
              availableNodes[nodeId]?.inputs[fieldName]?.max !== undefined && 
