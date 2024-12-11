@@ -74,8 +74,11 @@ export function Room() {
     string | number | undefined
   >(undefined);
 
-  const [streamUrl, setStreamUrl] = useState<string>("");
-  const [prompt, setPrompt] = useState<any>(null);
+  const [config, setConfig] = useState<StreamConfig>({
+    streamUrl: "",
+    frameRate: 0,
+    prompt: null,
+  });
 
   const connectingRef = useRef(false);
 
@@ -89,14 +92,13 @@ export function Room() {
   };
 
   const onStreamConfigSave = async (config: StreamConfig) => {
-    setStreamUrl(config.streamUrl);
-    setPrompt(config.prompt);
+    setConfig(config);
   };
 
   useEffect(() => {
     if (connectingRef.current) return;
 
-    if (!streamUrl) {
+    if (!config.streamUrl) {
       setConnect(false);
     } else {
       setConnect(true);
@@ -106,7 +108,7 @@ export function Room() {
 
       connectingRef.current = true;
     }
-  }, [streamUrl]);
+  }, [config.streamUrl]);
 
   const handleConnected = () => {
     setIsConnected(true);
@@ -130,8 +132,8 @@ export function Room() {
       />
       <div className="fixed inset-0 z-[-1] bg-cover bg-[black]">
         <PeerConnector
-          url={streamUrl}
-          prompt={prompt}
+          url={config.streamUrl}
+          prompt={config.prompt}
           connect={connect}
           onConnected={handleConnected}
           onDisconnected={handleDisconnected}
@@ -146,7 +148,10 @@ export function Room() {
                 />
               </div>
               <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square flex justify-center items-center lg:border-2 lg:rounded-md">
-                <Webcam onStreamReady={onStreamReady} />
+                <Webcam
+                  onStreamReady={onStreamReady}
+                  frameRate={config.frameRate}
+                />
               </div>
             </div>
 

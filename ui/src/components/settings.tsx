@@ -29,12 +29,14 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 
 export interface StreamConfig {
   streamUrl: string;
+  frameRate: number;
   prompt?: any;
 }
 
-const DEFAULT_CONFIG: StreamConfig = {
+export const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
     process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:3000",
+  frameRate: 30,
 };
 
 interface StreamSettingsProps {
@@ -89,6 +91,7 @@ export function StreamSettings({
 
 const formSchema = z.object({
   streamUrl: z.string().url(),
+  frameRate: z.coerce.number(),
 });
 
 interface ConfigFormProps {
@@ -137,6 +140,20 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
               <FormLabel>Stream URL</FormLabel>
               <FormControl>
                 <Input placeholder="Stream URL" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="frameRate"
+          render={({ field }) => (
+            <FormItem className="mt-4">
+              <FormLabel>Frame Rate</FormLabel>
+              <FormControl>
+                <Input placeholder="Frame Rate" {...field} type="number" />
               </FormControl>
               <FormMessage />
             </FormItem>
