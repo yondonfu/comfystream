@@ -14,10 +14,14 @@ from aiortc import (
     MediaStreamTrack,
 )
 from aiortc.rtcrtpsender import RTCRtpSender
+from aiortc.codecs import h264
 from pipeline import Pipeline
 from utils import patch_loop_datagram
 
 logger = logging.getLogger(__name__)
+
+MAX_BITRATE = 2000000
+MIN_BITRATE = 2000000
 
 
 class VideoStreamTrack(MediaStreamTrack):
@@ -102,6 +106,10 @@ async def offer(request):
     caps = RTCRtpSender.getCapabilities("video")
     prefs = list(filter(lambda x: x.name == "H264", caps.codecs))
     transceiver.setCodecPreferences(prefs)
+
+    # Monkey patch max and min bitrate to ensure constant bitrate
+    h264.MAX_BITRATE = MAX_BITRATE
+    h264.MIN_BITRATE = MIN_BITRATE
 
     @pc.on("track")
     def on_track(track):
