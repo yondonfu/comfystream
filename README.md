@@ -8,6 +8,7 @@ This repo also includes a WebRTC server and UI that uses comfystream to support 
 - [Install package](#install-package)
   - [Custom Nodes](#custom-nodes)
   - [Usage](#usage)
+- [Run tests](#run-tests)
 - [Run server](#run-server)
 - [Run UI](#run-ui)
 - [Limitations](#limitations)
@@ -65,6 +66,20 @@ cp -r nodes/* /home/user/ComfyUI/custom_nodes
 ## Usage
 
 See `example.py`.
+
+# Run tests
+
+Install dev dependencies:
+
+```
+pip install .[dev]
+```
+
+Run tests:
+
+```
+pytest
+```
 
 # Run server
 
