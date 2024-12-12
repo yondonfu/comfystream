@@ -48,18 +48,18 @@ pip install git+https://github.com/yondonfu/comfystream.git
 
 ## Custom Nodes
 
-**tensor_utils**
+comfystream uses a few custom nodes to support running workflows.
 
-Copy the `tensor_utils` nodes into the `custom_nodes` folder of your ComfyUI workspace:
-
-```
-cp -r nodes/tensor_utils custom_nodes
-```
-
-For example, if you ComfyUI workspace is under `/home/user/ComfyUI`:
+Copy the custom nodes into the `custom_nodes` folder of your ComfyUI workspace:
 
 ```
-cp -r nodes/tensor_utils /home/user/ComfyUI/custom_nodes
+cp -r nodes/* custom_nodes/
+```
+
+For example, if your ComfyUI workspace is under `/home/user/ComfyUI`:
+
+```
+cp -r nodes/* /home/user/ComfyUI/custom_nodes
 ```
 
 ## Usage
@@ -144,9 +144,15 @@ The Stream URL is the URL of the [server](#run-server) which defaults to http://
 
 At the moment, a workflow must fufill the following requirements:
 
-- Single input using the LoadImage node
+- The workflow must have a single primary input node that will receive individual video frames
+  - The primary input node is designed by one of the following:
+    - A single [PrimaryInputLoadImage](./nodes/video_stream_utils/primary_input_load_image.py) node (see [this workflow](./workflows/liveportait.json) for example usage)
+      - This node can be used as a drop-in replacement for a LoadImage node
+      - In this scenario, any number of additional LoadImage nodes can be used
+    - A single LoadImage node
+      - In this scenario, the workflow can only contain the single LoadImage node
   - At runtime, this node is replaced with a LoadTensor node
-- Single output using a PreviewImage or SaveImage node
+- The workflow must have a single output using a PreviewImage or SaveImage node
   - At runtime, this node is replaced with a SaveTensor node
 
 # Troubleshoot
