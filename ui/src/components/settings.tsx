@@ -30,8 +30,9 @@ import { Select } from "./ui/select";
 
 export interface StreamConfig {
   streamUrl: string;
+  frameRate: number;
   prompt?: any;
-  selectedDeviceId?: string;
+  selectedDeviceId: string;
 }
 
 interface VideoDevice {
@@ -39,22 +40,22 @@ interface VideoDevice {
   label: string;
 }
 
-const DEFAULT_CONFIG: StreamConfig = {
+export const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
     process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:3000",
+  frameRate: 30,
+  selectedDeviceId: "",
 };
 
 interface StreamSettingsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDeviceChange: (deviceId: string) => void;
   onSave: (config: StreamConfig) => void;
 }
 
 export function StreamSettings({
   open,
   onOpenChange,
-  onDeviceChange,
   onSave,
 }: StreamSettingsProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -76,7 +77,7 @@ export function StreamSettings({
               <div className="mt-4">Stream Settings</div>
             </DialogTitle>
           </DialogHeader>
-          <ConfigForm config={config} onDeviceChange={onDeviceChange} onSubmit={handleSubmit} />
+          <ConfigForm config={config} onSubmit={handleSubmit} />
         </DialogContent>
       </Dialog>
     );
@@ -89,7 +90,7 @@ export function StreamSettings({
           <DrawerTitle>Stream Settings</DrawerTitle>
         </DrawerHeader>
         <div className="px-4">
-          <ConfigForm config={config} onDeviceChange={onDeviceChange} onSubmit={handleSubmit} />
+          <ConfigForm config={config} onSubmit={handleSubmit} />
         </div>
       </DrawerContent>
     </Drawer>
@@ -98,22 +99,18 @@ export function StreamSettings({
 
 const formSchema = z.object({
   streamUrl: z.string().url(),
+  frameRate: z.coerce.number(),
 });
 
 interface ConfigFormProps {
   config: StreamConfig;
-  onDeviceChange: (deviceId: string) => void;
   onSubmit: (config: StreamConfig) => void;
 }
 
-function ConfigForm({ config, onDeviceChange, onSubmit }: ConfigFormProps) {
+function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const [prompt, setPrompt] = useState<any>(null);
   const [videoDevices, setVideoDevices] = useState<VideoDevice[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string>("");
-
-  useEffect(() => {
-    onDeviceChange(selectedDevice);
-  }, [selectedDevice]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -126,27 +123,30 @@ function ConfigForm({ config, onDeviceChange, onSubmit }: ConfigFormProps) {
 
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices
-        .filter(device => device.kind === 'videoinput')
-        .map(device => ({
+        .filter((device) => device.kind === "videoinput")
+        .map((device) => ({
           deviceId: device.deviceId,
-          label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`
+          label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`,
         }));
 
       setVideoDevices(videoDevices);
       if (videoDevices.length > 0) {
-        setSelectedDevice(curr => curr || videoDevices[0].deviceId);
+        setSelectedDevice((curr) => curr || videoDevices[0].deviceId);
       }
     } catch (err) {
-      console.error('Failed to get video devices');
+      console.error("Failed to get video devices");
     }
   }, []);
 
   useEffect(() => {
     getVideoDevices();
-    navigator.mediaDevices.addEventListener('devicechange', getVideoDevices);
+    navigator.mediaDevices.addEventListener("devicechange", getVideoDevices);
 
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', getVideoDevices);
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        getVideoDevices
+      );
     };
   }, [getVideoDevices]);
 
@@ -190,24 +190,26 @@ function ConfigForm({ config, onDeviceChange, onSubmit }: ConfigFormProps) {
           )}
         />
 
-        <div className="mt-6 mb-4 grid max-w-sm items-center gap-1.5">
-          <Label>Comfy Workflow</Label>
-          <Input
-            id="workflow"
-            type="file"
-            accept=".json"
-            onChange={handlePromptChange}
-          ></Input>
-        </div>
+        <FormField
+          control={form.control}
+          name="frameRate"
+          render={({ field }) => (
+            <FormItem className="mt-4">
+              <FormLabel>Frame Rate</FormLabel>
+              <FormControl>
+                <Input placeholder="Frame Rate" {...field} type="number" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        <div className="mt-6 mb-4">
+        <div className="mt-4 mb-4">
           <Label>Camera</Label>
-          <Select
-            value={selectedDevice}
-            onValueChange={setSelectedDevice}
-          >
+          <Select value={selectedDevice} onValueChange={setSelectedDevice}>
             <Select.Trigger className="w-full mt-2">
-              {videoDevices.find(d => d.deviceId === selectedDevice)?.label || 'Select camera'}
+              {videoDevices.find((d) => d.deviceId === selectedDevice)?.label ||
+                "Select camera"}
             </Select.Trigger>
             <Select.Content>
               {videoDevices.map((device) => (
@@ -217,6 +219,16 @@ function ConfigForm({ config, onDeviceChange, onSubmit }: ConfigFormProps) {
               ))}
             </Select.Content>
           </Select>
+        </div>
+
+        <div className="mt-4 mb-4 grid max-w-sm items-center gap-3">
+          <Label>Comfy Workflow</Label>
+          <Input
+            id="workflow"
+            type="file"
+            accept=".json"
+            onChange={handlePromptChange}
+          ></Input>
         </div>
 
         <Button type="submit" className="w-full mt-4 mb-4">

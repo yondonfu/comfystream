@@ -14,10 +14,14 @@ from aiortc import (
     MediaStreamTrack,
 )
 from aiortc.rtcrtpsender import RTCRtpSender
+from aiortc.codecs import h264
 from pipeline import Pipeline
 from utils import patch_loop_datagram
 
 logger = logging.getLogger(__name__)
+
+MAX_BITRATE = 2000000
+MIN_BITRATE = 2000000
 
 
 class VideoStreamTrack(MediaStreamTrack):
@@ -74,12 +78,12 @@ def get_ice_servers():
 
 
 async def offer(request):
+    pipeline = request.app["pipeline"]
     pcs = request.app["pcs"]
-    workspace = request.app["workspace"]
 
     params = await request.json()
 
-    pipeline = Pipeline(params["prompt"], cwd=workspace)
+    pipeline.set_prompt(params["prompt"])
     await pipeline.warm()
 
     offer_params = params["offer"]
@@ -102,6 +106,10 @@ async def offer(request):
     caps = RTCRtpSender.getCapabilities("video")
     prefs = list(filter(lambda x: x.name == "H264", caps.codecs))
     transceiver.setCodecPreferences(prefs)
+
+    # Monkey patch max and min bitrate to ensure constant bitrate
+    h264.MAX_BITRATE = MAX_BITRATE
+    h264.MIN_BITRATE = MIN_BITRATE
 
     @pc.on("track")
     def on_track(track):
@@ -141,6 +149,15 @@ async def offer(request):
     )
 
 
+async def set_prompt(request):
+    pipeline = request.app["pipeline"]
+
+    prompt = await request.json()
+    pipeline.set_prompt(prompt)
+
+    return web.Response(content_type="application/json", text="OK")
+
+
 def health(_):
     return web.Response(content_type="application/json", text="OK")
 
@@ -149,6 +166,9 @@ async def on_startup(app: web.Application):
     if app["media_ports"]:
         patch_loop_datagram(app["media_ports"])
 
+    app["pipeline"] = Pipeline(
+        cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True
+    )
     app["pcs"] = set()
 
 
@@ -187,6 +207,7 @@ if __name__ == "__main__":
     app.on_shutdown.append(on_shutdown)
 
     app.router.add_post("/offer", offer)
+    app.router.add_post("/prompt", set_prompt)
     app.router.add_get("/", health)
 
     web.run_app(app, host=args.host, port=int(args.port))
