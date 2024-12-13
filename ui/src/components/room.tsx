@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
 import { PeerConnector } from "@/components/peer";
+import { StreamConfig, StreamSettings } from "@/components/settings";
 import { Webcam } from "@/components/webcam";
-import { StreamSettings, StreamConfig } from "@/components/settings";
 import { usePeerContext } from "@/context/peer-context";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface MediaStreamPlayerProps {
@@ -77,23 +77,24 @@ export function Room() {
   const [config, setConfig] = useState<StreamConfig>({
     streamUrl: "",
     frameRate: 0,
+    selectedDeviceId: "",
     prompt: null,
   });
 
   const connectingRef = useRef(false);
 
-  const onStreamReady = (stream: MediaStream) => {
+  const onStreamReady = useCallback((stream: MediaStream) => {
     setLocalStream(stream);
-  };
+  }, []);
 
-  const onRemoteStreamReady = () => {
+  const onRemoteStreamReady = useCallback(() => {
     toast.success("Started stream!", { id: loadingToastId });
     setLoadingToastId(undefined);
-  };
+  }, [loadingToastId]);
 
-  const onStreamConfigSave = async (config: StreamConfig) => {
+  const onStreamConfigSave = useCallback((config: StreamConfig) => {
     setConfig(config);
-  };
+  }, []);
 
   useEffect(() => {
     if (connectingRef.current) return;
@@ -110,19 +111,19 @@ export function Room() {
     }
   }, [config.streamUrl]);
 
-  const handleConnected = () => {
+  const handleConnected = useCallback(() => {
     setIsConnected(true);
 
     console.debug("Connected!");
 
     connectingRef.current = false;
-  };
+  }, []);
 
-  const handleDisconnected = () => {
+  const handleDisconnected = useCallback(() => {
     setIsConnected(false);
 
     console.debug("Disconnected!");
-  };
+  }, []);
 
   return (
     <main className="fixed inset-0 overflow-hidden overscroll-none">
@@ -150,6 +151,7 @@ export function Room() {
               <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square flex justify-center items-center lg:border-2 lg:rounded-md">
                 <Webcam
                   onStreamReady={onStreamReady}
+                  deviceId={config.selectedDeviceId}
                   frameRate={config.frameRate}
                 />
               </div>
