@@ -1,0 +1,32 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+	"name": "ComfyStream",
+	// Image to use for the dev container. More info: https://containers.dev/guide/dockerfile.
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"runArgs": [
+		"--gpus=all"
+	], 
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"settings": {},
+			"extensions": [
+				"ms-python.python",
+				"ms-python.black-formatter"
+			]
+		}
+	},
+	"appPort": ["8888:8888","8188:8188"],
+	"forwardPorts": [8888, 8188],
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// Use 'mounts' to make a list of local folders available inside the container.
+	"mounts": [
+		"source=${localEnv:HOME}/ComfyUI--models,target=/workspaces/ComfyUI/models,type=bind",
+		"source=${localEnv:HOME}/ComfyUI--nodes,target=/workspaces/ComfyUI/custom_nodes,type=bind"
+		// "source=${localEnv:HOME}/ComfyUI--workspace,target=/workspaces/ComfyUI,type=bind"
+	]
+}

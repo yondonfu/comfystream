@@ -1,0 +1,53 @@
+ARG BASE_IMAGE=livepeer/ai-runner:live-base
+FROM ${BASE_IMAGE}
+#RUN mkdir /comfystream
+# # Copy application files to /app 
+# Copy application files to /app 
+COPY . /workspaces/comfystream
+WORKDIR /
+
+# Append the contents of the file patchrc to ~/.bashrc
+COPY /.devcontainer/patchrc /tmp/patchrc
+RUN cat /tmp/patchrc >> ~/.bashrc && rm /tmp/patchrc
+
+# Install required Python version
+ARG PYTHON_VERSION=3.10.15
+RUN pyenv install $PYTHON_VERSION && \
+    pyenv global $PYTHON_VERSION && \
+    pyenv rehash
+
+# Upgrade pip and install required packages
+ARG PIP_VERSION=23.3.2
+ENV PIP_PREFER_BINARY=1
+RUN pip install --no-cache-dir --upgrade pip==${PIP_VERSION} setuptools==69.5.1 wheel==0.43.0
+
+WORKDIR /workspaces
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git
+
+WORKDIR /workspaces/ComfyUI
+RUN pyenv virtualenv 3.10.15 ComfyUI
+RUN pyenv local ComfyUI
+RUN pip install -r requirements.txt
+
+RUN /bin/bash -c "source ~/.bashrc"
+
+WORKDIR /
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN chmod +x Miniconda3-latest-Linux-x86_64.sh
+RUN ./Miniconda3-latest-Linux-x86_64.sh -b
+
+RUN eval "$(/root/miniconda3/bin/conda shell.bash hook)"
+ENV PATH="/root/miniconda3/bin:${PATH}"
+RUN conda init bash
+WORKDIR /workspaces/comfystream
+RUN conda create -n comfystream python=3.11 -y
+# Activate the Conda environment and install dependencies 
+RUN /bin/bash -c "source activate comfystream && pip install twilio aiortc torchaudio scikit-image"
+RUN conda install pytorch torchvision torchaudio -c pytorch -y
+
+
+#COPY /workspaces/comfystream/nodes/tensor_utils /workspaces/ComfyUI/custom_nodes
+# COPY . /comfystream
+# RUN cd /workspaces/comfystream && pip install .
+# RUN /bin/bash -c "conda activate comfystream && pip install ."
+# RUN cp -r /comfystream/nodes/tensor_utils /workspaces/ComfyUI/custom_nodes
