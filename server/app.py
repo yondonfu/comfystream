@@ -3,6 +3,8 @@ import argparse
 import os
 import json
 import logging
+import wave
+import numpy as np
 
 from twilio.rest import Client
 from aiohttp import web
@@ -35,6 +37,95 @@ class VideoStreamTrack(MediaStreamTrack):
     async def recv(self):
         frame = await self.track.recv()
         return await self.pipeline(frame)
+    
+class AudioStreamTrack(MediaStreamTrack):
+    """
+    This custom audio track wraps an incoming audio MediaStreamTrack.
+    It continuously records frames in 10-second chunks and saves each chunk
+    as a separate WAV file with an incrementing index.
+    """
+
+    kind = "audio"
+
+    def __init__(self, track: MediaStreamTrack):
+        super().__init__()
+        self.track = track
+        self.start_time = None
+        self.frames = []
+        self._recording_duration = 10.0  # in seconds
+        self._chunk_index = 0
+        self._saving = False
+        self._lock = asyncio.Lock()
+
+    async def recv(self):
+        frame = await self.track.recv()
+        return await self.pipeline(frame)
+
+    # async def recv(self):
+    #     frame = await self.source.recv()
+        
+    #     # On the first frame, record the start time.
+    #     if self.start_time is None:
+    #         self.start_time = frame.time
+    #         logger.info(f"Audio recording started at time: {self.start_time:.3f}")
+
+    #     elapsed = frame.time - self.start_time
+    #     self.frames.append(frame)
+
+    #     logger.info(f"Received audio frame at time: {frame.time:.3f}, total frames: {len(self.frames)}")
+
+    #     # Check if we've hit 10 seconds and we're not currently saving.
+    #     if elapsed >= self._recording_duration and not self._saving:
+    #         logger.info(f"10 second chunk reached (elapsed: {elapsed:.3f}s). Preparing to save chunk {self._chunk_index}.")
+    #         self._saving = True
+    #         # Handle saving in a background task so we don't block the recv loop.
+    #         asyncio.create_task(self.save_audio())
+
+    #     return frame
+
+    async def save_audio(self):
+        logger.info(f"Starting to save audio chunk {self._chunk_index}...")
+        async with self._lock:
+            # Extract properties from the first frame
+            if not self.frames:
+                logger.warning("No frames to save, skipping.")
+                self._saving = False
+                return
+
+            sample_rate = self.frames[0].sample_rate
+            layout = self.frames[0].layout
+            channels = len(layout.channels)
+
+            logger.info(f"Audio chunk {self._chunk_index}: sample_rate={sample_rate}, channels={channels}, frames_count={len(self.frames)}")
+
+            # Convert all frames to ndarray and concatenate
+            data_arrays = [f.to_ndarray() for f in self.frames]
+            data = np.concatenate(data_arrays, axis=1)  # shape: (channels, total_samples)
+
+            # Interleave channels (if multiple) since WAV expects interleaved samples.
+            interleaved = data.T.flatten()
+
+            # If needed, convert float frames to int16
+            # interleaved = (interleaved * 32767).astype(np.int16)
+
+            filename = f"output_{self._chunk_index}.wav"
+            logger.info(f"Writing audio chunk {self._chunk_index} to file: {filename}")
+            with wave.open(filename, 'wb') as wf:
+                wf.setnchannels(channels)
+                wf.setsampwidth(2)  # 16-bit PCM
+                wf.setframerate(sample_rate)
+                wf.writeframes(interleaved.tobytes())
+
+            logger.info(f"Audio chunk {self._chunk_index} saved successfully as {filename}")
+
+            # Increment the chunk index for the next segment
+            self._chunk_index += 1
+
+            # Reset for next recording chunk
+            self.frames.clear()
+            self.start_time = None
+            self._saving = False
+            logger.info(f"Ready to record next 10-second chunk. Current chunk index: {self._chunk_index}")
 
 
 def force_codec(pc, sender, forced_codec):
@@ -99,7 +190,7 @@ async def offer(request):
 
     pcs.add(pc)
 
-    tracks = {"video": None}
+    tracks = {"video": None, "audio": None}
 
     # Prefer h264
     transceiver = pc.addTransceiver("video")
@@ -121,6 +212,10 @@ async def offer(request):
 
             codec = "video/H264"
             force_codec(pc, sender, codec)
+        elif track.kind == "audio":
+            audioTrack = AudioStreamTrack(track)
+            tracks["audio"] = audioTrack
+            pc.addTrack(audioTrack)
 
         @track.on("ended")
         async def on_ended():
