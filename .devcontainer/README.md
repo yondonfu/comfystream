@@ -1,7 +1,7 @@
 # Installation
 ## Build development container
 ```
-cd .devcontainer && docker build -f Dockerfile.base -t comfystream:base .
+docker build -f .devcontainer/Dockerfile.base -t comfystream:base .
  ```
 ### Create folders for models and custom nodes
 ```

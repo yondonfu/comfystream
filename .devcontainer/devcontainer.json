@@ -20,7 +20,7 @@
 			]
 		}
 	},
-	"appPort": ["8888:8888","8188:8188"],
+	"appPort": ["8888:8888","8188:8188","8927:8927"],
 	"forwardPorts": [8888, 8188],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// Use 'mounts' to make a list of local folders available inside the container.

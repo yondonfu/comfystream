@@ -1,4 +1,3 @@
-# FROM comfyui-builder:custom-nodes
 FROM comfystream:base
 
 WORKDIR /workspaces/comfystream

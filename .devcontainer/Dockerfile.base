@@ -1,8 +1,6 @@
 ARG BASE_IMAGE=livepeer/ai-runner:live-base
 FROM ${BASE_IMAGE}
-#RUN mkdir /comfystream
-# # Copy application files to /app 
-# Copy application files to /app 
+
 COPY . /workspaces/comfystream
 WORKDIR /
 
@@ -44,7 +42,7 @@ RUN conda create -n comfystream python=3.11 -y
 # Activate the Conda environment and install dependencies 
 RUN /bin/bash -c "source activate comfystream && pip install twilio aiortc torchaudio scikit-image"
 RUN conda install pytorch torchvision torchaudio -c pytorch -y
-
+RUN /root/miniconda3/envs/comfystream/bin/pip install /workspaces/comfystream
 
 #COPY /workspaces/comfystream/nodes/tensor_utils /workspaces/ComfyUI/custom_nodes
 # COPY . /comfystream
