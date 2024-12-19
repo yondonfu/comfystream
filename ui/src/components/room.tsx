@@ -6,6 +6,12 @@ import { Webcam } from "@/components/webcam";
 import { usePeerContext } from "@/context/peer-context";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MediaStreamPlayerProps {
   stream: MediaStream;
@@ -83,7 +89,14 @@ function Stage({ connected, onStreamReady }: StageProps) {
     <div className="relative">
       <MediaStreamPlayer stream={remoteStream} />
       <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
-        {frameRate} FPS
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>{frameRate} FPS</TooltipTrigger>
+            <TooltipContent>
+              <p>This is the FPS of the output stream.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );
