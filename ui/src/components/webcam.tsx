@@ -19,7 +19,7 @@ function StreamCanvas({
 
   useEffect(() => {
     const canvas = canvasRef.current!;
-    const outputStream = canvas.captureStream(30);
+    const outputStream = canvas.captureStream(frameRate);
     onStreamReady(outputStream);
 
     return () => {
