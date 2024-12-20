@@ -19,5 +19,6 @@ setup(
         "opentelemetry-semantic-conventions==0.48b0",
         "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@89d07f3adf32a6703181343bc732bd85104bb653",
     ],
+    extras_require={"dev": ["pytest"]},
     url="https://github.com/yondonfu/comfystream",
 )

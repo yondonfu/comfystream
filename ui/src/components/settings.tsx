@@ -1,19 +1,16 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import {
   Form,
   FormControl,
@@ -22,19 +19,32 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Select } from "./ui/select";
 
 export interface StreamConfig {
   streamUrl: string;
+  frameRate: number;
   prompt?: any;
+  selectedDeviceId: string;
 }
 
-const DEFAULT_CONFIG: StreamConfig = {
+interface VideoDevice {
+  deviceId: string;
+  label: string;
+}
+
+export const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
-    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8889",
+    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:3000",
+  frameRate: 30,
+  selectedDeviceId: "",
 };
 
 interface StreamSettingsProps {
@@ -89,6 +99,7 @@ export function StreamSettings({
 
 const formSchema = z.object({
   streamUrl: z.string().url(),
+  frameRate: z.coerce.number(),
 });
 
 interface ConfigFormProps {
@@ -98,11 +109,46 @@ interface ConfigFormProps {
 
 function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const [prompt, setPrompt] = useState<any>(null);
+  const [videoDevices, setVideoDevices] = useState<VideoDevice[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<string>("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: config,
   });
+
+  const getVideoDevices = useCallback(async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true });
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices
+        .filter((device) => device.kind === "videoinput")
+        .map((device) => ({
+          deviceId: device.deviceId,
+          label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`,
+        }));
+
+      setVideoDevices(videoDevices);
+      if (videoDevices.length > 0) {
+        setSelectedDevice((curr) => curr || videoDevices[0].deviceId);
+      }
+    } catch (err) {
+      console.error("Failed to get video devices");
+    }
+  }, []);
+
+  useEffect(() => {
+    getVideoDevices();
+    navigator.mediaDevices.addEventListener("devicechange", getVideoDevices);
+
+    return () => {
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        getVideoDevices
+      );
+    };
+  }, [getVideoDevices]);
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     onSubmit({
@@ -111,6 +157,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
         ? values.streamUrl.replace(/\/+$/, "")
         : values.streamUrl,
       prompt,
+      selectedDeviceId: selectedDevice,
     });
   };
 
@@ -143,7 +190,38 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
           )}
         />
 
-        <div className="mt-6 mb-4 grid max-w-sm items-center gap-1.5">
+        <FormField
+          control={form.control}
+          name="frameRate"
+          render={({ field }) => (
+            <FormItem className="mt-4">
+              <FormLabel>Frame Rate</FormLabel>
+              <FormControl>
+                <Input placeholder="Frame Rate" {...field} type="number" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="mt-4 mb-4">
+          <Label>Camera</Label>
+          <Select value={selectedDevice} onValueChange={setSelectedDevice}>
+            <Select.Trigger className="w-full mt-2">
+              {videoDevices.find((d) => d.deviceId === selectedDevice)?.label ||
+                "Select camera"}
+            </Select.Trigger>
+            <Select.Content>
+              {videoDevices.map((device) => (
+                <Select.Option key={device.deviceId} value={device.deviceId}>
+                  {device.label}
+                </Select.Option>
+              ))}
+            </Select.Content>
+          </Select>
+        </div>
+
+        <div className="mt-4 mb-4 grid max-w-sm items-center gap-3">
           <Label>Comfy Workflow</Label>
           <Input
             id="workflow"

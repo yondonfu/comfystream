@@ -6,11 +6,13 @@ import json
 from typing import Any, Dict
 from comfystream.client import ComfyStreamClient
 
+WARMUP_RUNS = 5
+
+
 
 class Pipeline:
-    def __init__(self, prompt: Dict[Any, Any], **kwargs):
+    def __init__(self, **kwargs):
         self.client = ComfyStreamClient(**kwargs)
-        self.client.set_prompt(prompt)
 
     async def update_parameters(self, params: Dict[Any, Any]):
         """Update workflow parameters dynamically
@@ -30,7 +32,12 @@ class Pipeline:
 
     async def warm(self):
         frame = torch.randn(1, 512, 512, 3)
-        await self.predict(frame)
+
+        for _ in range(WARMUP_RUNS):
+            await self.predict(frame)
+
+    def set_prompt(self, prompt: Dict[Any, Any]):
+        self.client.set_prompt(prompt)
 
     def preprocess(self, frame: av.VideoFrame) -> torch.Tensor:
         frame_np = frame.to_ndarray(format="rgb24").astype(np.float32) / 255.0
@@ -56,7 +63,5 @@ class Pipeline:
 
     async def get_nodes_info(self) -> Dict[str, Any]:
         """Get information about all nodes in the current prompt including metadata."""
-        print("[Pipeline] Requesting nodes info from client...")
         nodes_info = await self.client.get_available_nodes()
-        print(f"[Pipeline] Received nodes info: {json.dumps(nodes_info, indent=2)}")
         return nodes_info

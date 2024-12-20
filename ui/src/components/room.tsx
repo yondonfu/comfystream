@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
 import { PeerConnector } from "@/components/peer";
+import { StreamConfig, StreamSettings } from "@/components/settings";
 import { Webcam } from "@/components/webcam";
-import { StreamSettings, StreamConfig } from "@/components/settings";
 import { usePeerContext } from "@/context/peer-context";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ControlPanel } from "@/components/control-panel";
 import { ControlPanelsContainer } from "./control-panels-container";
@@ -76,29 +76,32 @@ export function Room() {
     string | number | undefined
   >(undefined);
 
-  const [streamUrl, setStreamUrl] = useState<string>("");
-  const [prompt, setPrompt] = useState<any>(null);
+  const [config, setConfig] = useState<StreamConfig>({
+    streamUrl: "",
+    frameRate: 0,
+    selectedDeviceId: "",
+    prompt: null,
+  });
 
   const connectingRef = useRef(false);
 
-  const onStreamReady = (stream: MediaStream) => {
+  const onStreamReady = useCallback((stream: MediaStream) => {
     setLocalStream(stream);
-  };
+  }, []);
 
-  const onRemoteStreamReady = () => {
+  const onRemoteStreamReady = useCallback(() => {
     toast.success("Started stream!", { id: loadingToastId });
     setLoadingToastId(undefined);
-  };
+  }, [loadingToastId]);
 
-  const onStreamConfigSave = async (config: StreamConfig) => {
-    setStreamUrl(config.streamUrl);
-    setPrompt(config.prompt);
-  };
+  const onStreamConfigSave = useCallback((config: StreamConfig) => {
+    setConfig(config);
+  }, []);
 
   useEffect(() => {
     if (connectingRef.current) return;
 
-    if (!streamUrl) {
+    if (!config.streamUrl) {
       setConnect(false);
     } else {
       setConnect(true);
@@ -108,21 +111,21 @@ export function Room() {
 
       connectingRef.current = true;
     }
-  }, [streamUrl]);
+  }, [config.streamUrl]);
 
-  const handleConnected = () => {
+  const handleConnected = useCallback(() => {
     setIsConnected(true);
 
     console.debug("Connected!");
 
     connectingRef.current = false;
-  };
+  }, []);
 
-  const handleDisconnected = () => {
+  const handleDisconnected = useCallback(() => {
     setIsConnected(false);
 
     console.debug("Disconnected!");
-  };
+  }, []);
 
   return (
     <main className="fixed inset-0 overflow-hidden overscroll-none">
@@ -132,23 +135,27 @@ export function Room() {
       />
       <div className="fixed inset-0 z-[-1] bg-cover bg-[black]">
         <PeerConnector
-          url={streamUrl}
-          prompt={prompt}
+          url={config.streamUrl}
+          prompt={config.prompt}
           connect={connect}
           onConnected={handleConnected}
           onDisconnected={handleDisconnected}
           localStream={localStream}
         >
-          <div className="min-h-[100dvh] flex flex-col items-center justify-center">
+          <div className="min-h-[100dvh] flex flex-col items-center justify-start pt-[10vh]">
             <div className="w-full max-h-[100dvh] flex flex-col lg:flex-row landscape:flex-row justify-center items-center lg:space-x-4">
-              <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square bg-[black] flex justify-center items-center lg:border-2 lg:rounded-md">
+              <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square bg-[black] flex justify-center items-center border-2 rounded-md">
                 <Stage
                   connected={isConnected}
                   onStreamReady={onRemoteStreamReady}
                 />
               </div>
               <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square flex justify-center items-center lg:border-2 lg:rounded-md">
-                <Webcam onStreamReady={onStreamReady} />
+                <Webcam
+                  onStreamReady={onStreamReady}
+                  deviceId={config.selectedDeviceId}
+                  frameRate={config.frameRate}
+                />
               </div>
             </div>
 

@@ -103,15 +103,12 @@ export const ControlPanel = () => {
   // Request available nodes when control channel is established
   useEffect(() => {
     if (controlChannel) {
-      console.log("[ControlPanel] Sending get_nodes request");
       controlChannel.send(JSON.stringify({ type: "get_nodes" }));
       
       controlChannel.addEventListener("message", (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("[ControlPanel] Received message:", data);
           if (data.type === "nodes_info") {
-            console.log("[ControlPanel] Setting available nodes:", data.nodes);
             setAvailableNodes(data.nodes);
           }
         } catch (error) {
@@ -175,7 +172,6 @@ export const ControlPanel = () => {
         field_name: fieldName,
         value: processedValue,
       });
-      console.log("[ControlPanel] Sending message:", message);
       controlChannel.send(message);
     }
   }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled, availableNodes]);
@@ -203,7 +199,6 @@ export const ControlPanel = () => {
     const input = availableNodes[nodeId]?.inputs[selectedField];
     if (input) {
       const initialValue = getInitialValue(input);
-      console.log("Setting initial value:", { field: selectedField, input, initialValue }); // Debug log
       setValue(initialValue);
     }
   };

@@ -1,0 +1,93 @@
+{
+  "1": {
+    "inputs": {
+      "precision": "fp16",
+      "mode": "human"
+    },
+    "class_type": "DownloadAndLoadLivePortraitModels"
+  },
+  "189": {
+    "inputs": {
+      "dsize": 512,
+      "scale": 2.34,
+      "vx_ratio": 0.099,
+      "vy_ratio": 0.148,
+      "face_index": 0,
+      "face_index_order": "large-small",
+      "rotate": false,
+      "pipeline": [
+        "1",
+        0
+      ],
+      "cropper": [
+        "204",
+        0
+      ],
+      "source_image": [
+        "196",
+        0
+      ]
+    },
+    "class_type": "LivePortraitCropper"
+  },
+  "190": {
+    "inputs": {
+      "lip_zero": false,
+      "lip_zero_threshold": 0.03,
+      "stitching": true,
+      "delta_multiplier": 1,
+      "mismatch_method": "constant",
+      "relative_motion_mode": "single_frame",
+      "driving_smooth_observation_variance": 0.000003,
+      "expression_friendly": false,
+      "expression_friendly_multiplier": 1,
+      "pipeline": [
+        "1",
+        0
+      ],
+      "crop_info": [
+        "189",
+        1
+      ],
+      "source_image": [
+        "196",
+        0
+      ],
+      "driving_images": [
+        "210",
+        0
+      ]
+    },
+    "class_type": "LivePortraitProcess"
+  },
+  "196": {
+    "inputs": {
+      "image": "s7.jpg",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "198": {
+    "inputs": {
+      "images": [
+        "190",
+        0
+      ]
+    },
+    "class_type": "PreviewImage"
+  },
+  "204": {
+    "inputs": {
+      "landmarkrunner_onnx_device": "torch_gpu",
+      "keep_model_loaded": true
+    },
+    "class_type": "LivePortraitLoadMediaPipeCropper"
+  },
+  "210": {
+    "inputs": {
+      "image": "sampled_frame_2.jpg",
+      "upload": "image"
+    },
+    "class_type": "PrimaryInputLoadImage"
+  }
+}

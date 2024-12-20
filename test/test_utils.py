@@ -55,6 +55,27 @@ def prompt_basic():
     }
 
 
+@pytest.fixture
+def prompt_primary_input():
+    return {
+        "12": {
+            "inputs": {"image": "sampled_frame.jpg", "upload": "image"},
+            "class_type": "LoadImage",
+            "_meta": {"title": "Load Image"},
+        },
+        "13": {
+            "inputs": {"image": "sampled_frame.jpg", "upload": "image"},
+            "class_type": "PrimaryInputLoadImage",
+            "_meta": {"title": "Load Image"},
+        },
+        "14": {
+            "inputs": {"images": ["13", 0]},
+            "class_type": "PreviewImage",
+            "_meta": {"title": "Preview Image"},
+        },
+    }
+
+
 def test_convert_prompt_invalid_schema(prompt_invalid_schema):
     with pytest.raises(Exception):
         convert_prompt(prompt_invalid_schema)
@@ -104,6 +125,31 @@ def test_convert_prompt_basic(prompt_basic):
             },
             "13": {
                 "inputs": {"images": ["12", 0]},
+                "class_type": "SaveTensor",
+                "_meta": {"title": "SaveTensor"},
+            },
+        }
+    )
+    assert prompt == exp
+
+
+def test_convert_prompt_primary_input(prompt_primary_input):
+    prompt = convert_prompt(prompt_primary_input)
+
+    exp = Prompt.validate(
+        {
+            "12": {
+                "inputs": {"image": "sampled_frame.jpg", "upload": "image"},
+                "class_type": "LoadImage",
+                "_meta": {"title": "Load Image"},
+            },
+            "13": {
+                "inputs": {},
+                "class_type": "LoadTensor",
+                "_meta": {"title": "LoadTensor"},
+            },
+            "14": {
+                "inputs": {"images": ["13", 0]},
                 "class_type": "SaveTensor",
                 "_meta": {"title": "SaveTensor"},
             },
