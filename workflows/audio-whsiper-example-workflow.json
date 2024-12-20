@@ -1,0 +1,34 @@
+{
+  "1": {
+    "inputs": {},
+    "class_type": "LoadAudioTensor",
+    "_meta": {
+      "title": "Load Audio Tensor"
+    }
+  },
+  "2": {
+    "inputs": {
+      "audio": [
+        "1",
+        0
+      ],
+      "model": "large"
+    },
+    "class_type": "ApplyWhisper",
+    "_meta": {
+      "title": "Apply Whisper"
+    }
+  },
+  "3": {
+    "inputs": {
+      "data": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "SaveASRResponse",
+    "_meta": {
+      "title": "Save ASR Response"
+    }
+  }
+}

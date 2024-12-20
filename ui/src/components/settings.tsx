@@ -33,6 +33,7 @@ export interface StreamConfig {
   frameRate: number;
   prompt?: any;
   selectedDeviceId: string;
+  selectedAudioDeviceId: string; // New property for audio device
 }
 
 interface VideoDevice {
@@ -45,6 +46,7 @@ export const DEFAULT_CONFIG: StreamConfig = {
     process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:3000",
   frameRate: 30,
   selectedDeviceId: "",
+  selectedAudioDeviceId: "", // Default value for audio device
 };
 
 interface StreamSettingsProps {
@@ -110,7 +112,9 @@ interface ConfigFormProps {
 function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const [prompt, setPrompt] = useState<any>(null);
   const [videoDevices, setVideoDevices] = useState<VideoDevice[]>([]);
+  const [audioDevices, setAudioDevices] = useState<VideoDevice[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string>("");
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -138,17 +142,42 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
     }
   }, []);
 
+  const getAudioDevices = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioDevices = devices
+        .filter((device) => device.kind === "audioinput")
+        .map((device) => ({
+          deviceId: device.deviceId,
+          label: device.label || `Microphone ${device.deviceId.slice(0, 5)}...`,
+        }));
+
+      setAudioDevices(audioDevices);
+      if (audioDevices.length > 0) {
+        setSelectedAudioDevice((curr) => curr || audioDevices[0].deviceId);
+      }
+    } catch (err) {
+      console.error("Failed to get audio devices");
+    }
+  }, []);
+
   useEffect(() => {
     getVideoDevices();
+    getAudioDevices();
     navigator.mediaDevices.addEventListener("devicechange", getVideoDevices);
+    navigator.mediaDevices.addEventListener("devicechange", getAudioDevices);
 
     return () => {
       navigator.mediaDevices.removeEventListener(
         "devicechange",
         getVideoDevices
       );
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        getAudioDevices
+      );
     };
-  }, [getVideoDevices]);
+  }, [getVideoDevices, getAudioDevices]);
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     onSubmit({
@@ -158,6 +187,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
         : values.streamUrl,
       prompt,
       selectedDeviceId: selectedDevice,
+      selectedAudioDeviceId: selectedAudioDevice,
     });
   };
 
@@ -213,6 +243,23 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             </Select.Trigger>
             <Select.Content>
               {videoDevices.map((device) => (
+                <Select.Option key={device.deviceId} value={device.deviceId}>
+                  {device.label}
+                </Select.Option>
+              ))}
+            </Select.Content>
+          </Select>
+        </div>
+
+        <div className="mt-4 mb-4">
+          <Label>Microphone</Label>
+          <Select value={selectedAudioDevice} onValueChange={setSelectedAudioDevice}>
+            <Select.Trigger className="w-full mt-2">
+              {audioDevices.find((d) => d.deviceId === selectedAudioDevice)?.label ||
+                "Select microphone"}
+            </Select.Trigger>
+            <Select.Content>
+              {audioDevices.map((device) => (
                 <Select.Option key={device.deviceId} value={device.deviceId}>
                   {device.label}
                 </Select.Option>

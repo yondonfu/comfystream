@@ -31,7 +31,7 @@ function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
       ref={videoRef}
       autoPlay
       playsInline
-      muted
+      // muted
       className="w-full h-full"
     />
   );
@@ -76,7 +76,7 @@ function Stage({ connected, onStreamReady }: StageProps) {
           className="w-full h-full object-cover"
           autoPlay
           loop
-          muted
+          // muted
           playsInline
         >
           <source src="/loading.mp4" type="video/mp4" />
@@ -116,6 +116,7 @@ export function Room() {
     streamUrl: "",
     frameRate: 0,
     selectedDeviceId: "",
+    selectedAudioDeviceId: "", // New property for audio device
     prompt: null,
   });
 
@@ -191,6 +192,7 @@ export function Room() {
                   onStreamReady={onStreamReady}
                   deviceId={config.selectedDeviceId}
                   frameRate={config.frameRate}
+                  selectedAudioDeviceId={config.selectedAudioDeviceId} // Pass audio device ID
                 />
               </div>
             </div>

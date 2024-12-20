@@ -75,7 +75,7 @@ function StreamCanvas({
     if (!stream) return;
     if (!videoRef.current) {
       videoRef.current = document.createElement("video");
-      videoRef.current.muted = true;
+      // videoRef.current.muted = true;
     }
 
     const video = videoRef.current;
@@ -123,9 +123,10 @@ interface WebcamProps {
   onStreamReady: (stream: MediaStream) => void;
   deviceId: string;
   frameRate: number;
+  selectedAudioDeviceId: string;
 }
 
-export function Webcam({ onStreamReady, deviceId, frameRate }: WebcamProps) {
+export function Webcam({ onStreamReady, deviceId, frameRate, selectedAudioDeviceId }: WebcamProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
 
   const replaceStream = useCallback((newStream: MediaStream | null) => {
@@ -143,7 +144,7 @@ export function Webcam({ onStreamReady, deviceId, frameRate }: WebcamProps) {
   }, []);
 
   const startWebcam = useCallback(async () => {
-    if (!deviceId) {
+    if (!deviceId || !selectedAudioDeviceId) {
       return null;
     }
     if (frameRate == 0) {
@@ -159,25 +160,35 @@ export function Webcam({ onStreamReady, deviceId, frameRate }: WebcamProps) {
           aspectRatio: { ideal: 1 },
           frameRate: { ideal: frameRate, max: frameRate },
         },
+        audio: {
+          ...(selectedAudioDeviceId ? { deviceId: { exact: selectedAudioDeviceId } } : {}),
+          sampleRate: 16000,
+          sampleSize: 16,
+          channelCount: 1,
+        },
       });
       return newStream;
     } catch (error) {
+      console.error("Error accessing media devices.", error);
       return null;
     }
-  }, [deviceId, frameRate]);
+  }, [deviceId, frameRate, selectedAudioDeviceId]);
 
   useEffect(() => {
-    if (!deviceId) return;
+    if (!deviceId || !selectedAudioDeviceId) return;
     if (frameRate == 0) return;
 
     startWebcam().then((newStream) => {
       replaceStream(newStream);
+      if (newStream) {
+        onStreamReady(newStream);
+      }
     });
 
     return () => {
       replaceStream(null);
     };
-  }, [deviceId, frameRate, startWebcam, replaceStream]);
+  }, [deviceId, frameRate, selectedAudioDeviceId, startWebcam, replaceStream, onStreamReady]);
 
   return (
     <div>
