@@ -1,7 +1,14 @@
-import { Peer } from "@/lib/peer";
 import * as React from "react";
 
-export const PeerContext = React.createContext<Peer | undefined>(undefined);
+interface PeerContextType {
+  remoteStream: MediaStream | null;
+  controlChannel: RTCDataChannel | null;
+}
+
+export const PeerContext = React.createContext<PeerContextType>({
+  remoteStream: null,
+  controlChannel: null,
+});
 
 export function usePeerContext() {
   const ctx = React.useContext(PeerContext);

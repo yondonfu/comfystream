@@ -12,6 +12,7 @@ from aiortc import (
     RTCConfiguration,
     RTCIceServer,
     MediaStreamTrack,
+    RTCDataChannel,
 )
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
@@ -107,9 +108,35 @@ async def offer(request):
     prefs = list(filter(lambda x: x.name == "H264", caps.codecs))
     transceiver.setCodecPreferences(prefs)
 
+
     # Monkey patch max and min bitrate to ensure constant bitrate
     h264.MAX_BITRATE = MAX_BITRATE
     h264.MIN_BITRATE = MIN_BITRATE
+
+    # Add control channel
+    control_channel = pc.createDataChannel("control")
+    
+    @control_channel.on("message")
+    async def on_message(message):
+        try:
+            params = json.loads(message)
+            
+            if params.get("type") == "get_nodes":
+                # Get nodes info from pipeline
+                nodes_info = await pipeline.get_nodes_info()
+                response = {
+                    "type": "nodes_info",
+                    "nodes": nodes_info
+                }
+                control_channel.send(json.dumps(response))
+            elif all(k in params for k in ["node_id", "field_name", "value"]):
+                await pipeline.update_parameters(params)
+            else:
+                logger.warning("[Server] Invalid message format - missing required fields")
+        except json.JSONDecodeError:
+            logger.error("[Server] Invalid JSON received")
+        except Exception as e:
+            logger.error(f"[Server] Error processing message: {str(e)}")
 
     @pc.on("track")
     def on_track(track):
@@ -197,7 +224,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    logging.basicConfig(level=args.log_level.upper())
+    logging.basicConfig(
+        level=args.log_level.upper(),
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%H:%M:%S'
+    )
 
     app = web.Application()
     app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
