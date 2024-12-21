@@ -6,9 +6,13 @@ import { Webcam } from "@/components/webcam";
 import { usePeerContext } from "@/context/peer-context";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ControlPanel } from "@/components/control-panel";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ControlPanelsContainer } from "./control-panels-container";
-
 interface MediaStreamPlayerProps {
   stream: MediaStream;
 }
@@ -39,13 +43,31 @@ interface StageProps {
 }
 
 function Stage({ connected, onStreamReady }: StageProps) {
-  const { remoteStream } = usePeerContext();
+  const { remoteStream, peerConnection } = usePeerContext();
+  const [frameRate, setFrameRate] = useState<number>(0);
 
   useEffect(() => {
     if (!connected || !remoteStream) return;
 
     onStreamReady();
-  }, [connected, remoteStream]);
+
+    const interval = setInterval(() => {
+      if (peerConnection) {
+        peerConnection.getStats().then((stats) => {
+          stats.forEach((report) => {
+            if (report.type === "inbound-rtp" && report.kind === "video") {
+              const currentFrameRate = report.framesPerSecond;
+              if (currentFrameRate) {
+                setFrameRate(Math.round(currentFrameRate));
+              }
+            }
+          });
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [connected, remoteStream, peerConnection, onStreamReady]);
 
   if (!connected || !remoteStream) {
     return (
@@ -63,7 +85,21 @@ function Stage({ connected, onStreamReady }: StageProps) {
     );
   }
 
-  return <MediaStreamPlayer stream={remoteStream} />;
+  return (
+    <div className="relative">
+      <MediaStreamPlayer stream={remoteStream} />
+      <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>{frameRate} FPS</TooltipTrigger>
+            <TooltipContent>
+              <p>This is the FPS of the output stream.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </div>
+  );
 }
 
 export function Room() {

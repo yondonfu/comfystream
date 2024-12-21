@@ -144,22 +144,25 @@ export const ControlPanel = () => {
     let processedValue: any = value;
 
     // Validate and process value based on type
-    switch (currentInput.type) {
+    switch (currentInput.type.toLowerCase()) {
       case 'number':
-        isValidValue = /^-?\d*\.?\d*$/.test(value);
+        isValidValue = /^-?\d*\.?\d*$/.test(value) && value !== '';
         processedValue = parseFloat(value);
         break;
       case 'boolean':
+        isValidValue = value === 'true' || value === 'false';
         processedValue = value === 'true';
         break;
       case 'string':
+        // String can be empty, so always valid
         processedValue = value;
         break;
       default:
         if (currentInput.widget === 'combo') {
+          isValidValue = value !== '';
           processedValue = value;
         } else {
-          isValidValue = true;
+          isValidValue = value !== '';
           processedValue = value;
         }
     }
@@ -230,11 +233,16 @@ export const ControlPanel = () => {
       >
         <option value="">Select Field</option>
         {nodeId && availableNodes[nodeId]?.inputs && 
-          Object.entries(availableNodes[nodeId].inputs).map(([field, info]) => (
-            <option key={field} value={field}>
-              {field} ({info.type}{info.widget ? ` - ${info.widget}` : ''})
-            </option>
-          ))
+          Object.entries(availableNodes[nodeId].inputs)
+            .filter(([_, info]) => {
+              const type = info.type.toLowerCase();
+              return ['boolean', 'number', 'float', 'int', 'string'].includes(type) || info.widget === 'combo';
+            })
+            .map(([field, info]) => (
+              <option key={field} value={field}>
+                {field} ({info.type}{info.widget ? ` - ${info.widget}` : ''})
+              </option>
+            ))
         }
       </select>
 
