@@ -5,6 +5,7 @@ comfystream is a package for running img2img [Comfy](https://www.comfy.org/) wor
 This repo also includes a WebRTC server and UI that uses comfystream to support streaming from a webcam and processing the stream with a workflow JSON file (API format) created in ComfyUI. If you have an existing ComfyUI installation, the same custom nodes used to create the workflow in ComfyUI will be re-used when processing the video stream.
 
 - [comfystream](#comfystream)
+- [Quick Start](#quick-start)
 - [Install package](#install-package)
   - [Custom Nodes](#custom-nodes)
   - [Usage](#usage)
@@ -13,6 +14,12 @@ This repo also includes a WebRTC server and UI that uses comfystream to support 
 - [Run UI](#run-ui)
 - [Limitations](#limitations)
 - [Troubleshoot](#troubleshoot)
+
+# Quick Start
+
+The fastest way to get started is to follow [this tutorial](https://livepeer.notion.site/ComfyStream-Dev-Environment-Setup-15d0a3485687802e9528d26050142d82) by @ryanontheinside.
+
+For additional information, refer to the remaining sections below.
 
 # Install package 
 
