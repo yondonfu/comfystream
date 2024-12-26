@@ -1,6 +1,7 @@
 import torch
 import av
 import numpy as np
+import json
 
 from typing import Any, Dict
 from comfystream.client import ComfyStreamClient
@@ -8,9 +9,26 @@ from comfystream.client import ComfyStreamClient
 WARMUP_RUNS = 5
 
 
+
 class Pipeline:
     def __init__(self, **kwargs):
         self.client = ComfyStreamClient(**kwargs)
+
+    async def update_parameters(self, params: Dict[Any, Any]):
+        """Update workflow parameters dynamically
+        
+        params format:
+        {
+            "node_id": str,            # ID of the node to update
+            "field_name": str,         # Name of the input field
+            "value": Any              # New value for the field
+        }
+        """
+        await self.client.update_node_input(
+            params["node_id"],
+            params["field_name"],
+            params["value"]
+        )
 
     async def warm(self):
         frame = torch.randn(1, 512, 512, 3)
@@ -42,3 +60,8 @@ class Pipeline:
         post_output.time_base = frame.time_base
 
         return post_output
+
+    async def get_nodes_info(self) -> Dict[str, Any]:
+        """Get information about all nodes in the current prompt including metadata."""
+        nodes_info = await self.client.get_available_nodes()
+        return nodes_info
