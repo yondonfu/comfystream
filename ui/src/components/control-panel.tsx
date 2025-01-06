@@ -235,7 +235,7 @@ export const ControlPanel = () => {
         {nodeId && availableNodes[nodeId]?.inputs && 
           Object.entries(availableNodes[nodeId].inputs)
             .filter(([_, info]) => {
-              const type = info.type.toLowerCase();
+              const type = typeof info.type === 'string' ? info.type.toLowerCase() : String(info.type).toLowerCase();
               return ['boolean', 'number', 'float', 'int', 'string'].includes(type) || info.widget === 'combo';
             })
             .map(([field, info]) => (
