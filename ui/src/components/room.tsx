@@ -12,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ControlPanelsContainer } from "./control-panels-container";
+import { ControlPanelsContainer } from "@/components/control-panels-container";
 interface MediaStreamPlayerProps {
   stream: MediaStream;
 }
