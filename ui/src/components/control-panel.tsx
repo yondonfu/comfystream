@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { usePeerContext } from "@/context/peer-context";
+import { usePrompt } from "./settings";
 
 interface InputInfo {
   value: any;
@@ -94,6 +95,7 @@ const InputControl = ({
 
 export const ControlPanel = () => {
   const { controlChannel } = usePeerContext();
+  const { originalPrompt } = usePrompt();
   const [nodeId, setNodeId] = useState("");
   const [fieldName, setFieldName] = useState("");
   const [value, setValue] = useState("0");
@@ -110,6 +112,10 @@ export const ControlPanel = () => {
           const data = JSON.parse(event.data);
           if (data.type === "nodes_info") {
             setAvailableNodes(data.nodes);
+          } else if (data.type === "prompt_updated") {
+            if (!data.success) {
+              console.error("[ControlPanel] Failed to update prompt");
+            }
           }
         } catch (error) {
           console.error("[ControlPanel] Error parsing node info:", error);
@@ -138,7 +144,7 @@ export const ControlPanel = () => {
   // Modify the effect that sends updates
   useEffect(() => {
     const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
-    if (!currentInput) return;
+    if (!currentInput || !originalPrompt) return;
 
     let isValidValue = true;
     let processedValue: any = value;
@@ -170,14 +176,20 @@ export const ControlPanel = () => {
     const hasRequiredFields = nodeId.trim() !== "" && fieldName.trim() !== "";
     
     if (controlChannel && isAutoUpdateEnabled && isValidValue && hasRequiredFields) {
-      const message = JSON.stringify({
-        node_id: nodeId,
-        field_name: fieldName,
-        value: processedValue,
-      });
-      controlChannel.send(message);
+      // Create updated prompt while maintaining original structure
+      const updatedPrompt = JSON.parse(JSON.stringify(originalPrompt)); // Deep clone
+      if (updatedPrompt[nodeId] && updatedPrompt[nodeId].inputs) {
+        updatedPrompt[nodeId].inputs[fieldName] = processedValue;
+        
+        // Send the full prompt update
+        const message = JSON.stringify({
+          type: "update_prompt",
+          prompt: updatedPrompt
+        });
+        controlChannel.send(message);
+      }
     }
-  }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled, availableNodes]);
+  }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled, availableNodes, originalPrompt]);
 
   const toggleAutoUpdate = () => {
     setIsAutoUpdateEnabled(!isAutoUpdateEnabled);

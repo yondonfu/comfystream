@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, createContext, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Select } from "./ui/select";
@@ -107,8 +107,21 @@ interface ConfigFormProps {
   onSubmit: (config: StreamConfig) => void;
 }
 
+interface PromptContextType {
+  originalPrompt: any;
+  setOriginalPrompt: (prompt: any) => void;
+}
+
+export const PromptContext = createContext<PromptContextType>({
+  originalPrompt: null,
+  setOriginalPrompt: () => {},
+});
+
+export const usePrompt = () => useContext(PromptContext);
+
 function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const [prompt, setPrompt] = useState<any>(null);
+  const { setOriginalPrompt } = usePrompt();
   const [videoDevices, setVideoDevices] = useState<VideoDevice[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string>("");
 
@@ -167,7 +180,9 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
 
     try {
       const text = await file.text();
-      setPrompt(JSON.parse(text));
+      const parsedPrompt = JSON.parse(text);
+      setPrompt(parsedPrompt);
+      setOriginalPrompt(parsedPrompt);
     } catch (err) {
       console.error(err);
     }

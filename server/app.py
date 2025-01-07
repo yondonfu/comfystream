@@ -137,9 +137,17 @@ async def offer(request):
                 }
                 logger.debug("[Control] Sending nodes info")
                 control_channel.send(json.dumps(response))
-            elif all(k in params for k in ["node_id", "field_name", "value"]):
-                logger.debug(f"[Pipeline] Updating parameter: {params['node_id']}.{params['field_name']} = {params['value']}")
-                await pipeline.update_parameters(params)
+            elif params.get("type") == "update_prompt":
+                if "prompt" not in params:
+                    logger.warning("[Control] Missing prompt in update_prompt message")
+                    return
+                logger.debug("[Pipeline] Updating prompt")
+                pipeline.set_prompt(params["prompt"])
+                response = {
+                    "type": "prompt_updated",
+                    "success": True
+                }
+                control_channel.send(json.dumps(response))
             else:
                 logger.warning("[Control] Invalid message format - missing required fields")
         except json.JSONDecodeError:

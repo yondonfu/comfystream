@@ -23,34 +23,6 @@ class ComfyStreamClient:
     def set_prompt(self, prompt: PromptDictInput):
         self.prompt = convert_prompt(prompt)
 
-
-    async def update_node_input(self, node_id: str, field_name: str, value: Any):
-        async with self._lock:
-            if self.prompt and node_id in self.prompt:
-                # Create a completely new mutable dictionary structure
-                prompt_dict = {}
-                for key, node in self.prompt.items():
-                    node_dict = dict(node)
-                    if 'inputs' in node_dict:
-                        node_dict['inputs'] = dict(node_dict['inputs'])
-                    prompt_dict[key] = node_dict
-                
-                # Update the specific node's input
-                if 'inputs' not in prompt_dict[node_id]:
-                    prompt_dict[node_id]['inputs'] = {}
-                    
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
-                    
-                prompt_dict[node_id]['inputs'][field_name] = value
-                
-                # Convert back to PromptDict type
-                from comfy.api.components.schema.prompt import Prompt
-                self.prompt = Prompt.validate(prompt_dict)
-
-
     async def queue_prompt(self, input: torch.Tensor) -> torch.Tensor:
         async with self._lock:
             tensor_cache.inputs.append(input)
