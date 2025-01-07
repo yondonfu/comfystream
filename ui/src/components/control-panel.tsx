@@ -95,12 +95,19 @@ const InputControl = ({
 
 export const ControlPanel = () => {
   const { controlChannel } = usePeerContext();
-  const { originalPrompt } = usePrompt();
+  const { currentPrompt, setCurrentPrompt } = usePrompt();
   const [nodeId, setNodeId] = useState("");
   const [fieldName, setFieldName] = useState("");
   const [value, setValue] = useState("0");
   const [isAutoUpdateEnabled, setIsAutoUpdateEnabled] = useState(false);
   const [availableNodes, setAvailableNodes] = useState<Record<string, NodeInfo>>({});
+  
+  // Add ref to track last sent value
+  const lastSentValueRef = React.useRef<{
+    nodeId: string;
+    fieldName: string;
+    value: any;
+  } | null>(null);
 
   // Request available nodes when control channel is established
   useEffect(() => {
@@ -144,7 +151,7 @@ export const ControlPanel = () => {
   // Modify the effect that sends updates
   useEffect(() => {
     const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
-    if (!currentInput || !originalPrompt) return;
+    if (!currentInput || !currentPrompt) return;
 
     let isValidValue = true;
     let processedValue: any = value;
@@ -175,21 +182,38 @@ export const ControlPanel = () => {
     
     const hasRequiredFields = nodeId.trim() !== "" && fieldName.trim() !== "";
     
-    if (controlChannel && isAutoUpdateEnabled && isValidValue && hasRequiredFields) {
-      // Create updated prompt while maintaining original structure
-      const updatedPrompt = JSON.parse(JSON.stringify(originalPrompt)); // Deep clone
+    // Check if the value has actually changed
+    const lastSent = lastSentValueRef.current;
+    const hasValueChanged = !lastSent || 
+      lastSent.nodeId !== nodeId || 
+      lastSent.fieldName !== fieldName || 
+      lastSent.value !== processedValue;
+
+    if (controlChannel && isAutoUpdateEnabled && isValidValue && hasRequiredFields && hasValueChanged) {
+      // Create updated prompt while maintaining current structure
+      const updatedPrompt = JSON.parse(JSON.stringify(currentPrompt)); // Deep clone
       if (updatedPrompt[nodeId] && updatedPrompt[nodeId].inputs) {
         updatedPrompt[nodeId].inputs[fieldName] = processedValue;
         
+        // Update last sent value
+        lastSentValueRef.current = {
+          nodeId,
+          fieldName,
+          value: processedValue
+        };
+
         // Send the full prompt update
         const message = JSON.stringify({
           type: "update_prompt",
           prompt: updatedPrompt
         });
         controlChannel.send(message);
+        
+        // Only update current prompt after sending
+        setCurrentPrompt(updatedPrompt);
       }
     }
-  }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled, availableNodes, originalPrompt]);
+  }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled, availableNodes, currentPrompt, setCurrentPrompt]);
 
   const toggleAutoUpdate = () => {
     setIsAutoUpdateEnabled(!isAutoUpdateEnabled);
