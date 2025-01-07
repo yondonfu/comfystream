@@ -102,12 +102,22 @@ export const ControlPanel = () => {
   const [isAutoUpdateEnabled, setIsAutoUpdateEnabled] = useState(false);
   const [availableNodes, setAvailableNodes] = useState<Record<string, NodeInfo>>({});
   
-  // Add ref to track last sent value
+  // Add ref to track last sent value and timeout
   const lastSentValueRef = React.useRef<{
     nodeId: string;
     fieldName: string;
     value: any;
   } | null>(null);
+  const updateTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup function for the timeout
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Request available nodes when control channel is established
   useEffect(() => {
@@ -148,7 +158,7 @@ export const ControlPanel = () => {
     setValue(newValue);
   };
 
-  // Modify the effect that sends updates
+  // Modify the effect that sends updates with debouncing
   useEffect(() => {
     const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
     if (!currentInput || !currentPrompt) return;
@@ -190,28 +200,36 @@ export const ControlPanel = () => {
       lastSent.value !== processedValue;
 
     if (controlChannel && isAutoUpdateEnabled && isValidValue && hasRequiredFields && hasValueChanged) {
-      // Create updated prompt while maintaining current structure
-      const updatedPrompt = JSON.parse(JSON.stringify(currentPrompt)); // Deep clone
-      if (updatedPrompt[nodeId] && updatedPrompt[nodeId].inputs) {
-        updatedPrompt[nodeId].inputs[fieldName] = processedValue;
-        
-        // Update last sent value
-        lastSentValueRef.current = {
-          nodeId,
-          fieldName,
-          value: processedValue
-        };
-
-        // Send the full prompt update
-        const message = JSON.stringify({
-          type: "update_prompt",
-          prompt: updatedPrompt
-        });
-        controlChannel.send(message);
-        
-        // Only update current prompt after sending
-        setCurrentPrompt(updatedPrompt);
+      // Clear any existing timeout
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
       }
+
+      // Set a new timeout for the update
+      updateTimeoutRef.current = setTimeout(() => {
+        // Create updated prompt while maintaining current structure
+        const updatedPrompt = JSON.parse(JSON.stringify(currentPrompt)); // Deep clone
+        if (updatedPrompt[nodeId] && updatedPrompt[nodeId].inputs) {
+          updatedPrompt[nodeId].inputs[fieldName] = processedValue;
+          
+          // Update last sent value
+          lastSentValueRef.current = {
+            nodeId,
+            fieldName,
+            value: processedValue
+          };
+
+          // Send the full prompt update
+          const message = JSON.stringify({
+            type: "update_prompt",
+            prompt: updatedPrompt
+          });
+          controlChannel.send(message);
+          
+          // Only update current prompt after sending
+          setCurrentPrompt(updatedPrompt);
+        }
+      }, currentInput.type.toLowerCase() === 'number' ? 100 : 300); // Shorter delay for numbers, longer for text
     }
   }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled, availableNodes, currentPrompt, setCurrentPrompt]);
 
