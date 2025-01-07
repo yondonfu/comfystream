@@ -21,6 +21,10 @@ from utils import patch_loop_datagram
 
 logger = logging.getLogger(__name__)
 
+# Only log WebRTC connection state changes at INFO level
+logging.getLogger('aioice').setLevel(logging.WARNING)
+logging.getLogger('aiortc').setLevel(logging.WARNING)
+
 MAX_BITRATE = 2000000
 MIN_BITRATE = 2000000
 
@@ -83,9 +87,12 @@ async def offer(request):
     pcs = request.app["pcs"]
 
     params = await request.json()
+    logger.info(f"[WebRTC] New connection request received")
 
     pipeline.set_prompt(params["prompt"])
+    logger.debug(f"[Pipeline] Setting prompt: {params['prompt']}")
     await pipeline.warm()
+    logger.debug("[Pipeline] Pipeline warmed up")
 
     offer_params = params["offer"]
     offer = RTCSessionDescription(sdp=offer_params["sdp"], type=offer_params["type"])
@@ -120,46 +127,52 @@ async def offer(request):
     async def on_message(message):
         try:
             params = json.loads(message)
+            logger.debug(f"[Control] Received message: {params.get('type', 'unknown')}")
             
             if params.get("type") == "get_nodes":
-                # Get nodes info from pipeline
                 nodes_info = await pipeline.get_nodes_info()
                 response = {
                     "type": "nodes_info",
                     "nodes": nodes_info
                 }
+                logger.debug("[Control] Sending nodes info")
                 control_channel.send(json.dumps(response))
             elif all(k in params for k in ["node_id", "field_name", "value"]):
+                logger.debug(f"[Pipeline] Updating parameter: {params['node_id']}.{params['field_name']} = {params['value']}")
                 await pipeline.update_parameters(params)
             else:
-                logger.warning("[Server] Invalid message format - missing required fields")
+                logger.warning("[Control] Invalid message format - missing required fields")
         except json.JSONDecodeError:
-            logger.error("[Server] Invalid JSON received")
+            logger.error("[Control] Invalid JSON received")
         except Exception as e:
-            logger.error(f"[Server] Error processing message: {str(e)}")
+            logger.error(f"[Control] Error processing message: {str(e)}")
 
     @pc.on("track")
     def on_track(track):
-        logger.info(f"Track received: {track.kind}")
+        logger.info(f"[WebRTC] Track received: {track.kind}")
         if track.kind == "video":
             videoTrack = VideoStreamTrack(track, pipeline)
             tracks["video"] = videoTrack
             sender = pc.addTrack(videoTrack)
+            logger.debug("[WebRTC] Video track added to peer connection")
 
             codec = "video/H264"
             force_codec(pc, sender, codec)
+            logger.debug("[WebRTC] H264 codec forced")
 
         @track.on("ended")
         async def on_ended():
-            logger.info(f"{track.kind} track ended")
+            logger.info(f"[WebRTC] {track.kind} track ended")
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
-        logger.info(f"Connection state is: {pc.connectionState}")
+        logger.info(f"[WebRTC] Connection state changed to: {pc.connectionState}")
         if pc.connectionState == "failed":
+            logger.error("[WebRTC] Connection failed")
             await pc.close()
             pcs.discard(pc)
         elif pc.connectionState == "closed":
+            logger.info("[WebRTC] Connection closed")
             await pc.close()
             pcs.discard(pc)
 

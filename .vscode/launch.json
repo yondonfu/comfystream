@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ComfyStream Server",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/server/app.py",
+            "args": [
+                "--workspace",
+                "D:\\Cursor Projects\\ryanontheinside_github\\ComfyStream-Setup-Scripts\\comfyRealtime\\ComfyUI",
+                "--port=3000",
+                "--media-ports=5678"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+} 

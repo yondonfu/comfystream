@@ -82,7 +82,7 @@ function StreamCanvas({
     video.srcObject = stream;
     video.onloadedmetadata = () => {
       video.play().catch((error) => {
-        console.log("Video play failed:", error);
+        console.error("[Webcam] Failed to play video:", error);
       });
     };
 
@@ -144,13 +144,16 @@ export function Webcam({ onStreamReady, deviceId, frameRate }: WebcamProps) {
 
   const startWebcam = useCallback(async () => {
     if (!deviceId) {
+      console.debug("[Webcam] No device ID provided");
       return null;
     }
     if (frameRate == 0) {
+      console.debug("[Webcam] Frame rate is 0");
       return null;
     }
 
     try {
+      console.debug(`[Webcam] Starting webcam with device ${deviceId} at ${frameRate} FPS`);
       const newStream = await navigator.mediaDevices.getUserMedia({
         video: {
           ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
@@ -160,8 +163,10 @@ export function Webcam({ onStreamReady, deviceId, frameRate }: WebcamProps) {
           frameRate: { ideal: frameRate, max: frameRate },
         },
       });
+      console.debug("[Webcam] Successfully started webcam stream");
       return newStream;
     } catch (error) {
+      console.error("[Webcam] Failed to start webcam:", error);
       return null;
     }
   }, [deviceId, frameRate]);
@@ -171,10 +176,14 @@ export function Webcam({ onStreamReady, deviceId, frameRate }: WebcamProps) {
     if (frameRate == 0) return;
 
     startWebcam().then((newStream) => {
-      replaceStream(newStream);
+      if (newStream) {
+        console.debug("[Webcam] Replacing stream");
+        replaceStream(newStream);
+      }
     });
 
     return () => {
+      console.debug("[Webcam] Cleaning up stream");
       replaceStream(null);
     };
   }, [deviceId, frameRate, startWebcam, replaceStream]);
