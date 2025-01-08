@@ -1,7 +1,6 @@
 "use client";
 
 import { Room } from "@/components/room";
-import { ControlPanelsContainer } from "@/components/control-panels-container";
 import { PromptContext } from "@/components/settings";
 import { useState, useEffect } from "react";
 
