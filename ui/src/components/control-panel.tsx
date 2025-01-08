@@ -261,7 +261,7 @@ export const ControlPanel = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-3 p-3">
       <select
         value={nodeId}
         onChange={(e) => {
