@@ -120,40 +120,43 @@ async def offer(request):
     h264.MAX_BITRATE = MAX_BITRATE
     h264.MIN_BITRATE = MIN_BITRATE
 
-    # Add control channel
-    control_channel = pc.createDataChannel("control")
-    
-    @control_channel.on("message")
-    async def on_message(message):
-        try:
-            params = json.loads(message)
-            logger.debug(f"[Control] Received message: {params.get('type', 'unknown')}")
+    # Handle control channel from client
+    @pc.on("datachannel")
+    def on_datachannel(channel):
+        if channel.label == "control":
+            logger.debug("[Control] Control channel received")
             
-            if params.get("type") == "get_nodes":
-                nodes_info = await pipeline.get_nodes_info()
-                response = {
-                    "type": "nodes_info",
-                    "nodes": nodes_info
-                }
-                logger.debug("[Control] Sending nodes info")
-                control_channel.send(json.dumps(response))
-            elif params.get("type") == "update_prompt":
-                if "prompt" not in params:
-                    logger.warning("[Control] Missing prompt in update_prompt message")
-                    return
-                logger.debug("[Pipeline] Updating prompt")
-                pipeline.set_prompt(params["prompt"])
-                response = {
-                    "type": "prompt_updated",
-                    "success": True
-                }
-                control_channel.send(json.dumps(response))
-            else:
-                logger.warning("[Control] Invalid message format - missing required fields")
-        except json.JSONDecodeError:
-            logger.error("[Control] Invalid JSON received")
-        except Exception as e:
-            logger.error(f"[Control] Error processing message: {str(e)}")
+            @channel.on("message")
+            async def on_message(message):
+                try:
+                    params = json.loads(message)
+                    logger.debug(f"[Control] Received message: {params.get('type', 'unknown')}")
+                    
+                    if params.get("type") == "get_nodes":
+                        nodes_info = await pipeline.get_nodes_info()
+                        response = {
+                            "type": "nodes_info",
+                            "nodes": nodes_info
+                        }
+                        logger.debug("[Control] Sending nodes info")
+                        channel.send(json.dumps(response))
+                    elif params.get("type") == "update_prompt":
+                        if "prompt" not in params:
+                            logger.warning("[Control] Missing prompt in update_prompt message")
+                            return
+                        logger.debug("[Pipeline] Updating prompt")
+                        pipeline.set_prompt(params["prompt"])
+                        response = {
+                            "type": "prompt_updated",
+                            "success": True
+                        }
+                        channel.send(json.dumps(response))
+                    else:
+                        logger.warning("[Control] Invalid message format - missing required fields")
+                except json.JSONDecodeError:
+                    logger.error("[Control] Invalid JSON received")
+                except Exception as e:
+                    logger.error(f"[Control] Error processing message: {str(e)}")
 
     @pc.on("track")
     def on_track(track):

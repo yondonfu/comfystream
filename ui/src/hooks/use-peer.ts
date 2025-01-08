@@ -14,9 +14,6 @@ export function usePeer(props: PeerProps): Peer {
   const [remoteStream, setRemoteStream] = React.useState<MediaStream | null>(
     null
   );
-  const [dataChannel, setDataChannel] = React.useState<RTCDataChannel | null>(
-    null
-  );
   const [controlChannel, setControlChannel] = React.useState<RTCDataChannel | null>(null);
 
   const connectionStateTimeoutRef = React.useRef(null);
@@ -89,20 +86,34 @@ export function usePeer(props: PeerProps): Peer {
 
       localStream.getTracks().forEach((track) => {
         pc.addTrack(track, localStream);
-
-        // const sender = pc.addTrack(track, localStream);
-        // const params = sender.getParameters();
-        // if (!params.encodings) {
-        //   params.encodings = [{}];
-        // }
-
-        // params.encodings[0].maxBitrate = 300000;
-        // params.encodings[0].maxFramerate = 30;
-        // sender.setParameters(params);
       });
 
-      const dataChannel = pc.createDataChannel("config");
-      setDataChannel(dataChannel);
+      // Create control channel for both negotiation and control
+      const channel = pc.createDataChannel("control");
+      
+      channel.onopen = () => {
+        console.debug("[Control] Channel opened");
+        setControlChannel(channel);
+      };
+
+      channel.onclose = () => {
+        console.debug("[Control] Channel closed");
+        setControlChannel(null);
+      };
+
+      channel.onerror = (error) => {
+        console.error("[Control] Channel error:", error);
+      };
+
+      channel.onmessage = (event) => {
+        // Only log node info messages at debug level
+        const data = JSON.parse(event.data);
+        if (data.type === "nodes_info") {
+          console.debug("[Control] Received nodes info");
+        } else {
+          console.debug("[Control] Received message:", data.type || "unknown type");
+        }
+      };
 
       pc.ontrack = (event) => {
         if (event.track.kind == "video") {
@@ -121,37 +132,6 @@ export function usePeer(props: PeerProps): Peer {
         handleConnectionStateChange(pc.connectionState);
       };
 
-      pc.ondatachannel = (event) => {
-        const channel = event.channel;
-        if (channel.label === "control") {
-          console.debug("[Control] Control channel received");
-          
-          channel.onopen = () => {
-            console.debug("[Control] Channel opened");
-            setControlChannel(channel);
-          };
-
-          channel.onclose = () => {
-            console.debug("[Control] Channel closed");
-            setControlChannel(null);
-          };
-
-          channel.onerror = (error) => {
-            console.error("[Control] Channel error:", error);
-          };
-
-          channel.onmessage = (event) => {
-            // Only log node info messages at debug level
-            const data = JSON.parse(event.data);
-            if (data.type === "nodes_info") {
-              console.debug("[Control] Received nodes info");
-            } else {
-              console.debug("[Control] Received message:", data.type || "unknown type");
-            }
-          };
-        }
-      };
-
       const createOffer = async () => {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -166,7 +146,6 @@ export function usePeer(props: PeerProps): Peer {
         peerConnection.close();
       }
       setControlChannel(null);
-      setDataChannel(null);
       setRemoteStream(null);
       setPeerConnection(null);
     }
@@ -175,7 +154,6 @@ export function usePeer(props: PeerProps): Peer {
   return {
     peerConnection,
     remoteStream,
-    dataChannel,
     controlChannel,
   };
 }
