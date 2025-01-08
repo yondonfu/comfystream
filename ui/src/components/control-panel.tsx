@@ -26,7 +26,6 @@ const InputControl = ({
   value: string, 
   onChange: (value: string) => void 
 }) => {
-  console.log("InputControl rendered with:", { input, value }); // Debug log
 
   if (input.widget === "combo") {
     return (
@@ -67,7 +66,7 @@ const InputControl = ({
           onChange={(e) => onChange(e.target.value)}
           min={input.min}
           max={input.max}
-          step={inputType === "int" ? "1" : "any"}
+          step={inputType === "float" ? "0.01" : inputType === "int" ? "1" : "any"}
           className="p-2 border rounded w-32"
         />
       );
