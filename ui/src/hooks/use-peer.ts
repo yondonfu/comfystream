@@ -43,7 +43,6 @@ export function usePeer(props: PeerProps): Peer {
       return await response.json();
     } catch (error) {
       if (retry < MAX_OFFER_RETRIES) {
-        console.debug(`[WebRTC] Retrying offer (attempt ${retry + 1}/${MAX_OFFER_RETRIES})`);
         await new Promise((resolve) =>
           setTimeout(resolve, OFFER_RETRY_INTERVAL)
         );
@@ -92,27 +91,21 @@ export function usePeer(props: PeerProps): Peer {
       const channel = pc.createDataChannel("control");
       
       channel.onopen = () => {
-        console.debug("[Control] Channel opened");
+        console.log("[usePeer] Control channel opened, readyState:", channel.readyState);
         setControlChannel(channel);
       };
 
       channel.onclose = () => {
-        console.debug("[Control] Channel closed");
+        console.log("[usePeer] Control channel closed");
         setControlChannel(null);
       };
 
       channel.onerror = (error) => {
-        console.error("[Control] Channel error:", error);
+        console.error("Control channel error:", error);
       };
 
       channel.onmessage = (event) => {
-        // Only log node info messages at debug level
-        const data = JSON.parse(event.data);
-        if (data.type === "nodes_info") {
-          console.debug("[Control] Received nodes info");
-        } else {
-          console.debug("[Control] Received message:", data.type || "unknown type");
-        }
+        console.log("Received message on control channel:", event.data);
       };
 
       pc.ontrack = (event) => {
