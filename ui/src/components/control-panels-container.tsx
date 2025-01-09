@@ -71,7 +71,7 @@ export const ControlPanelsContainer = () => {
         </style>
         <DrawerContent 
           id="control-panel-drawer"
-          className="h-[32vh] bg-background/90 backdrop-blur-md border-t shadow-lg"
+          className="max-h-[50vh] min-h-[200px] bg-background/90 backdrop-blur-md border-t shadow-lg overflow-hidden"
         >
           <DrawerTitle className="sr-only">Control Panels</DrawerTitle>
           
@@ -92,10 +92,10 @@ export const ControlPanelsContainer = () => {
             </div>
 
             {/* Control panels container */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden">
-              <div className="flex gap-4 p-4 h-[calc(32vh-2rem)] min-h-0">
+            <div className="flex-1 overflow-x-auto">
+              <div className="flex gap-4 p-4 min-h-0">
                 {panels.map((id) => (
-                  <div key={id} className="flex-none w-80 border rounded-lg bg-white/95 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                  <div key={id} className="flex-none w-80 border rounded-lg bg-white/95 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col max-h-[calc(50vh-3rem)]">
                     <div className="flex justify-between items-center p-2 border-b bg-gray-50/80">
                       <span className="font-medium">Control Panel {id + 1}</span>
                       <Button
