@@ -8,18 +8,19 @@ from comfystream.client import ComfyStreamClient
 WARMUP_RUNS = 5
 
 
+
 class Pipeline:
     def __init__(self, **kwargs):
         self.client = ComfyStreamClient(**kwargs)
+
+    def set_prompt(self, prompt: Dict[Any, Any]):
+        self.client.set_prompt(prompt)
 
     async def warm(self):
         frame = torch.randn(1, 512, 512, 3)
 
         for _ in range(WARMUP_RUNS):
             await self.predict(frame)
-
-    def set_prompt(self, prompt: Dict[Any, Any]):
-        self.client.set_prompt(prompt)
 
     def preprocess(self, frame: av.VideoFrame) -> torch.Tensor:
         frame_np = frame.to_ndarray(format="rgb24").astype(np.float32) / 255.0
@@ -42,3 +43,8 @@ class Pipeline:
         post_output.time_base = frame.time_base
 
         return post_output
+
+    async def get_nodes_info(self) -> Dict[str, Any]:
+        """Get information about all nodes in the current prompt including metadata."""
+        nodes_info = await self.client.get_available_nodes()
+        return nodes_info

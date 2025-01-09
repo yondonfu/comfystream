@@ -14,9 +14,7 @@ export function usePeer(props: PeerProps): Peer {
   const [remoteStream, setRemoteStream] = React.useState<MediaStream | null>(
     null
   );
-  const [dataChannel, setDataChannel] = React.useState<RTCDataChannel | null>(
-    null
-  );
+  const [controlChannel, setControlChannel] = React.useState<RTCDataChannel | null>(null);
 
   const connectionStateTimeoutRef = React.useRef(null);
 
@@ -87,20 +85,28 @@ export function usePeer(props: PeerProps): Peer {
 
       localStream.getTracks().forEach((track) => {
         pc.addTrack(track, localStream);
-
-        // const sender = pc.addTrack(track, localStream);
-        // const params = sender.getParameters();
-        // if (!params.encodings) {
-        //   params.encodings = [{}];
-        // }
-
-        // params.encodings[0].maxBitrate = 300000;
-        // params.encodings[0].maxFramerate = 30;
-        // sender.setParameters(params);
       });
 
-      const dataChannel = pc.createDataChannel("config");
-      setDataChannel(dataChannel);
+      // Create control channel for both negotiation and control
+      const channel = pc.createDataChannel("control");
+      
+      channel.onopen = () => {
+        console.log("[usePeer] Control channel opened, readyState:", channel.readyState);
+        setControlChannel(channel);
+      };
+
+      channel.onclose = () => {
+        console.log("[usePeer] Control channel closed");
+        setControlChannel(null);
+      };
+
+      channel.onerror = (error) => {
+        console.error("Control channel error:", error);
+      };
+
+      channel.onmessage = (event) => {
+        console.log("Received message on control channel:", event.data);
+      };
 
       pc.ontrack = (event) => {
         if (event.track.kind == "video") {
@@ -132,20 +138,15 @@ export function usePeer(props: PeerProps): Peer {
       if (peerConnection) {
         peerConnection.close();
       }
+      setControlChannel(null);
+      setRemoteStream(null);
+      setPeerConnection(null);
     }
   }, [connect, localStream]);
-
-  React.useEffect(() => {
-    if (!peerConnection) return;
-
-    return () => {
-      peerConnection.close();
-    };
-  }, [peerConnection]);
 
   return {
     peerConnection,
     remoteStream,
-    dataChannel,
+    controlChannel,
   };
 }

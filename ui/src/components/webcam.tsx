@@ -171,7 +171,7 @@ export function Webcam({ onStreamReady, deviceId, frameRate }: WebcamProps) {
     if (frameRate == 0) return;
 
     startWebcam().then((newStream) => {
-      replaceStream(newStream);
+        replaceStream(newStream);
     });
 
     return () => {

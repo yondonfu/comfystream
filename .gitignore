@@ -3,3 +3,16 @@ __pycache__
 build
 .DS_STORE
 comfyui*
+
+# VS Code settings
+.vscode/
+*.code-workspace
+launch.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production

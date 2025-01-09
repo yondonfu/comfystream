@@ -12,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
+import { ControlPanelsContainer } from "@/components/control-panels-container";
 interface MediaStreamPlayerProps {
   stream: MediaStream;
 }
@@ -178,9 +178,9 @@ export function Room() {
           onDisconnected={handleDisconnected}
           localStream={localStream}
         >
-          <div className="min-h-[100dvh] flex flex-col items-center justify-center">
+          <div className="min-h-[100dvh] flex flex-col items-center justify-start pt-[10vh]">
             <div className="w-full max-h-[100dvh] flex flex-col lg:flex-row landscape:flex-row justify-center items-center lg:space-x-4">
-              <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square bg-[black] flex justify-center items-center lg:border-2 lg:rounded-md">
+              <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square bg-[black] flex justify-center items-center border-2 rounded-md">
                 <Stage
                   connected={isConnected}
                   onStreamReady={onRemoteStreamReady}
@@ -194,6 +194,8 @@ export function Room() {
                 />
               </div>
             </div>
+
+            {isConnected && <ControlPanelsContainer />}
 
             <StreamSettings
               open={isStreamSettingsOpen}

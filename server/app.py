@@ -12,6 +12,7 @@ from aiortc import (
     RTCConfiguration,
     RTCIceServer,
     MediaStreamTrack,
+    RTCDataChannel,
 )
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
@@ -19,6 +20,7 @@ from pipeline import Pipeline
 from utils import patch_loop_datagram
 
 logger = logging.getLogger(__name__)
+
 
 MAX_BITRATE = 2000000
 MIN_BITRATE = 2000000
@@ -111,6 +113,39 @@ async def offer(request):
     h264.MAX_BITRATE = MAX_BITRATE
     h264.MIN_BITRATE = MIN_BITRATE
 
+    # Handle control channel from client
+    @pc.on("datachannel")
+    def on_datachannel(channel):
+        if channel.label == "control":
+            @channel.on("message")
+            async def on_message(message):
+                try:
+                    params = json.loads(message)
+                    
+                    if params.get("type") == "get_nodes":
+                        nodes_info = await pipeline.get_nodes_info()
+                        response = {
+                            "type": "nodes_info",
+                            "nodes": nodes_info
+                        }
+                        channel.send(json.dumps(response))
+                    elif params.get("type") == "update_prompt":
+                        if "prompt" not in params:
+                            logger.warning("[Control] Missing prompt in update_prompt message")
+                            return
+                        pipeline.set_prompt(params["prompt"])
+                        response = {
+                            "type": "prompt_updated",
+                            "success": True
+                        }
+                        channel.send(json.dumps(response))
+                    else:
+                        logger.warning("[Server] Invalid message format - missing required fields")
+                except json.JSONDecodeError:
+                    llogger.error("[Server] Invalid JSON received")
+                except Exception as e:
+                    logger.error(f"[Server] Error processing message: {str(e)}")
+
     @pc.on("track")
     def on_track(track):
         logger.info(f"Track received: {track.kind}")
@@ -197,7 +232,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    logging.basicConfig(level=args.log_level.upper())
+    logging.basicConfig(
+        level=args.log_level.upper(),
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%H:%M:%S'
+    )
 
     app = web.Application()
     app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
