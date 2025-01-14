@@ -4,6 +4,13 @@ import os
 import json
 import logging
 
+import torch
+
+# Initialize CUDA before any other imports
+if torch.cuda.is_available():
+    torch.cuda.init()
+
+
 from twilio.rest import Client
 from aiohttp import web
 from aiortc import (
