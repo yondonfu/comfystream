@@ -13,7 +13,7 @@ This guide will help you set up and run a development container for ComfyStream 
 To build the base container, run the following command in your terminal:
 
 ```sh
-docker build -f .devcontainer/Dockerfile.base -t comfyui-base .
+docker build -f .devcontainer/Dockerfile.base -t eliteencoder/comfyui-base:latest .
 ```
 
 ## Using the Pre-built Base Container
@@ -22,9 +22,9 @@ Most users will configure host paths for models in `devcontainer.json` and use t
 
 1. Pull the pre-built base container:
 
-    ```sh
-    docker pull livepeer/comfyui-base
-    ```
+```sh
+docker pull eliteencoder/comfyui-base:latest
+```
 
 2. Configure the host paths for models in the `devcontainer.json` file.
 
@@ -59,20 +59,20 @@ By following these steps, you should be able to set up and run your development 
 
 1. Navigate to the DepthAnything directory:
 
-    ```sh
-    cd /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/
-    ```
+```sh
+cd /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/
+```
 
 2. Run the export script to build the engine and move the generated engine file to the appropriate directory:
 
-    ```sh
-    python export_trt.py
-    mv depth_anything_vitl14-fp16.engine /ComfyUI/models/tensorrt/depth-anything/depth_anything_vitl14-fp16.engine
-    ```
+```sh
+python export_trt.py
+mv depth_anything_vitl14-fp16.engine /ComfyUI/models/tensorrt/depth-anything/depth_anything_vitl14-fp16.engine
+```
 
 By following these steps, you will have successfully built and copied the DepthAnything engine to the required location.
 
-3. Start ComfyUI
+### Starting ComfyUI
 
 When building engines, you should start ComfyUI normally. 
 
@@ -85,8 +85,8 @@ When running TensorRT engine enabled workflows, you should use the extra flag as
 python main.py --listen --disable-cuda-malloc
 ```
 
-4. Start ComfyStream
+### Starting ComfyStream
 
-    ```sh
-    python server/app.py --workspace ../ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8889
-    ```
+```sh
+python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8889
+```
