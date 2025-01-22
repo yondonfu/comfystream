@@ -1,0 +1,94 @@
+{
+  "last_node_id": 13,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 13,
+      "type": "ONNX_FP8_EXPORT",
+      "pos": [
+        1112.05517578125,
+        378.7208557128906
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "ONNX_FP8_EXPORT"
+      },
+      "widgets_values": [
+        "/workspace/ComfyUI/models/onnx",
+        "dreamshaper8_fp8.onnx"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "UNETLoader",
+      "pos": [
+        553.5215454101562,
+        392.55853271484375
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "dreamshaper_8_dmd_1kstep.safetensors",
+        "default"
+      ]
+    }
+  ],
+  "links": [
+    [
+      2,
+      12,
+      0,
+      13,
+      0,
+      "MODEL"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.3310000000000004,
+      "offset": [
+        -178.9215954852766,
+        -182.30203232582366
+      ]
+    },
+    "node_versions": {
+      "comfy-core": "0.3.10"
+    }
+  },
+  "version": 0.4
+}

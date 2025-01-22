@@ -1,0 +1,154 @@
+{
+  "last_node_id": 16,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 14,
+      "type": "UNETLoader",
+      "pos": [
+        582.37744140625,
+        373.4616394042969
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "dreamshaper_8_dmd_1kstep.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "STATIC_TRT_MODEL_CONVERSION",
+      "pos": [
+        1378.02001953125,
+        353.9273681640625
+      ],
+      "size": [
+        340.20001220703125,
+        202
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 3
+        },
+        {
+          "name": "onnx_model_path",
+          "type": "STRING",
+          "link": 4,
+          "widget": {
+            "name": "onnx_model_path"
+          },
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "STATIC_TRT_MODEL_CONVERSION"
+      },
+      "widgets_values": [
+        "tensorrt/static-dreamshaper8",
+        1,
+        512,
+        512,
+        1,
+        14,
+        ""
+      ]
+    },
+    {
+      "id": 15,
+      "type": "ONNXModelSelector",
+      "pos": [
+        588.3877563476562,
+        534.2430419921875
+      ],
+      "size": [
+        315,
+        78
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "model_path",
+          "type": "STRING",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "model_name",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ONNXModelSelector"
+      },
+      "widgets_values": [
+        "dreamshaper8_fp8.onnx"
+      ]
+    }
+  ],
+  "links": [
+    [
+      3,
+      14,
+      0,
+      16,
+      0,
+      "MODEL"
+    ],
+    [
+      4,
+      15,
+      0,
+      16,
+      1,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.3310000000000004,
+      "offset": [
+        -169.90581787445768,
+        -193.57175433934745
+      ]
+    },
+    "node_versions": {
+      "comfy-core": "0.3.10"
+    }
+  },
+  "version": 0.4
+}

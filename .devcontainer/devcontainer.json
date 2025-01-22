@@ -1,0 +1,41 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+	"name": "ComfyStream",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"runArgs": [
+		"--gpus=all",
+		"--workdir", "/workspace"
+	], 
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"python.defaultInterpreterPath": "/workspace/miniconda3/envs/comfystream/bin/python"
+			},
+			"extensions": [
+				"ms-python.python",
+				"ms-python.black-formatter",
+				"ms-python.vscode-pylance"
+			]
+		}
+	},
+	"appPort": [
+		"8188:8188",  // ComfyUI
+		"8889:8889",  // ComfyStream
+		"3000:3000"   // ComfyStream UI (optional)
+	],
+	"forwardPorts": [8188, 8889, 3000],
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// Use 'mounts' to make a list of local folders available inside the container.
+	"workspaceFolder": "/workspace",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+	"mounts": [
+		// Use 'mounts' to set models and environments for the container, the following targets are included in extra_model_paths.yaml
+		// "source=${localEnv:HOME}/ComfyUI-models,target=/ComfyUI/extra/models,type=bind,consistency=cached"
+	],
+	"postCreateCommand": "bash .devcontainer/post-create.sh"
+}
