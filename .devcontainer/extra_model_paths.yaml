@@ -1,0 +1,19 @@
+
+# Add your host mounted custom_nodes and model paths here
+a111:
+    base_path: /workspace/ComfyUI
+    checkpoints: /extra/models/checkpoints
+    configs: /extra/models/configs
+    vae: /extra/models/vae
+    loras: |
+         /extra/models/loras
+    upscale_models: |
+                  /extra/models/ESRGAN
+                  /extra/models/RealESRGAN
+                  /extra/models/SwinIR
+    embeddings: /extra/models/embeddings
+    hypernetworks: /extra/models/hypernetworks
+    controlnet: /extra/models/controlnet
+
+#  Optional: Map local custom nodes (requires installation)
+#     custom_nodes: /extra/custom-nodes
