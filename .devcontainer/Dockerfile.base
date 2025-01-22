@@ -22,56 +22,11 @@ RUN source activate comfyui && git clone https://github.com/comfyanonymous/Comfy
 cd /ComfyUI && /miniconda3/envs/comfyui/bin/pip install -r requirements.txt
 COPY ./workflows/ui* /ComfyUI/user/default/workflows/examples
 COPY ./nodes/tensor_utils /ComfyUI/custom_nodes/tensor_utils
-WORKDIR /
 
-# Clone ComfyUI Repo to /ComfyUI
-RUN source activate comfyui && cd /ComfyUI/custom_nodes && \
-    # Ryan's nodes
-    git clone https://github.com/pschroedl/ComfyUI_RyanOnTheInside.git && \
-    cd ComfyUI_RyanOnTheInside && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    git clone https://github.com/ltdrdata/ComfyUI-Manager.git && \
-    cd ComfyUI-Manager && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    git clone https://github.com/tsogzark/ComfyUI-load-image-from-url.git && \
-    git clone https://github.com/ryanontheinside/ComfyUI-Misc-Effects.git && \
-    git clone https://github.com/ryanontheinside/ComfyUI_RealTimeNodes.git && \
-    cd ComfyUI_RealTimeNodes && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    # Utility nodes
-    git clone https://github.com/rgthree/rgthree-comfy.git && \
-    cd rgthree-comfy && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    git clone https://github.com/kijai/ComfyUI-KJNodes.git && \
-    cd ComfyUI-KJNodes && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    # Vision and AI nodes
-    git clone https://github.com/ad-astra-video/ComfyUI-Florence2-Vision.git && \
-    cd ComfyUI-Florence2-Vision && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    git clone https://github.com/pschroedl/ComfyUI-SAM2-Realtime.git && \
-    cd ComfyUI-SAM2-Realtime && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    # Core TensorRT nodes
-    git clone -b quantization_with_controlnet_fixes https://github.com/yondonfu/ComfyUI_TensorRT && \
-    cd ComfyUI_TensorRT && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    git clone https://github.com/yondonfu/ComfyUI-Torch-Compile && \
-    cd ComfyUI-Torch-Compile && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt && \
-    cd .. && \
-    # Utility nodes
-    git clone https://github.com/yuvraj108c/ComfyUI-Depth-Anything-Tensorrt && \
-    cd ComfyUI-Depth-Anything-Tensorrt && \
-    /miniconda3/envs/comfyui/bin/pip install -r requirements.txt
+WORKDIR /app
+# Install custom nodes
+RUN source activate comfyui && /miniconda3/envs/comfyui/bin/python /app/src/comfystream/scripts/setup_nodes.py --workspace /ComfyUI
+WORKDIR /
 
 RUN conda create -n comfystream
 
