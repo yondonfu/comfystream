@@ -1,0 +1,26 @@
+models:
+  # Base models
+  dreamshaper-v8:
+    name: "Dreamshaper v8"
+    url: "https://civitai.com/api/download/models/128713?type=Model&format=SafeTensor&size=pruned&fp=fp16"
+    path: "checkpoints/SD1.5/dreamshaper-8.safetensors"
+    type: "checkpoint"
+
+  # DMD models
+  dreamshaper-dmd:
+    name: "Dreamshaper DMD"
+    url: "https://huggingface.co/aaronb/dreamshaper-8-dmd-1kstep/resolve/main/diffusion_pytorch_model.safetensors"
+    path: "unet/dreamshaper-8-dmd-1kstep.safetensors"
+    type: "unet"
+    extra_files:
+      - url: "https://huggingface.co/aaronb/dreamshaper-8-dmd-1kstep/raw/main/config.json"
+        path: "unet/dreamshaper-8-dmd-1kstep.json"
+
+
+
+  # ControlNet models
+  controlnet-depth:
+    name: "ControlNet Depth"
+    url: "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11f1p_sd15_depth_fp16.safetensors"
+    path: "controlnet/control_v11f1p_sd15_depth_fp16.safetensors"
+    type: "controlnet" 
