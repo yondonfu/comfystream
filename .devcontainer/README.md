@@ -49,28 +49,23 @@ Ensure your `devcontainer.json` is properly configured to map the necessary host
 
 Replace `/path/to/your/models` with the actual path to your models on the host machine.
 
-## Additional Resources
+### Download models
 
-- [Developing inside a Container](https://code.visualstudio.com/docs/remote/containers)
-- [Docker Documentation](https://docs.docker.com/)
+```sh
+python src/comfystream/scripts/setup_models.py --workspace /ComfyUI
+```
 
 By following these steps, you should be able to set up and run your development container for ComfyStream efficiently.
 ## Building the DepthAnything Engine
 
-1. Navigate to the DepthAnything directory:
+1. Run the **export_trt.py** script from the directory of the onnx file:
 
 ```sh
-cd /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/
+cd /ComfyUI/models/tensorrt/depth-anything
+python /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
 ```
 
-2. Run the export script to build the engine and move the generated engine file to the appropriate directory:
-
-```sh
-python export_trt.py
-mv depth_anything_vitl14-fp16.engine /ComfyUI/models/tensorrt/depth-anything/depth_anything_vitl14-fp16.engine
-```
-
-By following these steps, you will have successfully built and copied the DepthAnything engine to the required location.
+**Note**: You may use either conda environment for this step
 
 ### Starting ComfyUI
 
@@ -90,3 +85,8 @@ python main.py --listen --disable-cuda-malloc
 ```sh
 python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8889
 ```
+
+## Additional Resources
+
+- [Developing inside a Container](https://code.visualstudio.com/docs/remote/containers)
+- [Docker Documentation](https://docs.docker.com/)

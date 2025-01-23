@@ -16,7 +16,21 @@ models:
       - url: "https://huggingface.co/aaronb/dreamshaper-8-dmd-1kstep/raw/main/config.json"
         path: "unet/dreamshaper-8-dmd-1kstep.json"
 
+  # Depth Anything ONNX model
+  depthanything-onnx:
+    name: "DepthAnything ONNX"
+    url: "https://huggingface.co/yuvraj108c/Depth-Anything-2-Onnx/resolve/main/depth_anything_v2_vitb.onnx?download=true"
+    path: "tensorrt/depth-anything/depth_anything_vitl14.onnx"
 
+  # TAESD models
+  taesd:
+    name: "TAESD"
+    url: "https://raw.githubusercontent.com/madebyollin/taesd/main/taesd_decoder.pth"
+    path: "vae_approx/taesd_decoder.pth"
+    type: "vae_approx"
+    extra_files:
+      - url: "https://raw.githubusercontent.com/madebyollin/taesd/main/taesd_encoder.pth"
+        path: "vae_approx/taesd_encoder.pth"
 
   # ControlNet models
   controlnet-depth:
