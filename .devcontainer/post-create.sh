@@ -19,5 +19,4 @@ if [ ! -d "/workspace/ComfyUI" ]; then
     ln -s /ComfyUI /workspace/ComfyUI
 fi
 
-source ~/.bashrc
 /bin/bash

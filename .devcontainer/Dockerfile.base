@@ -18,41 +18,30 @@ RUN eval "$(/miniconda3/bin/conda shell.bash hook)"
 RUN conda create -n comfyui python=3.11 -y
 COPY . /app
 
-RUN source activate comfyui && git clone https://github.com/comfyanonymous/ComfyUI.git /ComfyUI && \
-cd /ComfyUI && /miniconda3/envs/comfyui/bin/pip install -r requirements.txt
+# Activate the comfyui environment
+SHELL ["conda", "run", "-n", "comfyui", "/bin/bash", "-c"]
+
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git /ComfyUI
+RUN cd /ComfyUI && pip install -r requirements.txt
 COPY ./workflows/ui* /ComfyUI/user/default/workflows/examples
 COPY ./nodes/tensor_utils /ComfyUI/custom_nodes/tensor_utils
 
-WORKDIR /app
 # Install custom nodes
-RUN source activate comfyui && /miniconda3/envs/comfyui/bin/python /app/src/comfystream/scripts/setup_nodes.py --workspace /ComfyUI
-WORKDIR /
+WORKDIR /app
+RUN python src/comfystream/scripts/setup_nodes.py --workspace /ComfyUI
 
-RUN conda create -n comfystream
-
-# Activate the comfystream environment and install dependencies 
-RUN bash -c "source activate comfystream && pip install /app && pip install tensorrt-cu12-bindings==10.7.0 tensorrt-cu12-libs==10.7.0 && python /app/install.py --workspace /ComfyUI"
+# Activate the comfystream environment 
+RUN conda create -n comfystream python=3.11 -y
+SHELL ["conda", "run", "-n", "comfystream", "/bin/bash", "-c"]
+#Install ComfyStream requirements
+WORKDIR /app
+RUN pip install -r requirements.txt && pip install .
+RUN pip install tensorrt-cu12-bindings==10.7.0 tensorrt-cu12-libs==10.7.0
+RUN python install.py --workspace /ComfyUI
 RUN rm -rf /app
 
-# Download models
-WORKDIR /ComfyUI
-RUN /miniconda3/envs/comfyui/bin/huggingface-cli download Livepeer-Studio/comfystream_checkpoints --local-dir models/checkpoints --include "*.safetensors"
-RUN /miniconda3/envs/comfyui/bin/huggingface-cli download Livepeer-Studio/comfystream_loras --local-dir models/checkpoints --include "*.safetensors"
-
-#Download ControlNet models
-RUN /miniconda3/envs/comfyui/bin/huggingface-cli download comfyanonymous/ControlNet-v1-1_fp16_safetensors --local-dir models/controlnet --include "control_v11f1p_sd15_depth_fp16.safetensors"
-RUN /miniconda3/envs/comfyui/bin/huggingface-cli download comfyanonymous/ControlNet-v1-1_fp16_safetensors --local-dir models/controlnet --include "control_v11p_sd15_openpose_fp16.safetensors"
-
-# Download Dreamshaper 8 Model and DMD
-RUN wget -O models/checkpoints/dreamshaper_8.safetensors https://civitai.com/api/download/models/128713 --content-disposition
-RUN /miniconda3/envs/comfyui/bin/huggingface-cli download aaronb/dreamshaper-8-dmd-1kstep --local-dir models/unet --include "diffusion_pytorch_model.safetensors"
-RUN mv /ComfyUI/models/unet/diffusion_pytorch_model.safetensors /ComfyUI/models/unet/dreamshaper_8_dmd_1kstep.safetensors
-
-# Download Depth-Anything model
-RUN wget -O /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/depth_anything_vitl14.onnx https://huggingface.co/yuvraj108c/Depth-Anything-2-Onnx/resolve/main/depth_anything_v2_vitb.onnx?download=true --content-disposition
-RUN mkdir -p /ComfyUI/models/tensorrt/depth-anything/
-
 # Download TAESD
+WORKDIR /ComfyUI
 RUN wget -O models/vae_approx/taesd_decoder.pth https://raw.githubusercontent.com/madebyollin/taesd/main/taesd_decoder.pth
 RUN wget -O models/vae_approx/taesd_encoder.pth https://raw.githubusercontent.com/madebyollin/taesd/main/taesd_encoder.pth
 
