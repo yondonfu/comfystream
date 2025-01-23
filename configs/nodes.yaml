@@ -16,6 +16,8 @@ nodes:
     name: "ComfyUI RyanOnTheInside"
     url: "https://github.com/pschroedl/ComfyUI_RyanOnTheInside.git"
     type: "utility"
+    dependencies:
+      - "scikit-image"
 
   comfyui-manager:
     name: "ComfyUI Manager"
