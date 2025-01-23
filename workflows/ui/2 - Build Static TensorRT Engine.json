@@ -31,7 +31,7 @@
         "Node name for S&R": "UNETLoader"
       },
       "widgets_values": [
-        "dreamshaper_8_dmd_1kstep.safetensors",
+        "dreamshaper-8-dmd-1kstep.safetensors",
         "default"
       ]
     },

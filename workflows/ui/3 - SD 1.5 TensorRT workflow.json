@@ -571,7 +571,7 @@
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
-        "dreamshaper_8.safetensors"
+        "dreamshaper-8.safetensors"
       ]
     },
     {
