@@ -13,7 +13,7 @@ This guide will help you set up and run a development container for ComfyStream 
 To build the base container, run the following command in your terminal:
 
 ```sh
-docker build -f .devcontainer/Dockerfile.base -t eliteencoder/comfyui-base:latest .
+docker build -f .devcontainer/Dockerfile.base -t livepeer/comfyui-base:latest .
 ```
 
 ## Using the Pre-built Base Container
@@ -23,7 +23,7 @@ Most users will configure host paths for models in `devcontainer.json` and use t
 1. Pull the pre-built base container:
 
 ```sh
-docker pull eliteencoder/comfyui-base:latest
+docker pull livepeer/comfyui-base:latest
 ```
 
 2. Configure the host paths for models in the `devcontainer.json` file.
@@ -34,14 +34,19 @@ docker pull eliteencoder/comfyui-base:latest
 
 ## Configuration
 
-Ensure your `devcontainer.json` is properly configured to map the necessary host paths for your models. Here is an example configuration:
+Create a directory to store the models
+```sh
+sudo mkdir -p /models/ComfyUI--models && sudo chown -R $USER /models/ComfyUI--models
+```
+
+If you have a different path for models, ensure your `devcontainer.json` is properly configured to map the correct host path to your models. Here is an example configuration:
 
 ```json
 {
     "name": "ComfyStream Dev Container",
     "image": "livepeer/comfyui-base",
     "mounts": [
-        "source=/path/to/your/models,target=/workspace/models,type=bind"
+        "source=/path/to/your/models,target=/ComfyUI/models,type=bind"
     ],
     "workspaceFolder": "/workspace"
 }
@@ -90,3 +95,4 @@ python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --po
 
 - [Developing inside a Container](https://code.visualstudio.com/docs/remote/containers)
 - [Docker Documentation](https://docs.docker.com/)
+- [Activate-Environments-in-Terminal-Using-Environment-Variables](https://github.com/microsoft/vscode-python/wiki/Activate-Environments-in-Terminal-Using-Environment-Variables)

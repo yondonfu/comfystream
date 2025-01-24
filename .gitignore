@@ -3,6 +3,7 @@ __pycache__
 build
 .DS_STORE
 comfyui*
+ComfyUI*
 
 # VS Code settings
 .vscode/
