@@ -1,6 +1,12 @@
 FROM eliteencoder/comfyui-base:latest
 ENV PATH="/miniconda3/bin:${PATH}"
 
+# Remove RunPod logo, replace with Livepeer AI
+RUN head -n $(($lines - 2)) ~/.bashrc > ~/.bashrc
+RUN echo -e "\ncat /workspace/.devcontainer/welcome.txt\n\n" >> /root/.bashrc
+RUN echo -e "echo -e '\nFor detailed documentation and guides, please visit:\n\033[1;34mhttps://pipelines.livepeer.org/docs\033[0m and \033[1;34mhttps://mirror.xyz.livepeer.eth/\033[0m\n\n'" >> /root/.bashrc
+
+WORKDIR /
 # Install NVM
 ENV NVM_DIR /root/.nvm
 ENV NODE_VERSION 18.18.0
