@@ -33,6 +33,24 @@
                 "--port=8889"
             ],
             "python": "/miniconda3/envs/comfystream/bin/python"
+        },
+        {
+            "name": "Run ComfyStream UI",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:3000",
+            "webRoot": "/workspace/client"
+        },
+        {
+            "name": "Run ComfyStream UI (Node.js)",
+            "type": "node",
+            "request": "launch",
+            "cwd": "/workspace/ui",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ]
         }
     ]
 }
