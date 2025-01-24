@@ -74,6 +74,7 @@ def setup_model_files(workspace_dir, config_path=None):
                             extra_path,
                             f"Downloading {os.path.basename(extra['path'])}"
                         )
+    print("Models download completed!")
 
 def setup_directories(workspace_dir):
     """Create required directories in the workspace"""
