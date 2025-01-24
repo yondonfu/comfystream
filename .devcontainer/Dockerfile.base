@@ -44,6 +44,5 @@ RUN python install.py --workspace /ComfyUI
 RUN rm -rf /app
 SHELL ["conda", "deactivate","/bin/bash", "-c"]
 
-# Set comfystream as the default environment
-# RUN conda config --set auto_activate_base false
+# Configure no environment activation by default
 SHELL ["conda", "config", "--set", "auto_activate_base", "false","/bin/bash", "-c"]
