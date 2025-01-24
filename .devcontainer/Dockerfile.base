@@ -1,6 +1,6 @@
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
-# 1. Install system dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     wget \
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     socat \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Miniconda (optional, if you want it ready at build-time)
+# Install Miniconda (optional, if you want it ready at build-time)
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
    && bash /tmp/miniconda.sh -b -p /miniconda3 \
    && rm /tmp/miniconda.sh
@@ -16,6 +16,7 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -
 ENV PATH="/miniconda3/bin:${PATH}"
 RUN eval "$(/miniconda3/bin/conda shell.bash hook)"
 RUN conda create -n comfyui python=3.11 -y
+RUN conda create -n comfystream python=3.11 -y
 COPY . /app
 
 # Activate the comfyui environment
@@ -30,23 +31,19 @@ COPY ./nodes/tensor_utils /ComfyUI/custom_nodes/tensor_utils
 WORKDIR /app
 RUN python src/comfystream/scripts/setup_nodes.py --workspace /ComfyUI
 
+# Activate the comfyui environment
+SHELL ["conda", "deactivate"]
+
 # Activate the comfystream environment 
-RUN conda create -n comfystream python=3.11 -y
 SHELL ["conda", "run", "-n", "comfystream", "/bin/bash", "-c"]
+
 #Install ComfyStream requirements
-WORKDIR /app
 RUN pip install -r requirements.txt && pip install .
 RUN pip install tensorrt-cu12-bindings==10.7.0 tensorrt-cu12-libs==10.7.0
 RUN python install.py --workspace /ComfyUI
 RUN rm -rf /app
-
-# Download TAESD
-WORKDIR /ComfyUI
-RUN wget -O models/vae_approx/taesd_decoder.pth https://raw.githubusercontent.com/madebyollin/taesd/main/taesd_decoder.pth
-RUN wget -O models/vae_approx/taesd_encoder.pth https://raw.githubusercontent.com/madebyollin/taesd/main/taesd_encoder.pth
+SHELL ["conda", "deactivate","/bin/bash", "-c"]
 
 # Set comfystream as the default environment
-RUN conda config --set auto_activate_base false
-RUN echo 'if [ -f "/miniconda3/etc/profile.d/conda.sh" ]; then' >> ~/.bashrc
-RUN echo '    . "/miniconda3/etc/profile.d/conda.sh"' >> ~/.bashrc
-RUN echo 'fi' >> ~/.bashrc
+# RUN conda config --set auto_activate_base false
+SHELL ["conda", "config", "--set", "auto_activate_base", "false","/bin/bash", "-c"]
