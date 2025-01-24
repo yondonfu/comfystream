@@ -49,5 +49,4 @@ RUN wget -O models/vae_approx/taesd_encoder.pth https://raw.githubusercontent.co
 RUN conda config --set auto_activate_base false
 RUN echo 'if [ -f "/miniconda3/etc/profile.d/conda.sh" ]; then' >> ~/.bashrc
 RUN echo '    . "/miniconda3/etc/profile.d/conda.sh"' >> ~/.bashrc
-RUN echo '    conda activate comfystream' >> ~/.bashrc
 RUN echo 'fi' >> ~/.bashrc

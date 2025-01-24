@@ -14,12 +14,14 @@
 	"customizations": {
 		"vscode": {
 			"settings": {
-				"python.defaultInterpreterPath": "/workspace/miniconda3/envs/comfystream/bin/python"
+				"python.defaultInterpreterPath": "/workspace/miniconda3/envs/comfystream/bin/python",
+				"terminal.integrated.shellIntegration.enabled": true
 			},
 			"extensions": [
 				"ms-python.python",
 				"ms-python.black-formatter",
-				"ms-python.vscode-pylance"
+				"ms-python.vscode-pylance",
+				"ms-python.debugpy"
 			]
 		}
 	},
@@ -35,7 +37,7 @@
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
 	"mounts": [
 		// Use 'mounts' to set models and environments for the container, the following targets are included in extra_model_paths.yaml
-		// "source=${localEnv:HOME}/ComfyUI-models,target=/ComfyUI/extra/models,type=bind,consistency=cached"
+		"source=/models/ComfyUI--models,target=/ComfyUI/models,type=bind,consistency=cached"
 	],
 	"postCreateCommand": "bash .devcontainer/post-create.sh"
 }
