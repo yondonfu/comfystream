@@ -57,6 +57,7 @@ Replace `/path/to/your/models` with the actual path to your models on the host m
 ### Download models
 
 ```sh
+cd /workspace
 python src/comfystream/scripts/setup_models.py --workspace /ComfyUI
 ```
 
