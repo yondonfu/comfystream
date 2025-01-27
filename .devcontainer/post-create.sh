@@ -5,9 +5,13 @@ if ! command -v conda &> /dev/null; then
     /miniconda3/bin/conda init bash
 fi
 
-# Create a symlink to the ComfyUI workspace
-if [ ! -d "/workspace/ComfyUI" ]; then
-    ln -s /ComfyUI /workspace/ComfyUI
+cd /workspace/ui
+if [ ! -d "node_modules" ]; then
+    npm install --legacy-peer-deps   
+fi
+if [ ! -d ".env" ]; then
+    echo "NEXT_PUBLIC_DEFAULT_STREAM_URL=http://127.0.0.1:8889" > .env
 fi
 
+cd /workspace
 /bin/bash

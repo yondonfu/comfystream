@@ -15,6 +15,9 @@
 		"vscode": {
 			"settings": {
 				"python.defaultInterpreterPath": "/workspace/miniconda3/envs/comfystream/bin/python",
+				"python.venvPath": "/workspace/miniconda3/envs",
+				"python.terminal.activateEnvInCurrentTerminal": false,
+				"python.terminal.activateEnvironment": true,
 				"terminal.integrated.shellIntegration.enabled": true
 			},
 			"extensions": [
@@ -37,7 +40,8 @@
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
 	"mounts": [
 		// Use 'mounts' to map to comfyui models on the host
-		"source=/models/ComfyUI--models,target=/ComfyUI/models,type=bind,consistency=cached"
+		"source=${localEnv:SystemDrive}/models/ComfyUI--models,target=/ComfyUI/models,type=bind,consistency=cached",
+		"source=${localEnv:SystemDrive}/models/ComfyUI--models/output,target=/ComfyUI/output,type=bind,consistency=cached"
 	],
 	"postCreateCommand": "bash .devcontainer/post-create.sh"
 }

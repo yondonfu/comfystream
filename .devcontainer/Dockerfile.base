@@ -31,7 +31,8 @@ WORKDIR /app
 RUN conda run -n comfyui python src/comfystream/scripts/setup_nodes.py --workspace /ComfyUI
 
 #Install ComfyStream requirements
-RUN conda run -n comfystream pip install -r requirements.txt && pip install .
+RUN conda run -n comfystream pip install -r requirements.txt
+RUN conda run -n comfystream pip install .
 RUN conda run -n comfystream pip install tensorrt-cu12-bindings==10.7.0 tensorrt-cu12-libs==10.7.0
 RUN conda run -n comfystream python install.py --workspace /ComfyUI
 RUN rm -rf /app

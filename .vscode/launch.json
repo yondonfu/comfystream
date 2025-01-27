@@ -16,6 +16,7 @@
             },
             "args": [
                 "--listen",
+                // "--disable-cuda-malloc"
             ],
             "python": "/miniconda3/envs/comfyui/bin/python"
         },
