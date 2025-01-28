@@ -1,5 +1,9 @@
 FROM eliteencoder/comfyui-base:latest
 ENV PATH="/miniconda3/bin:${PATH}"
+EXPOSE 8188
+EXPOSE 8889
+EXPOSE 3000
+EXPOSE 1024-65535/udp
 
 # Remove RunPod logo, replace with Livepeer AI
 RUN head -n $(($lines - 2)) ~/.bashrc > ~/.bashrc
