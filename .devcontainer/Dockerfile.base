@@ -25,6 +25,7 @@ COPY ./nodes/tensor_utils /ComfyUI/custom_nodes/tensor_utils
 
 WORKDIR /ComfyUI
 RUN conda run -n comfyui pip install -r requirements.txt
+RUN conda run -n comfyui pip install --upgrade tensorrt-cu12-bindings==10.7.0 tensorrt-cu12-libs==10.7.0
 
 # Install custom nodes
 WORKDIR /app
