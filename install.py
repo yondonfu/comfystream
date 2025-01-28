@@ -3,8 +3,8 @@ import subprocess
 import argparse
 import logging
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 
 def install_custom_node_req(workspace: str):
     custom_nodes_path = os.path.join(workspace, "custom_nodes")
@@ -24,4 +24,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    logger.info("Installing custom node requirements...")
     install_custom_node_req(args.workspace)
+    logger.info("Custom node requirements installed successfully.")
