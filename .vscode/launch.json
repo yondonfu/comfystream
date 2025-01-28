@@ -16,7 +16,7 @@
             },
             "args": [
                 "--listen",
-                // "--disable-cuda-malloc"
+                // "--disable-cuda-malloc",
             ],
             "python": "/miniconda3/envs/comfyui/bin/python"
         },
@@ -26,27 +26,21 @@
             "request": "launch",
             "cwd": "/workspace/server",
             "program": "app.py",
-            "console": "integratedTerminal",
             "args": [
                 "--workspace=/ComfyUI",
                 "--media-ports=5678",
                 "--host=0.0.0.0",
-                "--port=8889"
+                "--port=8889",
+                "--log-level=DEBUG",
             ],
             "python": "/miniconda3/envs/comfystream/bin/python"
-        },
-        {
-            "name": "Run ComfyStream UI",
-            "type": "chrome",
-            "request": "launch",
-            "url": "http://localhost:3000",
-            "webRoot": "/workspace/client"
         },
         {
             "name": "Run ComfyStream UI (Node.js)",
             "type": "node",
             "request": "launch",
             "cwd": "/workspace/ui",
+            "console": "integratedTerminal",
             "runtimeExecutable": "npm",
             "runtimeArgs": [
                 "run",

@@ -7,8 +7,8 @@ RUN echo -e "echo -e '\nFor detailed documentation and guides, please visit:\n\0
 
 WORKDIR /
 # Install NVM
-ENV NVM_DIR /root/.nvm
-ENV NODE_VERSION 18.18.0
+ENV NVM_DIR=/root/.nvm
+ENV NODE_VERSION=18.18.0
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
 # Install node and npm
@@ -18,8 +18,10 @@ RUN source $NVM_DIR/nvm.sh \
     && nvm use default
 
 # Add node and npm to path so the commands are available
-ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
-ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+ENV NODE_PATH=$NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-# Create a symlink to the ComfyUI workspace
+# Set the current directory as the workspace
+WORKDIR /workspace
+
 RUN ln -s /ComfyUI /workspace/ComfyUI
