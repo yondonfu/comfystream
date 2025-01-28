@@ -86,7 +86,7 @@ function Stage({ connected, onStreamReady }: StageProps) {
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full">
       <MediaStreamPlayer stream={remoteStream} />
       <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
         <TooltipProvider>
@@ -178,15 +178,24 @@ export function Room() {
           onDisconnected={handleDisconnected}
           localStream={localStream}
         >
-          <div className="min-h-[100dvh] flex flex-col items-center justify-start pt-[10vh]">
-            <div className="w-full max-h-[100dvh] flex flex-col lg:flex-row landscape:flex-row justify-center items-center lg:space-x-4">
-              <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square bg-[black] flex justify-center items-center border-2 rounded-md">
+          <div className="min-h-[100dvh] flex flex-col items-center justify-start">
+            <div className="w-full max-h-[100dvh] flex flex-col lg:flex-row landscape:flex-row justify-center items-center lg:space-x-4 sm:pt-[10vh]">
+              {/* Output Stream */}
+              <div className="relative w-full max-w-[100vw] h-auto aspect-square sm:max-w-[512px] sm:max-h-[512px] md:max-w-[512px] md:max-h-[512px] flex justify-center items-center bg-slate-900 sm:border-[2px] md:border-0 lg:border-2 rounded-md">
                 <Stage
                   connected={isConnected}
                   onStreamReady={onRemoteStreamReady}
                 />
+                <div className="absolute bottom-[8px] right-[8px] w-[90px] h-[90px] bg-slate-800 block md:hidden">
+                  <Webcam
+                    onStreamReady={onStreamReady}
+                    deviceId={config.selectedDeviceId}
+                    frameRate={config.frameRate}
+                  />
+                </div>
               </div>
-              <div className="landscape:w-full lg:w-1/2 h-[50dvh] lg:h-auto landscape:h-full max-w-[512px] max-h-[512px] aspect-square flex justify-center items-center lg:border-2 lg:rounded-md">
+              {/* Input Stream */}
+              <div className="hidden md:flex w-full sm:w-full md:w-full h-[50dvh] sm:h-auto md:h-auto max-w-[512px] max-h-[512px] aspect-square justify-center items-center lg:border-2 lg:rounded-md bg-slate-800">
                 <Webcam
                   onStreamReady={onStreamReady}
                   deviceId={config.selectedDeviceId}

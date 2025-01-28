@@ -100,9 +100,6 @@ function StreamCanvas({
           width={512}
           height={512}
           className="w-full h-full"
-          style={{
-            backgroundColor: "black",
-          }}
         />
         <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
           <TooltipProvider>
@@ -171,7 +168,7 @@ export function Webcam({ onStreamReady, deviceId, frameRate }: WebcamProps) {
     if (frameRate == 0) return;
 
     startWebcam().then((newStream) => {
-        replaceStream(newStream);
+      replaceStream(newStream);
     });
 
     return () => {
