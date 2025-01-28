@@ -54,32 +54,32 @@ def install_custom_nodes(workspace_dir, config_path=None):
         dir_name = node_info['url'].split("/")[-1].replace(".git", "")
         node_path = custom_nodes_path / dir_name
         
+        print(f"Installing {node_info['name']}...")
+        
+        # Clone the repository if it doesn't already exist
         if not node_path.exists():
-            print(f"Installing {node_info['name']}...")
-            
-            # Clone the repository
             cmd = ["git", "clone", node_info['url']]
             if 'branch' in node_info:
                 cmd.extend(["-b", node_info['branch']])
             subprocess.run(cmd, check=True)
-            
-            # Checkout specific commit if branch is a commit hash
-            if 'branch' in node_info and len(node_info['branch']) == 40:  # SHA-1 hash length
-                subprocess.run(["git", "-C", dir_name, "checkout", node_info['branch']], check=True)
-            
-            # Install requirements if present
-            requirements_file = node_path / "requirements.txt"
-            if requirements_file.exists():
-                subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(requirements_file)], check=True)
-            
-            # Install additional dependencies if specified
-            if 'dependencies' in node_info:
-                for dep in node_info['dependencies']:
-                    subprocess.run([sys.executable, "-m", "pip", "install", dep], check=True)
-            
-            print(f"Installed {node_info['name']}")
         else:
-            print(f"{node_info['name']} already installed")
+            print(f"{node_info['name']} already exists, skipping clone.")
+        
+        # Checkout specific commit if branch is a commit hash
+        if 'branch' in node_info and len(node_info['branch']) == 40:  # SHA-1 hash length
+            subprocess.run(["git", "-C", dir_name, "checkout", node_info['branch']], check=True)
+        
+        # Install requirements if present
+        requirements_file = node_path / "requirements.txt"
+        if requirements_file.exists():
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(requirements_file)], check=True)
+        
+        # Install additional dependencies if specified
+        if 'dependencies' in node_info:
+            for dep in node_info['dependencies']:
+                subprocess.run([sys.executable, "-m", "pip", "install", dep], check=True)
+        
+        print(f"Installed {node_info['name']}")
 
 def main():
     args = parse_args()
