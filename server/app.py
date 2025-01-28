@@ -142,7 +142,7 @@ async def offer(request):
                     else:
                         logger.warning("[Server] Invalid message format - missing required fields")
                 except json.JSONDecodeError:
-                    llogger.error("[Server] Invalid JSON received")
+                    logger.error("[Server] Invalid JSON received")
                 except Exception as e:
                     logger.error(f"[Server] Error processing message: {str(e)}")
 
