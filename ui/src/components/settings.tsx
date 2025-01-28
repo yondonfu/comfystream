@@ -23,7 +23,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useEffect, useState, createContext, useContext } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  createContext,
+  useContext,
+} from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Select } from "./ui/select";
@@ -42,7 +48,7 @@ interface VideoDevice {
 
 export const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
-    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:3000",
+    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8888",
   frameRate: 30,
   selectedDeviceId: "",
 };
