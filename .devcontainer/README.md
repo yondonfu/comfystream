@@ -89,7 +89,7 @@ python main.py --listen --disable-cuda-malloc
 ### Starting ComfyStream
 
 ```sh
-python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8889
+python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8888
 ```
 
 ## Additional Resources
