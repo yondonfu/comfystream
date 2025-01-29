@@ -6,6 +6,24 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/**
+ * Prevents iOS Safari from zooming in on focus.
+ *
+ * iOS automatically zooms inputs if text is smaller than 16px.
+ * This enforces `text-base` (16px) on affected elements only on iOS.
+ */
+@supports (-webkit-touch-callout: none) {
+  /* Apply the fix to standard text inputs */
+  .u-ios-text-base {
+    @apply text-base;
+  }
+
+  /* Apply the fix to file input text */
+  .u-ios-file-text-base::file-selector-button {
+    font-size: 16px !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

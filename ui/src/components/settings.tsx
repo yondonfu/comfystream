@@ -253,7 +253,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             type="file"
             accept=".json"
             onChange={handlePromptChange}
-          ></Input>
+          />
         </div>
 
         <Button type="submit" className="w-full mt-4 mb-4">
