@@ -60,6 +60,21 @@
             "runtimeArgs": [
                 "run",
                 "dev"
+            ],
+            "serverReadyAction": {
+                "pattern": "listening on",
+                "uriFormat": "http://localhost:3000",
+                "action": "openExternally"
+            }
+        },
+    ], "compounds": [
+        {
+            "name": "Run ComfyStream and UI",
+            "type": "composite",
+            "stopAll": true,
+            "configurations": [
+                "Run ComfyStream",
+                "Run ComfyStream UI (Node.js)"
             ]
         }
     ]
