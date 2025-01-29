@@ -22,14 +22,11 @@ Refer to [.devcontainer/README.md](.devcontainer/README.md) to setup ComfyStream
 
 For other installation options, refer to [Install ComfyUI and ComfyStream](https://pipelines.livepeer.org/docs/technical/install/local-testing) in the Livepeer pipelines documentation.
 
+For additional information, refer to the remaining sections below.
+
 ## Download Models
 
-Refer to [src/comfystream/scripts/README.md](src/comfystream/scripts/README.md) for instructions to  download commonly used models.
-
-
-
-
-For additional information, refer to the remaining sections below.
+Refer to [src/comfystream/scripts/README.md](src/comfystream/scripts/README.md) for instructions to download commonly used models.
 
 ## Install package
 
