@@ -17,7 +17,17 @@ This repo also includes a WebRTC server and UI that uses comfystream to support 
 
 ## Quick Start
 
-The fastest way to get started is to follow [this tutorial](https://livepeer.notion.site/ComfyStream-Dev-Environment-Setup-15d0a3485687802e9528d26050142d82) by @ryanontheinside.
+### Docker DevContainer
+Refer to [.devcontainer/README.md](.devcontainer/README.md) to setup ComfyStream in a devcontainer using a pre-configured ComfyUI docker environment.
+
+For other installation options, refer to [Install ComfyUI and ComfyStream](https://pipelines.livepeer.org/docs/technical/install/local-testing) in the Livepeer pipelines documentation.
+
+## Download Models
+
+Refer to [src/comfystream/scripts/README.md](src/comfystream/scripts/README.md) for instructions to  download commonly used models.
+
+
+
 
 For additional information, refer to the remaining sections below.
 
@@ -189,3 +199,4 @@ This project has been tested locally successfully with the following setup:
 - Driver: 550.127.05
 - CUDA: 12.5
 - torch: 2.5.1+cu121
+
