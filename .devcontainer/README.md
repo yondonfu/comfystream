@@ -37,7 +37,7 @@ docker pull livepeer/comfyui-base:latest
 Create a directory to store the models and engines
 ```sh
 sudo mkdir -p /models/ComfyUI--models && sudo mkdir -p /models/ComfyUI--output
-sudo chown -R $USER /models/ComfyUI--output && sudo chown -R $USER /models/ComfyUI--output
+sudo chown -R $USER /models/ComfyUI--models && sudo chown -R $USER /models/ComfyUI--output
 ```
 
 If you have a different path for models, ensure your `devcontainer.json` is properly configured to map the correct host path to your models. Here is an example configuration:
