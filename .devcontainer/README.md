@@ -13,7 +13,7 @@ This guide will help you set up and run a development container for ComfyStream 
 To build the base container, run the following command in your terminal:
 
 ```sh
-docker build -f .devcontainer/Dockerfile.base -t livepeer/comfyui-base:latest .
+docker build -f docker/Dockerfile.base -t livepeer/comfyui-base:latest .
 ```
 
 ## Using the Pre-built Base Container
@@ -34,9 +34,10 @@ docker pull livepeer/comfyui-base:latest
 
 ## Configuration
 
-Create a directory to store the models
+Create a directory to store the models and engines
 ```sh
-sudo mkdir -p /models/ComfyUI--models/output && sudo chown -R $USER /models/ComfyUI--models
+sudo mkdir -p /models/ComfyUI--models && sudo mkdir -p /models/ComfyUI--output
+sudo chown -R $USER /models/ComfyUI--output && sudo chown -R $USER /models/ComfyUI--output
 ```
 
 If you have a different path for models, ensure your `devcontainer.json` is properly configured to map the correct host path to your models. Here is an example configuration:
