@@ -42,7 +42,7 @@
 	"mounts": [
 		// Use 'mounts' to map to comfyui models on the host
 		"source=${localEnv:SystemDrive}/models/ComfyUI--models,target=/ComfyUI/models,type=bind,consistency=cached",
-		"source=${localEnv:SystemDrive}/models/ComfyUI--models/output,target=/ComfyUI/output,type=bind,consistency=cached"
+		"source=${localEnv:SystemDrive}/models/ComfyUI--output,target=/ComfyUI/output,type=bind,consistency=cached"
 	],
 	"postCreateCommand": ".devcontainer/post-create.sh"
 }
