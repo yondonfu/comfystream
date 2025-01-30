@@ -15,5 +15,5 @@ class LoadTensor:
         return float("nan")
 
     def execute(self):
-        input = tensor_cache.inputs.pop()
+        input = tensor_cache.image_inputs.get(block=True)
         return (input,)

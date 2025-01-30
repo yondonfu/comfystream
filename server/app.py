@@ -28,15 +28,36 @@ MIN_BITRATE = 2000000
 
 class VideoStreamTrack(MediaStreamTrack):
     kind = "video"
-
     def __init__(self, track: MediaStreamTrack, pipeline):
         super().__init__()
         self.track = track
         self.pipeline = pipeline
+        asyncio.create_task(self.collect_frames())
+
+    async def collect_frames(self):
+        while True:
+            frame = await self.track.recv()
+            await self.pipeline.put_video_frame(frame)
 
     async def recv(self):
-        frame = await self.track.recv()
-        return await self.pipeline(frame)
+        return await self.pipeline.get_processed_video_frame()
+    
+
+class AudioStreamTrack(MediaStreamTrack):
+    kind = "audio"
+    def __init__(self, track: MediaStreamTrack, pipeline):
+        super().__init__()
+        self.track = track
+        self.pipeline = pipeline
+        asyncio.create_task(self.collect_frames())
+
+    async def collect_frames(self):
+        while True:
+            frame = await self.track.recv()
+            await self.pipeline.put_audio_frame(frame)
+
+    async def recv(self):
+        return await self.pipeline.get_processed_audio_frame()
 
 
 def force_codec(pc, sender, forced_codec):
@@ -85,8 +106,8 @@ async def offer(request):
 
     params = await request.json()
 
-    pipeline.set_prompt(params["prompt"])
-    await pipeline.warm()
+    await pipeline.set_prompts(params["prompts"])
+    # await pipeline.warm()
 
     offer_params = params["offer"]
     offer = RTCSessionDescription(sdp=offer_params["sdp"], type=offer_params["type"])
@@ -101,17 +122,19 @@ async def offer(request):
 
     pcs.add(pc)
 
-    tracks = {"video": None}
+    tracks = {"video": None, "audio": None}
 
-    # Prefer h264
-    transceiver = pc.addTransceiver("video")
-    caps = RTCRtpSender.getCapabilities("video")
-    prefs = list(filter(lambda x: x.name == "H264", caps.codecs))
-    transceiver.setCodecPreferences(prefs)
+    # Only add video transceiver if video is present in the offer
+    if "m=video" in offer.sdp:
+        # Prefer h264
+        transceiver = pc.addTransceiver("video")
+        caps = RTCRtpSender.getCapabilities("video")
+        prefs = list(filter(lambda x: x.name == "H264", caps.codecs))
+        transceiver.setCodecPreferences(prefs)
 
-    # Monkey patch max and min bitrate to ensure constant bitrate
-    h264.MAX_BITRATE = MAX_BITRATE
-    h264.MIN_BITRATE = MIN_BITRATE
+        # Monkey patch max and min bitrate to ensure constant bitrate
+        h264.MAX_BITRATE = MAX_BITRATE
+        h264.MIN_BITRATE = MIN_BITRATE
 
     # Handle control channel from client
     @pc.on("datachannel")
@@ -156,6 +179,10 @@ async def offer(request):
 
             codec = "video/H264"
             force_codec(pc, sender, codec)
+        elif track.kind == "audio":
+            audioTrack = AudioStreamTrack(track, pipeline)
+            tracks["audio"] = audioTrack
+            pc.addTrack(audioTrack)
 
         @track.on("ended")
         async def on_ended():
@@ -173,6 +200,11 @@ async def offer(request):
 
     await pc.setRemoteDescription(offer)
 
+    if "m=audio" in pc.remoteDescription.sdp:
+        await pipeline.warm_audio()
+    if "m=video" in pc.remoteDescription.sdp:
+        await pipeline.warm_video()
+
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
 
@@ -188,7 +220,7 @@ async def set_prompt(request):
     pipeline = request.app["pipeline"]
 
     prompt = await request.json()
-    pipeline.set_prompt(prompt)
+    await pipeline.set_prompts(prompt)
 
     return web.Response(content_type="application/json", text="OK")
 

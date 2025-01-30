@@ -22,6 +22,6 @@ class SaveTensor:
         return float("nan")
 
     def execute(self, images: torch.Tensor):
-        fut = tensor_cache.outputs.pop()
+        fut = tensor_cache.image_outputs.get()
         fut.set_result(images)
         return images
