@@ -12,7 +12,7 @@ from comfystream import tensor_cache
 from comfystream.utils import convert_prompt
 
 logger = logging.getLogger(__name__)
-
+max_queue_size = 50
 
 class ComfyStreamClient:
     def __init__(self, **kwargs):
@@ -20,31 +20,57 @@ class ComfyStreamClient:
         self.comfy_client = EmbeddedComfyClient(config)
         self.prompt = None
         self._lock = asyncio.Lock()
-        self.task_queue = deque(maxlen=50)
+        self.input_queue = deque(maxlen=max_queue_size)
+        self.output_queue = asyncio.Queue()
         self.last_frame = None
+        self.processor_task = None
+        
+    async def _start_processor(self):
+        if self.processor_task is None:
+            self.processor_task = asyncio.create_task(self._process_queue())
+            
+    async def _process_queue(self):
+        while True:
+            try:
+                input_tensor, output_fut = await self.output_queue.get()
+                
+                # Process the input through ComfyUI
+                tensor_cache.inputs.append(input_tensor)
+                tensor_cache.outputs.append(output_fut)
+                await self.comfy_client.queue_prompt(self.prompt)
+                
+                self.output_queue.task_done()
+            except Exception as e:
+                logger.error(f"Error processing queue item: {str(e)}")
+                if output_fut and not output_fut.done():
+                    output_fut.set_exception(e)
+                self.output_queue.task_done()
 
     def set_prompt(self, prompt: PromptDictInput):
         self.prompt = convert_prompt(prompt)
 
     async def queue_prompt(self, input: torch.Tensor) -> torch.Tensor:
         async with self._lock:
-            if len(self.task_queue) >= 50:
+            if len(self.input_queue) >= max_queue_size:
                 logger.warning("Queue is full, returning last frame and reducing queue.")
-                self.task_queue.popleft()
+                self.input_queue.popleft()
                 return self.last_frame
-            else:
-                tensor_cache.inputs.append(input)
-                output_fut = asyncio.Future()
-                tensor_cache.outputs.append(output_fut)
-                self.task_queue.append(output_fut)
-                try:
-                    await self.comfy_client.queue_prompt(self.prompt)
-                except Exception as e:
-                    logger.error(f"Error queueing prompt: {str(e)}")
-                    logger.error(f"Error type: {type(e)}")
-                    raise
+                
+            output_fut = asyncio.Future()
+            self.input_queue.append(output_fut)
+            
+            # Ensure processor is running
+            await self._start_processor()
+            
+            # Queue the input and wait for result
+            await self.output_queue.put((input, output_fut))
+            
+            try:
                 self.last_frame = await output_fut
                 return self.last_frame
+            except Exception as e:
+                logger.error(f"Error processing prompt: {str(e)}")
+                raise
 
     async def get_available_nodes(self):
         """Get metadata and available nodes info in a single pass"""
