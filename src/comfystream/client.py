@@ -3,6 +3,7 @@ import asyncio
 from typing import Any
 import json
 import logging
+from collections import deque
 
 from comfy.api.components.schema.prompt import PromptDictInput
 from comfy.cli_args_types import Configuration
@@ -19,22 +20,31 @@ class ComfyStreamClient:
         self.comfy_client = EmbeddedComfyClient(config)
         self.prompt = None
         self._lock = asyncio.Lock()
+        self.task_queue = deque(maxlen=50)
+        self.last_frame = None
 
     def set_prompt(self, prompt: PromptDictInput):
         self.prompt = convert_prompt(prompt)
 
     async def queue_prompt(self, input: torch.Tensor) -> torch.Tensor:
         async with self._lock:
-            tensor_cache.inputs.append(input)
-            output_fut = asyncio.Future()
-            tensor_cache.outputs.append(output_fut)
-            try:
-                await self.comfy_client.queue_prompt(self.prompt)
-            except Exception as e:
-                logger.error(f"Error queueing prompt: {str(e)}")
-                logger.error(f"Error type: {type(e)}")
-                raise
-            return await output_fut
+            if len(self.task_queue) >= 50:
+                logger.warning("Queue is full, returning last frame and reducing queue.")
+                self.task_queue.popleft()
+                return self.last_frame
+            else:
+                tensor_cache.inputs.append(input)
+                output_fut = asyncio.Future()
+                tensor_cache.outputs.append(output_fut)
+                self.task_queue.append(output_fut)
+                try:
+                    await self.comfy_client.queue_prompt(self.prompt)
+                except Exception as e:
+                    logger.error(f"Error queueing prompt: {str(e)}")
+                    logger.error(f"Error type: {type(e)}")
+                    raise
+                self.last_frame = await output_fut
+                return self.last_frame
 
     async def get_available_nodes(self):
         """Get metadata and available nodes info in a single pass"""
