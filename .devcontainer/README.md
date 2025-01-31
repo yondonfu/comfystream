@@ -101,13 +101,13 @@ To launch a new terminal in either `comfystream` or `comfyui` environment:
 
 
 ### Starting ComfyUI
-Start ComfyUI from the default `/workspace`:
+Start ComfyUI:
 ```sh
 cd /workspace/ComfyUI
 python main.py --listen
 ```
 
-When running TensorRT engine enabled workflows, you should use the extra flag as shown below:
+When using TensorRT engine enabled workflows, you should include the `---disable-cuda-malloc` flag as shown below:
 
 ```sh
 cd /workspace/ComfyUI
