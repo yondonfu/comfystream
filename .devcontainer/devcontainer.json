@@ -14,8 +14,8 @@
 	"customizations": {
 		"vscode": {
 			"settings": {
-				"python.defaultInterpreterPath": "/comfystream/miniconda3/envs/comfystream/bin/python",
-				"python.venvPath": "/comfystream/miniconda3/envs",
+				"python.defaultInterpreterPath": "/miniconda3/envs/comfystream/bin/python",
+				"python.venvPath": "/miniconda3/envs",
 				"python.terminal.activateEnvInCurrentTerminal": false,
 				"python.terminal.activateEnvironment": true,
 				"terminal.integrated.shellIntegration.enabled": true
