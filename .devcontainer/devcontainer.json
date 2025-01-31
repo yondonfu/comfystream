@@ -14,8 +14,8 @@
 	"customizations": {
 		"vscode": {
 			"settings": {
-				"python.defaultInterpreterPath": "/workspace/miniconda3/envs/comfystream/bin/python",
-				"python.venvPath": "/workspace/miniconda3/envs",
+				"python.defaultInterpreterPath": "/comfystream/miniconda3/envs/comfystream/bin/python",
+				"python.venvPath": "/comfystream/miniconda3/envs",
 				"python.terminal.activateEnvInCurrentTerminal": false,
 				"python.terminal.activateEnvironment": true,
 				"terminal.integrated.shellIntegration.enabled": true
@@ -36,8 +36,8 @@
 	"forwardPorts": [8188, 8888, 3000],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// Use 'mounts' to make a list of local folders available inside the container.
-	"workspaceFolder": "/workspace",
-	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+	"workspaceFolder": "/comfystream",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/comfystream,type=bind",
 	"mounts": [
 		// Use 'mounts' to map to comfyui models on the host
 		"source=${localEnv:HOME}/models/ComfyUI--models,target=/ComfyUI/models,type=bind,consistency=cached",
