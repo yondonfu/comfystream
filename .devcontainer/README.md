@@ -21,18 +21,18 @@ cd comfystream
 
 ### Download or Build Base Docker Image
 
-The `livepeer/comfyui-base:latest` image provides a ComfyUI workspace for ComfyStream development. You may either pull the base docker image or build it:
+The `livepeerci/comfyui-base:latest` image provides a ComfyUI workspace for ComfyStream development. You may either pull the base docker image or build it:
 
 - Pull from Dockerhub:
 
     ```sh
-    docker pull livepeer/comfyui-base:latest
+    docker pull livepeerci/comfyui-base:latest
     ```
 
 - Build the base image:
 
     ```sh
-    docker build -f docker/Dockerfile.base -t livepeer/comfyui-base:latest .
+    docker build -f docker/Dockerfile.base -t livepeerci/comfyui-base:latest .
     ```
 
 ### Host Configuration
