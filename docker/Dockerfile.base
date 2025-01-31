@@ -21,12 +21,10 @@ RUN conda create -n comfyui python=3.11 -y
 # Clone ComfyUI
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /ComfyUI
 
+# Copy comfystream to the container
+COPY . /comfystream
+
 # Copy ComfyStream files into ComfyUI
-COPY requirements.txt /comfystream/requirements.txt
-COPY install.py /comfystream/install.py
-COPY setup.py /comfystream/setup.py
-COPY src /comfystream/src
-COPY configs /comfystream/configs
 COPY ./nodes/ /ComfyUI/custom_nodes/
 COPY ./workflows/ui* /ComfyUI/user/default/workflows/examples
 
@@ -45,3 +43,5 @@ RUN conda run -n comfystream pip install --upgrade tensorrt-cu12-bindings tensor
 # # Configure no environment activation by default
 RUN conda config --set auto_activate_base false
 RUN conda init bash
+
+WORKDIR /comfystream
