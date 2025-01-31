@@ -44,3 +44,4 @@ RUN conda run -n comfystream pip install --upgrade tensorrt-cu12-bindings tensor
 
 # # Configure no environment activation by default
 RUN conda config --set auto_activate_base false
+RUN conda init bash

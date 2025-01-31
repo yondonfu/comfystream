@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Initialize conda if needed
-if ! command -v conda &> /dev/null; then
-    /miniconda3/bin/conda init bash
-fi
-
 # Install npm packages if needed
 cd /workspace/ui
 if [ ! -d "node_modules" ]; then
