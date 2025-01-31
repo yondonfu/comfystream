@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import sys
 from pathlib import Path
 import requests
 from tqdm import tqdm
@@ -10,7 +9,7 @@ from utils import get_config_path, load_model_config
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Setup ComfyUI models')
-    parser.add_argument('--workspace', 
+    parser.add_argument('--workspace',
                        default=os.environ.get('COMFY_UI_WORKSPACE', os.path.expanduser('~/comfyui')),
                        help='ComfyUI workspace directory (default: ~/comfyui or $COMFY_UI_WORKSPACE)')
     return parser.parse_args()
@@ -19,13 +18,13 @@ def download_file(url, destination, description=None):
     """Download a file with progress bar"""
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
-    
+
     desc = description or os.path.basename(destination)
     progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True, desc=desc)
-    
+
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with open(destination, 'wb') as file:
         for data in response.iter_content(chunk_size=1024):
             size = file.write(data)
@@ -48,7 +47,7 @@ def setup_model_files(workspace_dir, config_path=None):
     models_path = workspace_dir / "models"
     base_path = workspace_dir
 
-    for model_id, model_info in config['models'].items():
+    for _, model_info in config['models'].items():
         # Determine the full path based on whether it's in custom_nodes or models
         if model_info['path'].startswith('custom_nodes/'):
             full_path = base_path / model_info['path']
@@ -82,7 +81,7 @@ def setup_directories(workspace_dir):
     workspace_dir.mkdir(parents=True, exist_ok=True)
     models_dir = workspace_dir / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Create model subdirectories
     model_dirs = [
         "checkpoints/SD1.5",
@@ -97,9 +96,9 @@ def setup_directories(workspace_dir):
 def main():
     args = parse_args()
     workspace_dir = Path(args.workspace)
-    
+
     setup_directories(workspace_dir)
     setup_model_files(workspace_dir)
 
 if __name__ == "__main__":
-    main() 
+    main()
