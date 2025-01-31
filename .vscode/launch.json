@@ -24,7 +24,7 @@
             "name": "Run ComfyStream",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/workspace/server",
+            "cwd": "/comfystream/server",
             "program": "app.py",
             "args": [
                 "--workspace=/ComfyUI",
@@ -39,7 +39,7 @@
             "name": "Run ComfyStream UI (Node.js)",
             "type": "node",
             "request": "launch",
-            "cwd": "/workspace/ui",
+            "cwd": "/comfystream/ui",
             "console": "integratedTerminal",
             "runtimeExecutable": "npm",
             "runtimeArgs": [

@@ -71,7 +71,7 @@ Replace `/path/to/your/model-files` and `path/to/your/output-files` with the pat
 From within the **dev container**, download models to run the example workflows:
 
 ```sh
-cd /workspace
+cd /comfystream
 conda activate comfystream
 python src/comfystream/scripts/setup_models.py --workspace /ComfyUI
 ```
@@ -118,7 +118,7 @@ Alternatively, you may activate an environment manually with `conda activate com
 Start ComfyUI:
 
 ```sh
-cd /workspace/ComfyUI
+cd /comfystream/ComfyUI
 conda activate comfyui
 python main.py --listen
 ```
@@ -126,7 +126,7 @@ python main.py --listen
 When using TensorRT engine enabled workflows, you should include the `---disable-cuda-malloc` flag as shown below:
 
 ```sh
-cd /workspace/ComfyUI
+cd /comfystream/ComfyUI
 conda activate comfyui
 python main.py --listen --disable-cuda-malloc
 ```
@@ -136,7 +136,7 @@ python main.py --listen --disable-cuda-malloc
 Start ComfyStream:
 
 ```sh
-cd /workspace
+cd /comfystream
 conda activate comfystream
 python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8888
 ```
@@ -144,7 +144,7 @@ python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --po
 Optionally, you can also start the [ComfyStream UI](../README.md#run-ui) to view the stream:
 
 ```sh
-cd /workspace/ui
+cd /comfystream/ui
 npm run dev:https
 ```
 
