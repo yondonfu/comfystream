@@ -25,15 +25,15 @@ The `livepeer/comfyui-base:latest` image provides a ComfyUI workspace for ComfyS
 
 - Pull from Dockerhub:
 
-  ```sh
-  docker pull livepeer/comfyui-base:latest
-  ```
+    ```sh
+    docker pull livepeer/comfyui-base:latest
+    ```
 
 - Build the base image:
 
-  ```sh
-  docker build -f docker/Dockerfile.base -t livepeer/comfyui-base:latest .
-  ```
+    ```sh
+    docker build -f docker/Dockerfile.base -t livepeer/comfyui-base:latest .
+    ```
 
 ### Host Configuration
 
@@ -72,6 +72,7 @@ From within the **dev container**, download models to run the example workflows:
 
 ```sh
 cd /workspace
+conda activate comfystream
 python src/comfystream/scripts/setup_models.py --workspace /ComfyUI
 ```
 
@@ -88,10 +89,10 @@ After downloading models, it is necessary to compile TensorRT engines for the ex
 
 1. Run the **export_trt.py** script from the directory of the onnx file:
 
-   ```sh
-   cd /ComfyUI/models/tensorrt/depth-anything
-   python /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
-   ```
+    ```sh
+    cd /ComfyUI/models/tensorrt/depth-anything
+    python /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
+    ```
 
 ## Debugging ComfyStream and ComfyUI
 
@@ -103,9 +104,9 @@ Conda is not initiated in the bash shell to provide better interoperability with
 
 To launch a new terminal in either `comfystream` or `comfyui` environment:
 
-1. From VSCode, press `Ctrl-Shift-P`
-2. Choose `Select Python Interpreter`
-3. Select `comfystream` or `comfyui`
+1. From VSCode, press `Ctrl-Shift-P`.
+2. Choose `Python: Select Interpreter`.
+3. Select `comfystream` or `comfyui`.
 4. Open a new terminal, you will see the environment name to the left of the bash terminal.
 
 > [!NOTE] NOTE For more information, see [Python environments in VS Code](https://code.visualstudio.com/docs/python/environments)
@@ -116,6 +117,7 @@ Start ComfyUI:
 
 ```sh
 cd /workspace/ComfyUI
+conda activate comfyui
 python main.py --listen
 ```
 
@@ -123,14 +125,26 @@ When using TensorRT engine enabled workflows, you should include the `---disable
 
 ```sh
 cd /workspace/ComfyUI
+conda activate comfyui
 python main.py --listen --disable-cuda-malloc
 ```
 
 ### Starting ComfyStream
 
+Start ComfyStream:
+
 ```sh
 cd /workspace
+conda activate comfystream
 python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8888
+```
+
+Optionally you can also start the [ComfyStream UI](../README.md#run-ui) to view the stream:
+
+```sh
+cd /workspace
+cd ui
+npm run dev
 ```
 
 ## Additional Resources
