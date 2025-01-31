@@ -11,7 +11,7 @@ This guide will help you set up and run a development container for ComfyStream 
 
 
 ## Download or Build Base Docker Image
-The `livepeer/comfyui-base:latest` image contains ComfyUI provides a ComfyUI workspace for  comfystream development. You can either pull the base docker image from dockerhub or build it:
+The `livepeer/comfyui-base:latest` image provides a ComfyUI workspace for ComfyStream development. You may either pull the base docker image or build it:
 
 - Pull from Dockerhub:
 ```sh
