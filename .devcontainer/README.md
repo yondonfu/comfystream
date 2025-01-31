@@ -76,7 +76,7 @@ conda activate comfystream
 python src/comfystream/scripts/setup_models.py --workspace /ComfyUI
 ```
 
-For more info about configuring model downloads, see [src/comfystream/scripts/README.md](./src/comfystream/scripts/README.md)
+For more info about configuring model downloads, see [src/comfystream/scripts/README.md](../src/comfystream/scripts/README.md)
 
 By following these steps, you should be able to set up and run your development container for ComfyStream efficiently.
 
@@ -100,14 +100,16 @@ The `launch.json` includes sample launch configurations for ComfyStream and Comf
 
 ## Setting the Python Environment
 
-Conda is not initiated in the bash shell to provide better interoperability with VS Code Shell Integration.
+Conda is initialized in the bash shell with no environment activated to provide better interoperability with VS Code Shell Integration.
 
-To launch a new terminal in either `comfystream` or `comfyui` environment:
+VS Code will automatically activate the `comfystream` environment, unless you change it:
 
 1. From VSCode, press `Ctrl-Shift-P`.
 2. Choose `Python: Select Interpreter`.
 3. Select `comfystream` or `comfyui`.
 4. Open a new terminal, you will see the environment name to the left of the bash terminal.
+
+Alternatively, you may activate an environment manually with `conda activate comfyui` or `conda activate comfystream`
 
 > [!NOTE] NOTE For more information, see [Python environments in VS Code](https://code.visualstudio.com/docs/python/environments)
 
