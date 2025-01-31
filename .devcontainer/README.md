@@ -22,19 +22,19 @@ Most users will configure host paths for models in `devcontainer.json` and use t
 
 1. Pull the pre-built base container:
 
-```sh
-docker pull livepeer/comfyui-base:latest
-```
+   ```sh
+   docker pull livepeer/comfyui-base:latest
+   ```
 
 2. Configure the host paths for models in the `devcontainer.json` file.
-
 3. Re-open the workspace in the dev container using VS Code:
-    - Open the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P` on macOS).
-    - Select `Remote-Containers: Reopen in Container`.
+   - Open the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P` on macOS).
+   - Select `Remote-Containers: Reopen in Container`.
 
 ## Configuration
 
-Create a directory to store the models and engines
+Create a directory to store the models and engines:
+
 ```sh
 sudo mkdir -p /models/ComfyUI--models && sudo mkdir -p /models/ComfyUI--output
 sudo chown -R $USER /models/ComfyUI--models && sudo chown -R $USER /models/ComfyUI--output
@@ -44,12 +44,10 @@ If you have a different path for models, ensure your `devcontainer.json` is prop
 
 ```json
 {
-    "name": "ComfyStream Dev Container",
-    "image": "livepeer/comfyui-base",
-    "mounts": [
-        "source=/path/to/your/models,target=/ComfyUI/models,type=bind"
-    ],
-    "workspaceFolder": "/workspace"
+  "name": "ComfyStream Dev Container",
+  "image": "livepeer/comfyui-base",
+  "mounts": ["source=/path/to/your/models,target=/ComfyUI/models,type=bind"],
+  "workspaceFolder": "/workspace"
 }
 ```
 
@@ -63,6 +61,7 @@ python src/comfystream/scripts/setup_models.py --workspace /ComfyUI
 ```
 
 By following these steps, you should be able to set up and run your development container for ComfyStream efficiently.
+
 ## Building the DepthAnything Engine
 
 1. Run the **export_trt.py** script from the directory of the onnx file:
@@ -72,17 +71,19 @@ cd /ComfyUI/models/tensorrt/depth-anything
 python /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
 ```
 
-**Note**: You may use either conda environment for this step
+> [!NOTE]
+> You may use either conda environment for this step.
 
 ### Starting ComfyUI
 
-When building engines, you should start ComfyUI normally. 
+When building engines, you should start ComfyUI normally.
 
 ```sh
 python main.py --listen
 ```
 
 When running TensorRT engine enabled workflows, you should use the extra flag as shown below:
+
 ```sh
 python main.py --listen --disable-cuda-malloc
 ```
