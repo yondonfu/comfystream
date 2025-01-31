@@ -139,12 +139,11 @@ conda activate comfystream
 python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8888
 ```
 
-Optionally you can also start the [ComfyStream UI](../README.md#run-ui) to view the stream:
+Optionally, you can also start the [ComfyStream UI](../README.md#run-ui) to view the stream:
 
 ```sh
-cd /workspace
-cd ui
-npm run dev
+cd /workspace/ui
+npm run dev:https
 ```
 
 ## Additional Resources
