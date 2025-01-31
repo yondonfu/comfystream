@@ -6,6 +6,8 @@ This repo also includes a WebRTC server and UI that uses comfystream to support 
 
 - [comfystream](#comfystream)
   - [Quick Start](#quick-start)
+    - [Docker DevContainer](#docker-devcontainer)
+  - [Download Models](#download-models)
   - [Install package](#install-package)
     - [Custom Nodes](#custom-nodes)
     - [Usage](#usage)
@@ -196,4 +198,3 @@ This project has been tested locally successfully with the following setup:
 - Driver: 550.127.05
 - CUDA: 12.5
 - torch: 2.5.1+cu121
-
