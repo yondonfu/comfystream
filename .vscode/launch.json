@@ -16,21 +16,6 @@
             },
             "args": [
                 "--listen",
-            ],
-            "python": "/miniconda3/envs/comfyui/bin/python"
-        },
-        {
-            "name": "Run ComfyUI (disable-cuda-malloc)",
-            "type": "debugpy",
-            "request": "launch",
-            "cwd": "/ComfyUI",
-            "program": "main.py",
-            "purpose": ["debug-in-terminal"],
-            "env": {
-                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
-            },
-            "args": [
-                "--listen",
                 "--disable-cuda-malloc",
             ],
             "python": "/miniconda3/envs/comfyui/bin/python"
@@ -46,7 +31,7 @@
                 "--media-ports=5678",
                 "--host=0.0.0.0",
                 "--port=8888",
-                                "--log-level=DEBUG",
+                "--log-level=DEBUG",
             ],
             "python": "/miniconda3/envs/comfystream/bin/python"
         },
