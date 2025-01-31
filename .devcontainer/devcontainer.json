@@ -7,8 +7,7 @@
 		"context": "../"
 	},
 	"runArgs": [
-		"--gpus=all",
-		"--workdir", "/workspace"
+		"--gpus=all"
 	], 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// Configure tool-specific properties.
@@ -41,8 +40,8 @@
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
 	"mounts": [
 		// Use 'mounts' to map to comfyui models on the host
-		"source=${localEnv:SystemDrive}/models/ComfyUI--models,target=/ComfyUI/models,type=bind,consistency=cached",
-		"source=${localEnv:SystemDrive}/models/ComfyUI--output,target=/ComfyUI/output,type=bind,consistency=cached"
+		"source=${localEnv:HOME}/models/ComfyUI--models,target=/ComfyUI/models,type=bind,consistency=cached",
+		"source=${localEnv:HOME}/models/ComfyUI--output,target=/ComfyUI/output,type=bind,consistency=cached"
 	],
 	"postCreateCommand": ".devcontainer/post-create.sh"
 }
