@@ -126,30 +126,52 @@ class ComfyStreamClient:
                     # Process required inputs
                     if 'required' in input_data:
                         for name, value in input_data['required'].items():
-                            if isinstance(value, tuple) and len(value) == 2:
-                                input_type, config = value
-                                input_info[name] = {
-                                    'type': input_type,
-                                    'required': True,
-                                    'min': config.get('min', None),
-                                    'max': config.get('max', None),
-                                    'widget': config.get('widget', None)
-                                }
+                            if isinstance(value, tuple):
+                                if len(value) == 1 and isinstance(value[0], list):
+                                    # Handle combo box case where value is ([option1, option2, ...],)
+                                    input_info[name] = {
+                                        'type': 'combo',
+                                        'value': value[0],  # The list of options becomes the value
+                                    }
+                                elif len(value) == 2:
+                                    input_type, config = value
+                                    input_info[name] = {
+                                        'type': input_type,
+                                        'min': config.get('min', None),
+                                        'max': config.get('max', None),
+                                        'widget': config.get('widget', None)
+                                    }
+                                elif len(value) == 1:
+                                    # Handle simple type case like ('IMAGE',)
+                                    input_info[name] = {
+                                        'type': value[0]
+                                    }
                             else:
                                 logger.error(f"Unexpected structure for required input {name}: {value}")
                     
-                    # Process optional inputs
+                    # Process optional inputs with same logic
                     if 'optional' in input_data:
                         for name, value in input_data['optional'].items():
-                            if isinstance(value, tuple) and len(value) == 2:
-                                input_type, config = value
-                                input_info[name] = {
-                                    'type': input_type,
-                                    'required': False,
-                                    'min': config.get('min', None),
-                                    'max': config.get('max', None),
-                                    'widget': config.get('widget', None)
-                                }
+                            if isinstance(value, tuple):
+                                if len(value) == 1 and isinstance(value[0], list):
+                                    # Handle combo box case where value is ([option1, option2, ...],)
+                                    input_info[name] = {
+                                        'type': 'combo',
+                                        'value': value[0],  # The list of options becomes the value
+                                    }
+                                elif len(value) == 2:
+                                    input_type, config = value
+                                    input_info[name] = {
+                                        'type': input_type,
+                                        'min': config.get('min', None),
+                                        'max': config.get('max', None),
+                                        'widget': config.get('widget', None)
+                                    }
+                                elif len(value) == 1:
+                                    # Handle simple type case like ('IMAGE',)
+                                    input_info[name] = {
+                                        'type': value[0]
+                                    }
                             else:
                                 logger.error(f"Unexpected structure for optional input {name}: {value}")
                     
@@ -166,13 +188,17 @@ class ComfyStreamClient:
                         
                         if 'inputs' in node:
                             for input_name, input_value in node['inputs'].items():
+                                input_metadata = input_info.get(input_name, {})
                                 node_info['inputs'][input_name] = {
                                     'value': input_value,
-                                    'type': input_info.get(input_name, {}).get('type', 'unknown'),
-                                    'min': input_info.get(input_name, {}).get('min', None),
-                                    'max': input_info.get(input_name, {}).get('max', None),
-                                    'widget': input_info.get(input_name, {}).get('widget', None)
+                                    'type': input_metadata.get('type', 'unknown'),
+                                    'min': input_metadata.get('min', None),
+                                    'max': input_metadata.get('max', None),
+                                    'widget': input_metadata.get('widget', None)
                                 }
+                                # For combo type inputs, include the list of options
+                                if input_metadata.get('type') == 'combo':
+                                    node_info['inputs'][input_name]['value'] = input_metadata.get('value', [])
                         
                         nodes_info[node_id] = node_info
                         remaining_nodes.remove(node_id)
