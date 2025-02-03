@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 from pathlib import Path
 import requests
@@ -93,12 +92,11 @@ def setup_directories(workspace_dir):
     for dir_name in model_dirs:
         (models_dir / dir_name).mkdir(parents=True, exist_ok=True)
 
-def main():
+def setup_models():
     args = parse_args()
     workspace_dir = Path(args.workspace)
 
     setup_directories(workspace_dir)
     setup_model_files(workspace_dir)
 
-if __name__ == "__main__":
-    main()
+setup_models()
