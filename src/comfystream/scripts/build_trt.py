@@ -188,6 +188,11 @@ def build_static_trt_engine(
     opt_config = dict(min_config)
     max_config = dict(min_config)
 
+    # The tensorrt_diffusion_model build() signature is typically:
+    #   build(onnx_path, engine_path, timing_cache_path, opt_config, min_config, max_config)
+    # If you have a separate 'timing_cache.trt', put it next to this script:
+    timing_cache_path = os.path.join(os.path.dirname(__file__), "timing_cache.trt")
+
     if verbose:
         print(f"[INFO] Building engine -> {engine_out_path}")
 
