@@ -27,14 +27,15 @@ const InputControl = ({
   onChange: (value: string) => void 
 }) => {
 
-  if (input.widget === "combo") {
+  if (input.type === 'combo') {
+    const options = Array.isArray(input.value) ? input.value : [];
     return (
       <select 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="p-2 border rounded w-full"
       >
-        {Array.isArray(input.value) && input.value.map((option: string) => (
+        {options.map((option: string) => (
           <option key={option} value={option}>
             {option}
           </option>
@@ -289,11 +290,11 @@ export const ControlPanel = () => {
           Object.entries(availableNodes[nodeId].inputs)
             .filter(([_, info]) => {
               const type = typeof info.type === 'string' ? info.type.toLowerCase() : String(info.type).toLowerCase();
-              return ['boolean', 'number', 'float', 'int', 'string'].includes(type) || info.widget === 'combo';
+              return ['boolean', 'number', 'float', 'int', 'string', 'combo'].includes(type);
             })
             .map(([field, info]) => (
               <option key={field} value={field}>
-                {field} ({info.type}{info.widget ? ` - ${info.widget}` : ''})
+                {field} ({info.type})
               </option>
             ))
         }
