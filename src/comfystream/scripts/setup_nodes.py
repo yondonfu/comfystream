@@ -1,15 +1,10 @@
-#!/usr/bin/env python3
 import os
 import subprocess
 import sys
 from pathlib import Path
 import yaml
 import argparse
-
-# Change relative import to absolute import
 from utils import get_config_path, load_model_config
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Setup ComfyUI nodes and models')
     parser.add_argument('--workspace',
@@ -46,38 +41,43 @@ def install_custom_nodes(workspace_dir, config_path=None):
     custom_nodes_path.mkdir(parents=True, exist_ok=True)
     os.chdir(custom_nodes_path)
 
-    for _, node_info in config['nodes'].items():
-        dir_name = node_info['url'].split("/")[-1].replace(".git", "")
-        node_path = custom_nodes_path / dir_name
+    try:
+        for _, node_info in config['nodes'].items():
+            dir_name = node_info['url'].split("/")[-1].replace(".git", "")
+            node_path = custom_nodes_path / dir_name
 
-        print(f"Installing {node_info['name']}...")
+            print(f"Installing {node_info['name']}...")
 
-        # Clone the repository if it doesn't already exist
-        if not node_path.exists():
-            cmd = ["git", "clone", node_info['url']]
-            if 'branch' in node_info:
-                cmd.extend(["-b", node_info['branch']])
-            subprocess.run(cmd, check=True)
-        else:
-            print(f"{node_info['name']} already exists, skipping clone.")
+            # Clone the repository if it doesn't already exist
+            if not node_path.exists():
+                cmd = ["git", "clone", node_info['url']]
+                if 'branch' in node_info:
+                    cmd.extend(["-b", node_info['branch']])
+                subprocess.run(cmd, check=True)
+            else:
+                print(f"{node_info['name']} already exists, skipping clone.")
 
-        # Checkout specific commit if branch is a commit hash
-        if 'branch' in node_info and len(node_info['branch']) == 40:  # SHA-1 hash length
-            subprocess.run(["git", "-C", dir_name, "checkout", node_info['branch']], check=True)
+            # Checkout specific commit if branch is a commit hash
+            if 'branch' in node_info and len(node_info['branch']) == 40:  # SHA-1 hash length
+                subprocess.run(["git", "-C", dir_name, "checkout", node_info['branch']], check=True)
 
-        # Install requirements if present
-        requirements_file = node_path / "requirements.txt"
-        if requirements_file.exists():
-            subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(requirements_file)], check=True)
+            # Install requirements if present
+            requirements_file = node_path / "requirements.txt"
+            if requirements_file.exists():
+                subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(requirements_file)], check=True)
 
-        # Install additional dependencies if specified
-        if 'dependencies' in node_info:
-            for dep in node_info['dependencies']:
-                subprocess.run([sys.executable, "-m", "pip", "install", dep], check=True)
+            # Install additional dependencies if specified
+            if 'dependencies' in node_info:
+                for dep in node_info['dependencies']:
+                    subprocess.run([sys.executable, "-m", "pip", "install", dep], check=True)
 
-        print(f"Installed {node_info['name']}")
+            print(f"Installed {node_info['name']}")
+    except Exception as e:
+        print(f"Error installing {node_info['name']} {e}")
+        raise e
+        return
 
-def main():
+def setup_nodes():
     args = parse_args()
     workspace_dir = Path(args.workspace)
 
@@ -85,5 +85,5 @@ def main():
     setup_directories(workspace_dir)
     install_custom_nodes(workspace_dir)
 
-if __name__ == "__main__":
-    main()
+
+setup_nodes()
