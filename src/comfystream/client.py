@@ -12,7 +12,7 @@ from comfystream import tensor_cache
 from comfystream.utils import convert_prompt
 
 logger = logging.getLogger(__name__)
-max_queue_size = 50
+MAX_QUEUE_SIZE = 50
 
 class ComfyStreamClient:
     def __init__(self, **kwargs):
@@ -20,7 +20,7 @@ class ComfyStreamClient:
         self.comfy_client = EmbeddedComfyClient(config)
         self.prompt = None
         self._lock = asyncio.Lock()
-        self.input_queue = deque(maxlen=max_queue_size)
+        self.input_queue = deque(maxlen=MAX_QUEUE_SIZE)
         self.output_queue = asyncio.Queue()
         self.last_frame = None
         self.processor_task = None
@@ -30,8 +30,8 @@ class ComfyStreamClient:
             self.processor_task = asyncio.create_task(self._process_queue())
             
     async def _process_queue(self):
-        while True:
-            try:
+        try:
+            while True:
                 input_tensor, output_fut = await self.output_queue.get()
                 
                 # Process the input through ComfyUI
@@ -40,18 +40,21 @@ class ComfyStreamClient:
                 await self.comfy_client.queue_prompt(self.prompt)
                 
                 self.output_queue.task_done()
-            except Exception as e:
-                logger.error(f"Error processing queue item: {str(e)}")
-                if output_fut and not output_fut.done():
-                    output_fut.set_exception(e)
-                self.output_queue.task_done()
+        except Exception as e:
+            logger.error(f"Error processing queue item: {str(e)}")
+            if output_fut and not output_fut.done():
+                output_fut.set_exception(e)
+            self.output_queue.task_done()
+        except asyncio.CancelledError:
+            logger.info("Stopped frame processor loop")
+            raise
 
     def set_prompt(self, prompt: PromptDictInput):
         self.prompt = convert_prompt(prompt)
 
     async def queue_prompt(self, input: torch.Tensor) -> torch.Tensor:
         async with self._lock:
-            if len(self.input_queue) >= max_queue_size:
+            if len(self.input_queue) >= MAX_QUEUE_SIZE:
                 logger.warning("Queue is full, returning last frame and reducing queue.")
                 self.input_queue.popleft()
                 return self.last_frame
