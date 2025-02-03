@@ -9,23 +9,24 @@
             "type": "debugpy",
             "request": "launch",
             "cwd": "/ComfyUI",
-            "program": "main.py",
-            "purpose": ["debug-in-terminal"],
-            "env": {
-                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
-            },
+            "program":"/miniconda3/envs/comfystream/bin/comfyui",
             "args": [
                 "--listen",
                 "--disable-cuda-malloc",
+                "--front-end-version=Comfy-Org/ComfyUI_frontend@latest"
             ],
-            "python": "/miniconda3/envs/comfyui/bin/python"
+            "env": {
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
+            },
+            "python": "/miniconda3/envs/comfystream/bin/python"
         },
         {
             "name": "Run ComfyStream",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/comfystream/server",
-            "program": "app.py",
+            "cwd": "/comfystream",
+            "program": "server/app.py",
+            "console": "integratedTerminal",
             "args": [
                 "--workspace=/ComfyUI",
                 "--media-ports=5678",
@@ -33,10 +34,13 @@
                 "--port=8888",
                 "--log-level=DEBUG",
             ],
+            "env": {
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
+            },
             "python": "/miniconda3/envs/comfystream/bin/python"
         },
         {
-            "name": "Run ComfyStream UI (Node.js)",
+            "name": "Run ComfyStream UI",
             "type": "node",
             "request": "launch",
             "cwd": "/comfystream/ui",
@@ -54,12 +58,11 @@
         },
     ], "compounds": [
         {
-            "name": "Run ComfyStream and UI",
+            "name": "Run ComfyStream & UI",
             "type": "composite",
-            "stopAll": true,
             "configurations": [
                 "Run ComfyStream",
-                "Run ComfyStream UI (Node.js)"
+                "Run ComfyStream UI"
             ]
         }
     ]

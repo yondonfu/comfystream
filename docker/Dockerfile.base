@@ -16,10 +16,11 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -
 
 ENV PATH="/miniconda3/bin:${PATH}"
 RUN eval "$(/miniconda3/bin/conda shell.bash hook)"
-RUN conda create -n comfyui python=3.11 -y
+RUN conda install ffmpeg -y
+RUN conda create -n comfystream python=3.11 -y
 
 # Clone ComfyUI
-RUN git clone https://github.com/comfyanonymous/ComfyUI.git /ComfyUI
+RUN git clone https://github.com/hiddenswitch/ComfyUI.git /ComfyUI
 
 # Copy comfystream to the container
 COPY . /comfystream
@@ -29,19 +30,20 @@ COPY ./nodes/ /ComfyUI/custom_nodes/
 COPY ./workflows/ui* /ComfyUI/user/default/workflows/examples
 
 # Install custom nodes
-RUN conda run -n comfyui pip install aiortc aiohttp requests tqdm pyyaml
-RUN conda run -n comfyui --cwd /comfystream python src/comfystream/scripts/setup_nodes.py --workspace /ComfyUI
-RUN conda create -n comfystream --clone comfyui
-RUN conda run -n comfyui --cwd /ComfyUI pip install -r requirements.txt
+RUN conda run -n comfystream pip install aiortc aiohttp requests tqdm pyyaml
+RUN conda run -n comfystream --cwd /ComfyUI pip install -r requirements.txt
 
 # Install ComfyStream requirements
 RUN conda run -n comfystream --cwd /comfystream pip install -r requirements.txt
-RUN conda run -n comfystream --cwd /comfystream pip install .
-RUN conda run -n comfystream --cwd /comfystream python install.py --workspace /ComfyUI
+RUN conda run -n comfystream --cwd /comfystream pip install -e .
+RUN conda run -n comfystream --cwd /comfystream python src/comfystream/scripts/setup_nodes.py --workspace /ComfyUI
 RUN conda run -n comfystream pip install --upgrade tensorrt-cu12-bindings tensorrt-cu12-libs
 
 # # Configure no environment activation by default
 RUN conda config --set auto_activate_base false
 RUN conda init bash
+
+# Clean pip cache to reduce image size
+RUN pip cache purge
 
 WORKDIR /comfystream
