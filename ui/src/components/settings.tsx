@@ -253,6 +253,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             type="file"
             accept=".json"
             onChange={handlePromptChange}
+            required={true}
           />
         </div>
 
