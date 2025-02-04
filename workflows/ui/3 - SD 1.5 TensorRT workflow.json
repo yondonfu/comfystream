@@ -1,95 +1,26 @@
 {
-  "last_node_id": 16,
-  "last_link_id": 32,
+  "last_node_id": 22,
+  "last_link_id": 21,
   "nodes": [
-    {
-      "id": 2,
-      "type": "DepthAnythingTensorrt",
-      "pos": [
-        515,
-        130
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 17
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            27
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "DepthAnythingTensorrt"
-      },
-      "widgets_values": [
-        "depth_anything_vitl14-fp16.engine"
-      ]
-    },
-    {
-      "id": 3,
-      "type": "TensorRTLoader",
-      "pos": [
-        100,
-        362
-      ],
-      "size": [
-        315,
-        82
-      ],
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            20
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "TensorRTLoader"
-      },
-      "widgets_values": [
-        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
-        "SD15"
-      ]
-    },
     {
       "id": 5,
       "type": "CLIPTextEncode",
       "pos": [
-        515,
-        318
+        1104,
+        615
       ],
       "size": [
         400,
         200
       ],
       "flags": {},
-      "order": 8,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 18
+          "link": 2
         }
       ],
       "outputs": [
@@ -97,36 +28,37 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            24
-          ]
+            4
+          ],
+          "slot_index": 0
         }
       ],
       "properties": {
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
-        " In a winter wonderland"
+        "the hulk"
       ]
     },
     {
       "id": 6,
       "type": "CLIPTextEncode",
       "pos": [
-        515,
-        648
+        1104,
+        891
       ],
       "size": [
         400,
         200
       ],
       "flags": {},
-      "order": 9,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 19
+          "link": 3
         }
       ],
       "outputs": [
@@ -134,8 +66,9 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            25
-          ]
+            5
+          ],
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -146,100 +79,11 @@
       ]
     },
     {
-      "id": 7,
-      "type": "KSampler",
-      "pos": [
-        1430,
-        130
-      ],
-      "size": [
-        315,
-        262
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 20
-        },
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "link": 21
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "link": 22
-        },
-        {
-          "name": "latent_image",
-          "type": "LATENT",
-          "link": 23
-        }
-      ],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "links": [
-            30
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "KSampler"
-      },
-      "widgets_values": [
-        431120618284339,
-        "randomize",
-        1,
-        1,
-        "lcm",
-        "normal",
-        1
-      ]
-    },
-    {
-      "id": 8,
-      "type": "ControlNetLoader",
-      "pos": [
-        100,
-        802
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CONTROL_NET",
-          "type": "CONTROL_NET",
-          "links": [
-            28
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ControlNetLoader"
-      },
-      "widgets_values": [
-        "control_v11f1p_sd15_depth_fp16.safetensors"
-      ]
-    },
-    {
       "id": 9,
       "type": "ControlNetApplyAdvanced",
       "pos": [
-        1015,
-        130
+        1602,
+        664
       ],
       "size": [
         315,
@@ -252,22 +96,22 @@
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 24
+          "link": 4
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 25
+          "link": 5
         },
         {
           "name": "control_net",
           "type": "CONTROL_NET",
-          "link": 26
+          "link": 11
         },
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 27
+          "link": 12
         },
         {
           "name": "vae",
@@ -281,15 +125,17 @@
           "name": "positive",
           "type": "CONDITIONING",
           "links": [
-            21
-          ]
+            7
+          ],
+          "slot_index": 0
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
           "links": [
-            22
-          ]
+            8
+          ],
+          "slot_index": 1
         }
       ],
       "properties": {
@@ -302,227 +148,18 @@
       ]
     },
     {
-      "id": 10,
-      "type": "TorchCompileLoadControlNet",
-      "pos": [
-        515,
-        978
-      ],
-      "size": [
-        327.5999755859375,
-        106
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "controlnet",
-          "type": "CONTROL_NET",
-          "link": 28
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONTROL_NET",
-          "type": "CONTROL_NET",
-          "links": [
-            26
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "TorchCompileLoadControlNet"
-      },
-      "widgets_values": [
-        "inductor",
-        false,
-        "reduce-overhead"
-      ]
-    },
-    {
-      "id": 11,
-      "type": "VAELoader",
-      "pos": [
-        100,
-        990
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            29
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader"
-      },
-      "widgets_values": [
-        "taesd"
-      ]
-    },
-    {
-      "id": 13,
-      "type": "TorchCompileLoadVAE",
-      "pos": [
-        515,
-        1214
-      ],
-      "size": [
-        315,
-        154
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 29
-        }
-      ],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            31
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "TorchCompileLoadVAE"
-      },
-      "widgets_values": [
-        "inductor",
-        true,
-        "reduce-overhead",
-        true,
-        true
-      ]
-    },
-    {
-      "id": 14,
-      "type": "VAEDecode",
-      "pos": [
-        1845,
-        130
-      ],
-      "size": [
-        210,
-        46
-      ],
-      "flags": {},
-      "order": 13,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 30
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 31
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            32
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAEDecode"
-      }
-    },
-    {
-      "id": 15,
-      "type": "PreviewImage",
-      "pos": [
-        2155,
-        130
-      ],
-      "size": [
-        210,
-        246
-      ],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 32
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
-      "id": 16,
-      "type": "EmptyLatentImage",
-      "pos": [
-        100,
-        1178
-      ],
-      "size": [
-        315,
-        106
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "links": [
-            23
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "EmptyLatentImage"
-      },
-      "widgets_values": [
-        512,
-        512,
-        1
-      ]
-    },
-    {
       "id": 4,
       "type": "CheckpointLoaderSimple",
       "pos": [
-        100,
-        574
+        648,
+        771
       ],
       "size": [
         315,
         98
       ],
       "flags": {},
-      "order": 4,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -535,9 +172,10 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            18,
-            19
-          ]
+            2,
+            3
+          ],
+          "slot_index": 1
         },
         {
           "name": "VAE",
@@ -553,18 +191,324 @@
       ]
     },
     {
+      "id": 8,
+      "type": "ControlNetLoader",
+      "pos": [
+        650,
+        1244
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
+          "links": [
+            10
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ControlNetLoader"
+      },
+      "widgets_values": [
+        "control_v11f1p_sd15_depth_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "TorchCompileLoadControlNet",
+      "pos": [
+        1130,
+        1226
+      ],
+      "size": [
+        327.5999755859375,
+        106
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "controlnet",
+          "type": "CONTROL_NET",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TorchCompileLoadControlNet"
+      },
+      "widgets_values": [
+        "inductor",
+        false,
+        "reduce-overhead"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "TensorRTLoader",
+      "pos": [
+        642,
+        396
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TensorRTLoader"
+      },
+      "widgets_values": [
+        "ComfyUI_STAT_dreamshaper-8-dmd-1kstep-fp8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+        "SD15"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "VAELoader",
+      "pos": [
+        649,
+        1498
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            13
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "taesd"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "KSampler",
+      "pos": [
+        2024,
+        287
+      ],
+      "size": [
+        315,
+        262
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 7
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 8
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            14
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        945236422600751,
+        "randomize",
+        1,
+        1,
+        "lcm",
+        "normal",
+        1
+      ]
+    },
+    {
+      "id": 15,
+      "type": "PreviewImage",
+      "pos": [
+        2878.828125,
+        299.9607238769531
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 15
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "VAEDecode",
+      "pos": [
+        2521.657470703125,
+        307.1023254394531
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 14
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            15
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "TorchCompileLoadVAE",
+      "pos": [
+        1138.843017578125,
+        1457.9476318359375
+      ],
+      "size": [
+        315,
+        154
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            16
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TorchCompileLoadVAE"
+      },
+      "widgets_values": [
+        "inductor",
+        true,
+        "reduce-overhead",
+        true,
+        true
+      ]
+    },
+    {
       "id": 1,
       "type": "LoadImage",
       "pos": [
-        100,
-        130
+        803,
+        -123
       ],
       "size": [
         315,
         314
       ],
       "flags": {},
-      "order": 5,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -572,8 +516,9 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            17
-          ]
+            1
+          ],
+          "slot_index": 0
         },
         {
           "name": "MASK",
@@ -585,14 +530,86 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "example.png",
+        "DALL·E 2024-11-15 10.15.49 - An anime-style character standing in a modern office space. The character is a young professional, dressed in a stylish business outfit, with medium-l.jpg",
         "image"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "DepthAnythingTensorrt",
+      "pos": [
+        1238,
+        77
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            12
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DepthAnythingTensorrt"
+      },
+      "widgets_values": [
+        "depth_anything_v2_vits-fp16.engine"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "EmptyLatentImage",
+      "pos": [
+        1627,
+        -92
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            17
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        512,
+        512,
+        1
       ]
     }
   ],
   "links": [
     [
-      17,
+      1,
       1,
       0,
       2,
@@ -600,7 +617,7 @@
       "IMAGE"
     ],
     [
-      18,
+      2,
       4,
       1,
       5,
@@ -608,7 +625,7 @@
       "CLIP"
     ],
     [
-      19,
+      3,
       4,
       1,
       6,
@@ -616,7 +633,39 @@
       "CLIP"
     ],
     [
-      20,
+      4,
+      5,
+      0,
+      9,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      5,
+      6,
+      0,
+      9,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      7,
+      9,
+      0,
+      7,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      8,
+      9,
+      1,
+      7,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      9,
       3,
       0,
       7,
@@ -624,63 +673,7 @@
       "MODEL"
     ],
     [
-      21,
-      9,
-      0,
-      7,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      22,
-      9,
-      1,
-      7,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      23,
-      16,
-      0,
-      7,
-      3,
-      "LATENT"
-    ],
-    [
-      24,
-      5,
-      0,
-      9,
-      0,
-      "CONDITIONING"
-    ],
-    [
-      25,
-      6,
-      0,
-      9,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      26,
       10,
-      0,
-      9,
-      2,
-      "CONTROL_NET"
-    ],
-    [
-      27,
-      2,
-      0,
-      9,
-      3,
-      "IMAGE"
-    ],
-    [
-      28,
       8,
       0,
       10,
@@ -688,7 +681,23 @@
       "CONTROL_NET"
     ],
     [
-      29,
+      11,
+      10,
+      0,
+      9,
+      2,
+      "CONTROL_NET"
+    ],
+    [
+      12,
+      2,
+      0,
+      9,
+      3,
+      "IMAGE"
+    ],
+    [
+      13,
       11,
       0,
       13,
@@ -696,7 +705,7 @@
       "VAE"
     ],
     [
-      30,
+      14,
       7,
       0,
       14,
@@ -704,7 +713,15 @@
       "LATENT"
     ],
     [
-      31,
+      15,
+      14,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
       13,
       0,
       14,
@@ -712,29 +729,23 @@
       "VAE"
     ],
     [
-      32,
-      14,
+      17,
+      16,
       0,
-      15,
-      0,
-      "IMAGE"
+      7,
+      3,
+      "LATENT"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.7513148009015777,
+      "scale": 0.5131581182307082,
       "offset": [
-        660.8600621028962,
-        94.59269584816836
+        -374.74081589726774,
+        -39.464450618247305
       ]
-    },
-    "node_versions": {
-      "ComfyUI-Depth-Anything-Tensorrt": "ede57bac05059731f955c1b1563af2c1947f999a",
-      "ComfyUI_TensorRT": "657994a5481897944a62266ab9f4f9aef24f93f4",
-      "comfy-core": "0.3.12",
-      "ComfyUI-Torch-Compile": "28b36d2569b39c303b2d9b0e5540ec5d628164af"
     }
   },
   "version": 0.4
