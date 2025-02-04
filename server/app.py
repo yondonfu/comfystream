@@ -20,6 +20,8 @@ from pipeline import Pipeline
 from utils import patch_loop_datagram
 
 logger = logging.getLogger(__name__)
+logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
+logging.getLogger('aiortc.rtcrtpreceiver').setLevel(logging.WARNING)
 
 
 MAX_BITRATE = 2000000
