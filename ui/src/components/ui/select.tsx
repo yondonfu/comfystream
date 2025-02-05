@@ -1,15 +1,29 @@
-import { cn } from "@/lib/utils"
-import * as SelectPrimitive from "@radix-ui/react-select"
-import { Check, ChevronDown } from "lucide-react"
-import * as React from "react"
+/**
+ * @file Contains styled Radix UI select components.
+ */
+import { cn } from "@/lib/utils";
+import * as SelectPrimitive from "@radix-ui/react-select";
+import { Check, ChevronDown } from "lucide-react";
+import * as React from "react";
 
-const Select = SelectPrimitive.Root as {
-  (props: SelectPrimitive.SelectProps): JSX.Element
-  Trigger: typeof SelectTrigger
-  Content: typeof SelectContent
-  Option: typeof SelectOption
-}
+/**
+ * Styled select component.
+ * @param props - Select props.
+ */
+const Select: React.FC<SelectPrimitive.SelectProps> & {
+  Trigger: typeof SelectTrigger;
+  Content: typeof SelectContent;
+  Option: typeof SelectOption;
+} = (props) => {
+  return <SelectPrimitive.Root {...props} />;
+};
+Select.displayName = SelectPrimitive.Root.displayName;
 
+/**
+ * Styled select trigger element.
+ * @param props - Select trigger props.
+ * @param ref - Select trigger ref.
+ */
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
@@ -17,7 +31,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm  ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 u-ios-text-base",
+      "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 u-ios-text-base",
       className
     )}
     {...props}
@@ -27,9 +41,14 @@ const SelectTrigger = React.forwardRef<
       <ChevronDown className="h-4 w-4 opacity-50" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
-))
-SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
+));
+SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 
+/**
+ * Styled select content element.
+ * @param props - Select content props.
+ * @param ref - Select content ref.
+ */
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
@@ -57,9 +76,14 @@ const SelectContent = React.forwardRef<
       </SelectPrimitive.Viewport>
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
-))
-SelectContent.displayName = SelectPrimitive.Content.displayName
+));
+SelectContent.displayName = SelectPrimitive.Content.displayName;
 
+/**
+ * Styled select option element.
+ * @param props - Select option props.
+ * @param ref - Select option ref.
+ */
 const SelectOption = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
@@ -79,11 +103,11 @@ const SelectOption = React.forwardRef<
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
   </SelectPrimitive.Item>
-))
-SelectOption.displayName = SelectPrimitive.Item.displayName
+));
+SelectOption.displayName = SelectPrimitive.Item.displayName;
 
-Select.Trigger = SelectTrigger
-Select.Content = SelectContent
-Select.Option = SelectOption
+Select.Trigger = SelectTrigger;
+Select.Content = SelectContent;
+Select.Option = SelectOption;
 
-export { Select }
+export { Select };
