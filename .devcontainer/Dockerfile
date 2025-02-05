@@ -1,9 +1,10 @@
-FROM livepeer/comfyui-base:latest
+FROM livepeer/comfyui-base:latest AS comfystream
 ENV PATH="/miniconda3/bin:${PATH}"
 EXPOSE 8188
 EXPOSE 8888
 EXPOSE 3000
 EXPOSE 1024-65535/udp
+RUN apt-get update && apt-get install -y supervisor
 
 WORKDIR /
 
@@ -22,3 +23,12 @@ RUN bash -c "source $NVM_DIR/nvm.sh \
 ENV NODE_PATH=$NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 RUN conda init bash
+
+WORKDIR /comfystream
+COPY docker/entrypoint.sh /comfystream/docker/entrypoint.sh
+RUN chmod +x /comfystream/docker/entrypoint.sh
+ENTRYPOINT ["/comfystream/docker/entrypoint.sh"]
+
+# Create the supervisor configuration file for ComfyUI and ComfyStream 
+RUN mkdir -p /etc/supervisor/conf.d
+COPY .devcontainer/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

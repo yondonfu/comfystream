@@ -40,7 +40,7 @@ docker build -f docker/Dockerfile.base -t livepeer/comfyui-base:latest .
 On your **host** system, create directories to store models and engines:
 
 ```sh
-mkdir -p ~/models/ComfyUI--models && mkdir -p ~/models/ComfyUI--output
+mkdir -p ~/models/ComfyUI--models ~/models/ComfyUI--output
 ```
 
 > [!NOTE]
