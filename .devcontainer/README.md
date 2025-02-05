@@ -15,7 +15,7 @@ This guide will help you set up and run a development container for ComfyStream 
 First, clone the `comfystream` repository:
 
 ```sh
-clone https://github.com/yondonfu/comfystream.git
+git clone https://github.com/yondonfu/comfystream.git
 cd comfystream
 ```
 
@@ -25,15 +25,15 @@ The `livepeer/comfyui-base:latest` image provides a ComfyUI workspace for ComfyS
 
 - Pull from Dockerhub:
 
-    ```sh
-    docker pull livepeer/comfyui-base:latest
-    ```
+```sh
+docker pull livepeer/comfyui-base:latest
+```
 
 - Build the base image:
 
-    ```sh
-    docker build -f docker/Dockerfile.base -t livepeer/comfyui-base:latest .
-    ```
+```sh
+docker build -f docker/Dockerfile.base -t livepeer/comfyui-base:latest .
+```
 
 ### Host Configuration
 
@@ -111,7 +111,7 @@ VS Code will automatically activate the `comfystream` environment, unless you ch
 
 Alternatively, you may activate an environment manually with `conda activate comfyui` or `conda activate comfystream`
 
-> [!NOTE] NOTE For more information, see [Python environments in VS Code](https://code.visualstudio.com/docs/python/environments)
+> [!NOTE] For more information, see [Python environments in VS Code](https://code.visualstudio.com/docs/python/environments)
 
 ### Starting ComfyUI
 
