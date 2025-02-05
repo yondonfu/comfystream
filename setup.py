@@ -7,7 +7,7 @@ setup(
     package_dir={"": "src"},
     install_requires=[
         "asyncio",
-        "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@1f69d3ec0b95ff6512b5976752f33fc4c56a4fbe",
+        "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@ce3583ad42c024b8f060d0002cbe20c265da6dc8",
     ],
     extras_require={"dev": ["pytest"]},
     url="https://github.com/yondonfu/comfystream",
