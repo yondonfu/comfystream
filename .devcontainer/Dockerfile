@@ -1,4 +1,8 @@
-FROM livepeer/comfyui-base:latest AS comfystream
+ARG BASE_IMAGE=livepeer/comfyui-base:latest
+FROM ${BASE_IMAGE}
+
+RUN echo "Using base image: ${BASE_IMAGE}"
+
 ENV PATH="/miniconda3/bin:${PATH}"
 EXPOSE 8188
 EXPOSE 8888
@@ -24,11 +28,11 @@ ENV NODE_PATH=$NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 RUN conda init bash
 
+# Create the supervisor configuration file for ComfyUI and ComfyStream 
+RUN mkdir -p /etc/supervisor/conf.d
+COPY .devcontainer/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 WORKDIR /comfystream
 COPY docker/entrypoint.sh /comfystream/docker/entrypoint.sh
 RUN chmod +x /comfystream/docker/entrypoint.sh
 ENTRYPOINT ["/comfystream/docker/entrypoint.sh"]
-
-# Create the supervisor configuration file for ComfyUI and ComfyStream 
-RUN mkdir -p /etc/supervisor/conf.d
-COPY .devcontainer/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
