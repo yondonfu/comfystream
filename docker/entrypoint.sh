@@ -16,7 +16,7 @@ if [ "$1" = "--build-engines" ]; then
     shift
 fi
 
-if [ "$1" = "--run-comfystream" ]; then
+if [ "$1" = "--server" ]; then
     /usr/bin/supervisord
 fi
 
