@@ -291,7 +291,7 @@
         "Node name for S&R": "TensorRTLoader"
       },
       "widgets_values": [
-        "ComfyUI_STAT_dreamshaper-8-dmd-1kstep-fp8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
         "SD15"
       ]
     },
