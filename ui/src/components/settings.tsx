@@ -1,3 +1,6 @@
+/**
+ * @file Contains a StreamSettings component for configuring stream settings.
+ */
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,7 +41,7 @@ export interface StreamConfig {
   streamUrl: string;
   frameRate: number;
   prompt?: any;
-  selectedDeviceId: string;
+  selectedDeviceId: string | undefined;
 }
 
 interface VideoDevice {
@@ -50,7 +53,7 @@ export const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
     process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8888",
   frameRate: 30,
-  selectedDeviceId: "",
+  selectedDeviceId: undefined,
 };
 
 interface StreamSettingsProps {
@@ -77,7 +80,7 @@ export function StreamSettings({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader className="text-left">
             <DialogTitle>
               <div className="mt-4">Stream Settings</div>
@@ -133,17 +136,22 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const [prompt, setPrompt] = useState<any>(null);
   const { setOriginalPrompt } = usePrompt();
   const [videoDevices, setVideoDevices] = useState<VideoDevice[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<string>("");
+  const [selectedDevice, setSelectedDevice] = useState<string | undefined>(
+    config.selectedDeviceId
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: config,
   });
 
+  /**
+   * Retrieves the list of video devices available on the user's device.
+   */
   const getVideoDevices = useCallback(async () => {
     try {
+      // Get Available Video Devices.
       await navigator.mediaDevices.getUserMedia({ video: true });
-
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices
         .filter((device) => device.kind === "videoinput")
@@ -151,16 +159,18 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
           deviceId: device.deviceId,
           label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`,
         }));
-
       setVideoDevices(videoDevices);
-      if (videoDevices.length > 0) {
-        setSelectedDevice((curr) => curr || videoDevices[0].deviceId);
-      }
-    } catch (err) {
-      console.error("Failed to get video devices");
-    }
-  }, []);
 
+      // Use first device as default and remove selected device if unavailable.
+      if (!videoDevices.some((device) => device.deviceId === selectedDevice)) {
+        setSelectedDevice(videoDevices.length > 0 ? videoDevices[0].deviceId : undefined);
+      }
+    } catch (err){
+      console.log(`Failed to get video devices: ${err}`);
+    }
+  }, [selectedDevice]);
+
+  // Handle device change events.
   useEffect(() => {
     getVideoDevices();
     navigator.mediaDevices.addEventListener("devicechange", getVideoDevices);
@@ -198,6 +208,16 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
     }
   };
 
+  /**
+   * Handles the camera selection.
+   * @param deviceId
+   */
+  const handleCameraSelect = (deviceId: string) => {
+    if (deviceId !== selectedDevice) {
+      setSelectedDevice(deviceId);
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} autoComplete="off">
@@ -231,17 +251,29 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
 
         <div className="mt-4 mb-4">
           <Label>Camera</Label>
-          <Select value={selectedDevice} onValueChange={setSelectedDevice}>
+          <Select
+            required={true}
+            value={selectedDevice}
+            onValueChange={handleCameraSelect}
+          >
             <Select.Trigger className="w-full mt-2">
-              {videoDevices.find((d) => d.deviceId === selectedDevice)?.label ||
-                "Select camera"}
+              {videoDevices.length === 0
+                ? "No camera devices found"
+                : videoDevices.find((d) => d.deviceId === selectedDevice)
+                    ?.label || "Select camera"}
             </Select.Trigger>
             <Select.Content>
-              {videoDevices.map((device) => (
-                <Select.Option key={device.deviceId} value={device.deviceId}>
-                  {device.label}
+              {videoDevices.length === 0 ? (
+                <Select.Option disabled value="no-devices">
+                  No camera devices found
                 </Select.Option>
-              ))}
+              ) : (
+                videoDevices.map((device) => (
+                  <Select.Option key={device.deviceId} value={device.deviceId}>
+                    {device.label}
+                  </Select.Option>
+                ))
+              )}
             </Select.Content>
           </Select>
         </div>
