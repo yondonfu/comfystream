@@ -62,11 +62,6 @@ nodes:
     url: "https://github.com/rgthree/rgthree-comfy.git"
     type: "utility"
 
-  comfyui-kjnodes:
-    name: "ComfyUI KJNodes"
-    url: "https://github.com/kijai/ComfyUI-KJNodes.git"
-    type: "utility"
-
   comfyui-background-edit:
     name: "ComfyUI Background Edit"
     url: "https://github.com/yondonfu/ComfyUI-Background-Edit"
