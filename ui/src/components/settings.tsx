@@ -154,8 +154,8 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
    */
   const getVideoDevices = useCallback(async () => {
     try {
-      // Get Available Video Devices.
-      await navigator.mediaDevices.getUserMedia({ video: true });
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = [
         { deviceId: "none", label: "No Video" },

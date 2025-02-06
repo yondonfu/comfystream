@@ -22,6 +22,7 @@ from utils import patch_loop_datagram
 logger = logging.getLogger(__name__)
 logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
 logging.getLogger('aiortc.rtcrtpreceiver').setLevel(logging.WARNING)
+logging.getLogger('numba').setLevel(logging.WARNING)
 
 
 MAX_BITRATE = 2000000
@@ -37,9 +38,12 @@ class VideoStreamTrack(MediaStreamTrack):
         asyncio.create_task(self.collect_frames())
 
     async def collect_frames(self):
-        while True:
-            frame = await self.track.recv()
-            await self.pipeline.put_video_frame(frame)
+        try:
+            while True:
+                frame = await self.track.recv()
+                await self.pipeline.put_video_frame(frame)
+        except asyncio.CancelledError:
+            logger.info("Audio frame collection cancelled")
 
     async def recv(self):
         return await self.pipeline.get_processed_video_frame()
@@ -54,9 +58,12 @@ class AudioStreamTrack(MediaStreamTrack):
         asyncio.create_task(self.collect_frames())
 
     async def collect_frames(self):
-        while True:
-            frame = await self.track.recv()
-            await self.pipeline.put_audio_frame(frame)
+        try:
+            while True:
+                frame = await self.track.recv()
+                await self.pipeline.put_audio_frame(frame)
+        except asyncio.CancelledError:
+            logger.info("Audio frame collection cancelled")
 
     async def recv(self):
         return await self.pipeline.get_processed_audio_frame()

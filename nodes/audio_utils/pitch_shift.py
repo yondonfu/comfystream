@@ -27,6 +27,6 @@ class PitchShifter:
 
     def execute(self, audio, sample_rate, pitch_shift):
         audio_float = audio.astype(np.float32) / 32768.0
-        shifted_audio = librosa.effects.pitch_shift(audio_float, sample_rate, n_steps=pitch_shift)
+        shifted_audio = librosa.effects.pitch_shift(y=audio_float, sr=sample_rate, n_steps=pitch_shift)
         shifted_int16 = np.clip(shifted_audio * 32768.0, -32768, 32767).astype(np.int16)
         return shifted_int16, sample_rate

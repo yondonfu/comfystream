@@ -22,7 +22,7 @@ class ComfyStreamClient:
 
     async def set_prompts(self, prompts: List[PromptDictInput]):
         self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
-        for idx in range(self.current_prompts):
+        for idx in range(len(self.current_prompts)):
             task = asyncio.create_task(self.run_prompt(idx))
             self.running_prompts[idx] = task
 
