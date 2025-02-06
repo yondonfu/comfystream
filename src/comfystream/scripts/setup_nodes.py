@@ -85,5 +85,5 @@ def setup_nodes():
     setup_directories(workspace_dir)
     install_custom_nodes(workspace_dir)
 
-
-setup_nodes()
+if __name__ == "__main__":
+    setup_nodes()

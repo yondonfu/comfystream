@@ -4,6 +4,7 @@ build
 .DS_STORE
 comfyui*
 ComfyUI*
+src/comfystream/scripts/build_trt/__pycache__
 
 # VS Code settings
 .vscode/

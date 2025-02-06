@@ -8,45 +8,20 @@ import argparse
 # Reccomended running from comfystream conda environment
 # in devcontainer from the workspace/ directory, or comfystream/ if you've checked out the repo
 # $> conda activate comfystream
-# $> python src/comfystream/scripts/build_trt.py --model /ComfyUI/models/checkpoints/SD1.5/dreamshaper-8.safetensors --out-engine /ComfyUI/output/tensorrt/static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine
-
-# Paths path explicitly to use the downloaded comfyUI installation on root
-ROOT_DIR="/"
-COMFYUI_DIR = "/ComfyUI"
-timing_cache_path = "/ComfyUI/output/tensorrt/timing_cache"
-
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
-if COMFYUI_DIR not in sys.path:
-    sys.path.insert(0, COMFYUI_DIR)
-    
-comfy_dirs = [
-    "/ComfyUI/",
-    "/ComfyUI/comfy",
-    "/ComfyUI/comfy_extras"
-]
-
-for comfy_dir in comfy_dirs:
-    init_file_path = os.path.join(comfy_dir, "__init__.py")
-
-    # Check if the __init__.py file exists
-    if not os.path.exists(init_file_path):
-        try:
-            # Create the __init__.py file
-            with open(init_file_path, "w") as init_file:
-                init_file.write("# This file ensures comfy is treated as a package\n")
-            print(f"Created __init__.py at {init_file_path}")
-        except Exception as e:
-            print(f"Error creating __init__.py: {e}")
-    else:
-        print(f"__init__.py already exists at {init_file_path}")
+# $> python src/comfystream/scripts/build_trt.py --model /ComfyUI/models/checkpoints/SD1.5/dreamshaper-8.safetensors --out-engine /ComfyUI/output/tensorrt/static-dreamshaper8_SD15_/$stat-b-1-h-512-w-512_00001_.engine
 
 import comfy
+import comfy.sd
 import comfy.model_management
 
-from ComfyUI.custom_nodes.ComfyUI_TensorRT.models.supported_models import detect_version_from_model, get_helper_from_model
-from ComfyUI.custom_nodes.ComfyUI_TensorRT.onnx_utils.export import export_onnx
-from ComfyUI.custom_nodes.ComfyUI_TensorRT.tensorrt_diffusion_model import TRTDiffusionBackbone
+# Absolute path of the scripts/ directory for imports
+SCRIPTS_DIR = os.path.abspath(os.path.dirname(__file__))
+if SCRIPTS_DIR not in sys.path:
+    sys.path.append(SCRIPTS_DIR)
+
+from comfyui_trt.models.supported_models import detect_version_from_model, get_helper_from_model
+from comfyui_trt.onnx_utils.export import export_onnx
+from comfyui_trt.tensorrt_diffusion_model import TRTDiffusionBackbone
 
 def parse_args():
     parser = argparse.ArgumentParser(
