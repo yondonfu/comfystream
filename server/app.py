@@ -298,4 +298,7 @@ if __name__ == "__main__":
     app.router.add_get("/", health)
     app.router.add_get("/health", health)
 
+    from api import add_routes
+    add_routes(app)
+    
     web.run_app(app, host=args.host, port=int(args.port))
