@@ -19,11 +19,6 @@ nodes:
     dependencies:
       - "scikit-image"
 
-  comfyui-manager:
-    name: "ComfyUI Manager"
-    url: "https://github.com/ltdrdata/ComfyUI-Manager.git"
-    type: "utility"
-
   comfyui-misc-effects:
     name: "ComfyUI Misc Effects"
     url: "https://github.com/ryanontheinside/ComfyUI-Misc-Effects.git"
