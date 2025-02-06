@@ -33,6 +33,7 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Select } from "./ui/select";
+import { toast } from "sonner";
 
 export interface StreamConfig {
   streamUrl: string;
@@ -156,8 +157,11 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       if (videoDevices.length > 0) {
         setSelectedDevice((curr) => curr || videoDevices[0].deviceId);
       }
-    } catch (err) {
-      console.error("Failed to get video devices");
+    } catch (error){
+      console.log(`Failed to get video devices: ${error}`);
+      toast.error("Failed to get video devices", {
+        description: "Please make sure your camera is connected and enabled.",
+      });
     }
   }, []);
 
@@ -193,8 +197,11 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       const parsedPrompt = JSON.parse(text);
       setPrompt(parsedPrompt);
       setOriginalPrompt(parsedPrompt);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(`Failed to parse prompt: ${error}`);
+      toast.error("Failed to Parse Workflow", {
+        description: "Please upload a valid JSON file.",
+      });
     }
   };
 
