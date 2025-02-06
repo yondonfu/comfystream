@@ -12,12 +12,14 @@ from aiortc import (
     RTCConfiguration,
     RTCIceServer,
     MediaStreamTrack,
-    RTCDataChannel,
 )
+import threading
+import av
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
 from pipeline import Pipeline
-from utils import patch_loop_datagram
+from utils import patch_loop_datagram, StreamStats
+import time
 
 logger = logging.getLogger(__name__)
 logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
@@ -29,16 +31,82 @@ MIN_BITRATE = 2000000
 
 
 class VideoStreamTrack(MediaStreamTrack):
+    """video stream track that processes video frames using a pipeline.
+
+    Attributes:
+        kind (str): The kind of media, which is "video" for this class.
+        track (MediaStreamTrack): The underlying media stream track.
+        pipeline (Pipeline): The processing pipeline to apply to each video frame.
+    """
+
     kind = "video"
 
-    def __init__(self, track: MediaStreamTrack, pipeline):
+    def __init__(self, track: MediaStreamTrack, pipeline: Pipeline):
+        """Initialize the VideoStreamTrack.
+
+        Args:
+            track: The underlying media stream track.
+            pipeline: The processing pipeline to apply to each video frame.
+        """
         super().__init__()
         self.track = track
         self.pipeline = pipeline
+        self._frame_count = 0
+        self._start_time = time.monotonic()
+        self._lock = threading.Lock()
+        self._fps = 0.0
+        self._running = True
+        self._start_fps_thread()
 
-    async def recv(self):
-        frame = await self.track.recv()
-        return await self.pipeline(frame)
+    def _start_fps_thread(self):
+        """Start a separate thread to calculate FPS periodically."""
+        self.fps_thread = threading.Thread(target=self._calculate_fps_loop, daemon=True)
+        self.fps_thread.start()
+
+    def _calculate_fps_loop(self):
+        """Loop to calculate FPS periodically."""
+        while self._running:
+            time.sleep(1)  # Calculate FPS every second.
+            with self._lock:
+                current_time = time.monotonic()
+                time_diff = current_time - self._start_time
+                if time_diff > 0:
+                    self._fps = self._frame_count / time_diff
+
+                    # Reset start_time and frame_count for the next interval.
+                    self._start_time = current_time
+                    self._frame_count = 0
+
+    def stop(self):
+        """Stop the FPS calculation thread."""
+        self._running = False
+        self.fps_thread.join()
+
+    @property
+    def fps(self) -> float:
+        """Get the current output frames per second (FPS).
+
+        Returns:
+            The current output FPS.
+        """
+        with self._lock:
+            return self._fps
+
+    async def recv(self) -> av.VideoFrame:
+        """Receive and process a video frame. Called by the WebRTC library when a frame
+        is received.
+
+        Returns:
+            The processed video frame.
+        """
+        input_frame = await self.track.recv()
+        processed_frame = await self.pipeline(input_frame)
+
+        # Increment frame count for FPS calculation.
+        with self._lock:
+            self._frame_count += 1
+
+        return processed_frame
 
 
 def force_codec(pc, sender, forced_codec):
@@ -156,6 +224,10 @@ async def offer(request):
             tracks["video"] = videoTrack
             sender = pc.addTrack(videoTrack)
 
+            # Store video track in app for stats.
+            stream_id = track.id
+            request.app["video_tracks"][stream_id] = videoTrack
+
             codec = "video/H264"
             force_codec(pc, sender, codec)
 
@@ -207,6 +279,7 @@ async def on_startup(app: web.Application):
         cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True
     )
     app["pcs"] = set()
+    app["video_tracks"] = {}
 
 
 async def on_shutdown(app: web.Application):
@@ -250,5 +323,10 @@ if __name__ == "__main__":
     app.router.add_post("/offer", offer)
     app.router.add_post("/prompt", set_prompt)
     app.router.add_get("/", health)
+
+    # Add routes for getting stream statistics.
+    stream_stats = StreamStats(app)
+    app.router.add_get("/stats", stream_stats.get_stats)
+    app.router.add_get("/stats/{stream_id}", stream_stats.get_stats_by_id)
 
     web.run_app(app, host=args.host, port=int(args.port))
