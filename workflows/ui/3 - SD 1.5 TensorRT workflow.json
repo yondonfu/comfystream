@@ -569,7 +569,7 @@
         "Node name for S&R": "DepthAnythingTensorrt"
       },
       "widgets_values": [
-        "depth_anything_v2_vits-fp16.engine"
+        "depth_anything_vits-fp16.engine"
       ]
     },
     {
