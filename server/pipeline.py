@@ -48,3 +48,9 @@ class Pipeline:
         """Get information about all nodes in the current prompt including metadata."""
         nodes_info = await self.client.get_available_nodes()
         return nodes_info
+
+    async def trigger_workflow(self) -> None:
+        """Trigger the current workflow without requiring a video input"""
+        # Create a dummy frame of 512x512 size
+        frame = torch.zeros(1, 512, 512, 3)
+        await self.predict(frame)

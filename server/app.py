@@ -208,6 +208,21 @@ async def on_startup(app: web.Application):
     )
     app["pcs"] = set()
 
+    # If initial prompt file is provided, load and trigger the workflow
+    if app["initial_prompt_file"]:
+        try:
+            with open(app["initial_prompt_file"], 'r') as f:
+                prompt_data = json.load(f)
+            app["pipeline"].set_prompt(prompt_data)
+            await app["pipeline"].trigger_workflow()
+            logger.info(f"Initial workflow from {app['initial_prompt_file']} triggered successfully")
+        except FileNotFoundError:
+            logger.error(f"Initial prompt file not found: {app['initial_prompt_file']}")
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse JSON from {app['initial_prompt_file']}")
+        except Exception as e:
+            logger.error(f"Failed to trigger initial workflow: {str(e)}")
+
 
 async def on_shutdown(app: web.Application):
     pcs = app["pcs"]
@@ -232,6 +247,11 @@ if __name__ == "__main__":
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level",
     )
+    parser.add_argument(
+        "--initial-prompt-file",
+        default=None,
+        help="Path to JSON file containing the initial prompt to run on startup",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -243,6 +263,7 @@ if __name__ == "__main__":
     app = web.Application()
     app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
     app["workspace"] = args.workspace
+    app["initial_prompt_file"] = args.initial_prompt_file
 
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
