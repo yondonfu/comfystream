@@ -234,6 +234,7 @@ async def offer(request):
         @track.on("ended")
         async def on_ended():
             logger.info(f"{track.kind} track ended")
+            request.app["video_tracks"].pop(track.id, None)
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
