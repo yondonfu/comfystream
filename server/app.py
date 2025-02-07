@@ -51,8 +51,8 @@ class VideoStreamTrack(MediaStreamTrack):
         super().__init__()
         self.track = track
         self.pipeline = pipeline
-        self._frame_count = 0
-        self._start_time = time.monotonic()
+        self._fps_interval_frame_count = 0
+        self._last_fps_calculation_time = time.monotonic()
         self._lock = threading.Lock()
         self._fps = 0.0
         self._running = True
@@ -60,8 +60,8 @@ class VideoStreamTrack(MediaStreamTrack):
 
     def _start_fps_thread(self):
         """Start a separate thread to calculate FPS periodically."""
-        self.fps_thread = threading.Thread(target=self._calculate_fps_loop, daemon=True)
-        self.fps_thread.start()
+        self._fps_thread = threading.Thread(target=self._calculate_fps_loop, daemon=True)
+        self._fps_thread.start()
 
     def _calculate_fps_loop(self):
         """Loop to calculate FPS periodically."""
@@ -69,18 +69,18 @@ class VideoStreamTrack(MediaStreamTrack):
             time.sleep(1)  # Calculate FPS every second.
             with self._lock:
                 current_time = time.monotonic()
-                time_diff = current_time - self._start_time
+                time_diff = current_time - self._last_fps_calculation_time
                 if time_diff > 0:
-                    self._fps = self._frame_count / time_diff
+                    self._fps = self._fps_interval_frame_count / time_diff
 
                     # Reset start_time and frame_count for the next interval.
-                    self._start_time = current_time
-                    self._frame_count = 0
+                    self._last_fps_calculation_time = current_time
+                    self._fps_interval_frame_count = 0
 
     def stop(self):
         """Stop the FPS calculation thread."""
         self._running = False
-        self.fps_thread.join()
+        self._fps_thread.join()
 
     @property
     def fps(self) -> float:
@@ -104,7 +104,7 @@ class VideoStreamTrack(MediaStreamTrack):
 
         # Increment frame count for FPS calculation.
         with self._lock:
-            self._frame_count += 1
+            self._fps_interval_frame_count += 1
 
         return processed_frame
 
