@@ -85,6 +85,7 @@ class StreamStats:
         """
         return {
             "fps": video_track.fps,
+            "frame_delay": video_track.frame_delay,
         }
 
     async def get_stats(self, _) -> web.Response:
