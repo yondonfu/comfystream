@@ -250,5 +250,6 @@ if __name__ == "__main__":
     app.router.add_post("/offer", offer)
     app.router.add_post("/prompt", set_prompt)
     app.router.add_get("/", health)
+    app.router.add_get("/health", health)
 
     web.run_app(app, host=args.host, port=int(args.port))
