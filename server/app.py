@@ -18,7 +18,7 @@ import av
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
 from pipeline import Pipeline
-from utils import patch_loop_datagram, StreamStats
+from utils import patch_loop_datagram, StreamStats, add_prefix_to_app_routes
 import time
 
 logger = logging.getLogger(__name__)
@@ -320,13 +320,19 @@ if __name__ == "__main__":
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
 
+    app.router.add_get("/", health)
+
+    # WebRTC signalling and control routes.
     app.router.add_post("/offer", offer)
     app.router.add_post("/prompt", set_prompt)
-    app.router.add_get("/", health)
 
     # Add routes for getting stream statistics.
     stream_stats = StreamStats(app)
-    app.router.add_get("/stats", stream_stats.get_stats)
-    app.router.add_get("/stats/{stream_id}", stream_stats.get_stats_by_id)
+    app.router.add_get("/streams/stats", stream_stats.get_stats)
+    app.router.add_get("/stream/{stream_id}/stats", stream_stats.get_stats_by_id)
+
+    # Add hosted platform route prefix.
+    # NOTE: This ensures that the local and hosted experiences have consistent routes.
+    add_prefix_to_app_routes(app, "/live")
 
     web.run_app(app, host=args.host, port=int(args.port))
