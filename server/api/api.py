@@ -174,7 +174,7 @@ async def models(request):
     '''
     workspace_dir = request.app["workspace"]
     try:
-        nodes = await list_models(workspace_dir)
+        models = await list_models(workspace_dir)
         return web.json_response({"error": None, "models": models})
     except Exception as e:
         return web.json_response({"error": str(e), "models": models}, status=500)
