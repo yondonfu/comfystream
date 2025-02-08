@@ -483,7 +483,7 @@ if __name__ == "__main__":
     if args.comfyui_inference_log_level:
         app["comfui_inference_log_level"] = args.comfyui_inference_log_level
 
-    from api import add_routes
+    from api.api import add_routes
     add_routes(app)
     
     web.run_app(app, host=args.host, port=int(args.port), print=force_print)
