@@ -435,7 +435,7 @@ if __name__ == "__main__":
         print(*args, **kwargs, flush=True)
         sys.stdout.flush()
 
-    from api import add_routes
+    from api.api import add_routes
     add_routes(app)
     
     web.run_app(app, host=args.host, port=int(args.port), print=force_print)
