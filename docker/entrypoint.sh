@@ -12,7 +12,7 @@ fi
 if [ "$1" = "--build-engines" ]; then
     cd /comfystream
     conda activate comfystream
-    python src/comfystream/scripts/build_trt.py --model /ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /ComfyUI/models/tensorrt/static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine
+    python src/comfystream/scripts/build_trt.py --model /ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /ComfyUI/models/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-512-w-512_00001_.engine
     shift
 fi
 
