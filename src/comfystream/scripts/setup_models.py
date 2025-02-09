@@ -99,4 +99,5 @@ def setup_models():
     setup_directories(workspace_dir)
     setup_model_files(workspace_dir)
 
-setup_models()
+if __name__ == "__main__":
+    setup_models()
