@@ -15,14 +15,52 @@ export const ControlPanelsContainer = () => {
   const [panels, setPanels] = useState<number[]>([0]); // Start with one panel
   const [nextPanelId, setNextPanelId] = useState(1);
   const [isOpen, setIsOpen] = useState(false);
+  const [panelStates, setPanelStates] = useState<Record<number, {
+    nodeId: string;
+    fieldName: string;
+    value: string;
+    isAutoUpdateEnabled: boolean;
+  }>>({
+    0: {
+      nodeId: "",
+      fieldName: "",
+      value: "0",
+      isAutoUpdateEnabled: false
+    }
+  });
 
   const addPanel = () => {
-    setPanels([...panels, nextPanelId]);
+    const newId = nextPanelId;
+    setPanels([...panels, newId]);
+    setPanelStates(prev => ({
+      ...prev,
+      [newId]: {
+        nodeId: "",
+        fieldName: "",
+        value: "0",
+        isAutoUpdateEnabled: false
+      }
+    }));
     setNextPanelId(nextPanelId + 1);
   };
 
   const removePanel = (id: number) => {
     setPanels(panels.filter(panelId => panelId !== id));
+    setPanelStates(prev => {
+      const newState = { ...prev };
+      delete newState[id];
+      return newState;
+    });
+  };
+
+  const updatePanelState = (id: number, state: Partial<typeof panelStates[number]>) => {
+    setPanelStates(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        ...state
+      }
+    }));
   };
 
   return (
@@ -108,7 +146,10 @@ export const ControlPanelsContainer = () => {
                       </Button>
                     </div>
                     <div className="flex-1 overflow-y-auto">
-                      <ControlPanel />
+                      <ControlPanel 
+                        panelState={panelStates[id]}
+                        onStateChange={(state) => updatePanelState(id, state)}
+                      />
                     </div>
                   </div>
                 ))}

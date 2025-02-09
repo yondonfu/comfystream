@@ -17,6 +17,21 @@ interface NodeInfo {
   inputs: Record<string, InputInfo>;
 }
 
+interface ControlPanelProps {
+  panelState: {
+    nodeId: string;
+    fieldName: string;
+    value: string;
+    isAutoUpdateEnabled: boolean;
+  };
+  onStateChange: (state: Partial<{
+    nodeId: string;
+    fieldName: string;
+    value: string;
+    isAutoUpdateEnabled: boolean;
+  }>) => void;
+}
+
 const InputControl = ({ 
   input, 
   value, 
@@ -92,13 +107,9 @@ const InputControl = ({
   }
 };
 
-export const ControlPanel = () => {
+export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) => {
   const { controlChannel } = usePeerContext();
   const { currentPrompt, setCurrentPrompt } = usePrompt();
-  const [nodeId, setNodeId] = useState("");
-  const [fieldName, setFieldName] = useState("");
-  const [value, setValue] = useState("0");
-  const [isAutoUpdateEnabled, setIsAutoUpdateEnabled] = useState(false);
   const [availableNodes, setAvailableNodes] = useState<Record<string, NodeInfo>>({});
   
   // Add ref to track last sent value and timeout
@@ -141,7 +152,7 @@ export const ControlPanel = () => {
   }, [controlChannel]);
 
   const handleValueChange = (newValue: string) => {
-    const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
+    const currentInput = panelState.nodeId && panelState.fieldName ? availableNodes[panelState.nodeId]?.inputs[panelState.fieldName] : null;
     
     if (currentInput) {
       // Validate against min/max if they exist for number types
@@ -154,51 +165,51 @@ export const ControlPanel = () => {
       }
     }
     
-    setValue(newValue);
+    onStateChange({ value: newValue });
   };
 
   // Modify the effect that sends updates with debouncing
   useEffect(() => {
-    const currentInput = nodeId && fieldName ? availableNodes[nodeId]?.inputs[fieldName] : null;
+    const currentInput = panelState.nodeId && panelState.fieldName ? availableNodes[panelState.nodeId]?.inputs[panelState.fieldName] : null;
     if (!currentInput || !currentPrompt) return;
 
     let isValidValue = true;
-    let processedValue: any = value;
+    let processedValue: any = panelState.value;
 
     // Validate and process value based on type
     switch (currentInput.type.toLowerCase()) {
       case 'number':
-        isValidValue = /^-?\d*\.?\d*$/.test(value) && value !== '';
-        processedValue = parseFloat(value);
+        isValidValue = /^-?\d*\.?\d*$/.test(panelState.value) && panelState.value !== '';
+        processedValue = parseFloat(panelState.value);
         break;
       case 'boolean':
-        isValidValue = value === 'true' || value === 'false';
-        processedValue = value === 'true';
+        isValidValue = panelState.value === 'true' || panelState.value === 'false';
+        processedValue = panelState.value === 'true';
         break;
       case 'string':
         // String can be empty, so always valid
-        processedValue = value;
+        processedValue = panelState.value;
         break;
       default:
         if (currentInput.widget === 'combo') {
-          isValidValue = value !== '';
-          processedValue = value;
+          isValidValue = panelState.value !== '';
+          processedValue = panelState.value;
         } else {
-          isValidValue = value !== '';
-          processedValue = value;
+          isValidValue = panelState.value !== '';
+          processedValue = panelState.value;
         }
     }
     
-    const hasRequiredFields = nodeId.trim() !== "" && fieldName.trim() !== "";
+    const hasRequiredFields = panelState.nodeId.trim() !== "" && panelState.fieldName.trim() !== "";
     
     // Check if the value has actually changed
     const lastSent = lastSentValueRef.current;
     const hasValueChanged = !lastSent || 
-      lastSent.nodeId !== nodeId || 
-      lastSent.fieldName !== fieldName || 
+      lastSent.nodeId !== panelState.nodeId || 
+      lastSent.fieldName !== panelState.fieldName || 
       lastSent.value !== processedValue;
 
-    if (controlChannel && isAutoUpdateEnabled && isValidValue && hasRequiredFields && hasValueChanged) {
+    if (controlChannel && panelState.isAutoUpdateEnabled && isValidValue && hasRequiredFields && hasValueChanged) {
       // Clear any existing timeout
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
@@ -208,13 +219,13 @@ export const ControlPanel = () => {
       updateTimeoutRef.current = setTimeout(() => {
         // Create updated prompt while maintaining current structure
         const updatedPrompt = JSON.parse(JSON.stringify(currentPrompt)); // Deep clone
-        if (updatedPrompt[nodeId] && updatedPrompt[nodeId].inputs) {
-          updatedPrompt[nodeId].inputs[fieldName] = processedValue;
+        if (updatedPrompt[panelState.nodeId] && updatedPrompt[panelState.nodeId].inputs) {
+          updatedPrompt[panelState.nodeId].inputs[panelState.fieldName] = processedValue;
           
           // Update last sent value
           lastSentValueRef.current = {
-            nodeId,
-            fieldName,
+            nodeId: panelState.nodeId,
+            fieldName: panelState.fieldName,
             value: processedValue
           };
 
@@ -230,10 +241,10 @@ export const ControlPanel = () => {
         }
       }, currentInput.type.toLowerCase() === 'number' ? 100 : 300); // Shorter delay for numbers, longer for text
     }
-  }, [value, nodeId, fieldName, controlChannel, isAutoUpdateEnabled, availableNodes, currentPrompt, setCurrentPrompt]);
+  }, [panelState.value, panelState.nodeId, panelState.fieldName, panelState.isAutoUpdateEnabled, controlChannel, availableNodes, currentPrompt, setCurrentPrompt]);
 
   const toggleAutoUpdate = () => {
-    setIsAutoUpdateEnabled(!isAutoUpdateEnabled);
+    onStateChange({ isAutoUpdateEnabled: !panelState.isAutoUpdateEnabled });
   };
 
   // Modified to handle initial values better
@@ -250,23 +261,29 @@ export const ControlPanel = () => {
   // Update the field selection handler
   const handleFieldSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedField = e.target.value;
-    setFieldName(selectedField);
     
-    const input = availableNodes[nodeId]?.inputs[selectedField];
+    const input = availableNodes[panelState.nodeId]?.inputs[selectedField];
     if (input) {
       const initialValue = getInitialValue(input);
-      setValue(initialValue);
+      onStateChange({ 
+        fieldName: selectedField,
+        value: initialValue
+      });
+    } else {
+      onStateChange({ fieldName: selectedField });
     }
   };
 
   return (
     <div className="flex flex-col gap-3 p-3">
       <select
-        value={nodeId}
+        value={panelState.nodeId}
         onChange={(e) => {
-          setNodeId(e.target.value);
-          setFieldName(""); // Reset field name when node changes
-          setValue("0");    // Reset value when node changes
+          onStateChange({
+            nodeId: e.target.value,
+            fieldName: "",
+            value: "0"
+          });
         }}
         className="p-2 border rounded"
       >
@@ -279,14 +296,14 @@ export const ControlPanel = () => {
       </select>
 
       <select
-        value={fieldName}
+        value={panelState.fieldName}
         onChange={handleFieldSelect}
-        disabled={!nodeId}
+        disabled={!panelState.nodeId}
         className="p-2 border rounded"
       >
         <option value="">Select Field</option>
-        {nodeId && availableNodes[nodeId]?.inputs && 
-          Object.entries(availableNodes[nodeId].inputs)
+        {panelState.nodeId && availableNodes[panelState.nodeId]?.inputs && 
+          Object.entries(availableNodes[panelState.nodeId].inputs)
             .filter(([_, info]) => {
               const type = typeof info.type === 'string' ? info.type.toLowerCase() : String(info.type).toLowerCase();
               return ['boolean', 'number', 'float', 'int', 'string'].includes(type) || info.widget === 'combo';
@@ -300,19 +317,19 @@ export const ControlPanel = () => {
       </select>
 
       <div className="flex items-center gap-2">
-        {nodeId && fieldName && availableNodes[nodeId]?.inputs[fieldName] && (
+        {panelState.nodeId && panelState.fieldName && availableNodes[panelState.nodeId]?.inputs[panelState.fieldName] && (
           <InputControl
-            input={availableNodes[nodeId].inputs[fieldName]}
-            value={value}
+            input={availableNodes[panelState.nodeId].inputs[panelState.fieldName]}
+            value={panelState.value}
             onChange={handleValueChange}
           />
         )}
         
-        {nodeId && fieldName && availableNodes[nodeId]?.inputs[fieldName]?.type === 'number' && (
+        {panelState.nodeId && panelState.fieldName && availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]?.type === 'number' && (
           <span className="text-sm text-gray-600">
-            {availableNodes[nodeId]?.inputs[fieldName]?.min !== undefined && 
-             availableNodes[nodeId]?.inputs[fieldName]?.max !== undefined && 
-              `(${availableNodes[nodeId]?.inputs[fieldName]?.min} - ${availableNodes[nodeId]?.inputs[fieldName]?.max})`
+            {availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]?.min !== undefined && 
+             availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]?.max !== undefined && 
+              `(${availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]?.min} - ${availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]?.max})`
             }
           </span>
         )}
@@ -324,13 +341,13 @@ export const ControlPanel = () => {
         className={`p-2 rounded ${
           !controlChannel 
             ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-            : isAutoUpdateEnabled 
+            : panelState.isAutoUpdateEnabled 
               ? 'bg-green-500 text-white'
               : 'bg-red-500 text-white'
         }`}
       >
         Auto-Update {controlChannel 
-          ? (isAutoUpdateEnabled ? '(ON)' : '(OFF)') 
+          ? (panelState.isAutoUpdateEnabled ? '(ON)' : '(OFF)') 
           : '(Not Connected)'}
       </button>
     </div>
