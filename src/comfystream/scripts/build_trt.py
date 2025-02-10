@@ -12,8 +12,8 @@ import argparse
 
 # Paths path explicitly to use the downloaded comfyUI installation on root
 ROOT_DIR="/"
-COMFYUI_DIR = "/ComfyUI"
-timing_cache_path = "/ComfyUI/output/tensorrt/timing_cache"
+COMFYUI_DIR = "/workspace/ComfyUI"
+timing_cache_path = "/workspace/ComfyUI/output/tensorrt/timing_cache"
 
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
@@ -21,9 +21,9 @@ if COMFYUI_DIR not in sys.path:
     sys.path.insert(0, COMFYUI_DIR)
     
 comfy_dirs = [
-    "/ComfyUI/",
-    "/ComfyUI/comfy",
-    "/ComfyUI/comfy_extras"
+    "/workspace/ComfyUI/",
+    "/workspace/ComfyUI/comfy",
+    "/workspace/ComfyUI/comfy_extras"
 ]
 
 for comfy_dir in comfy_dirs:

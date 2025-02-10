@@ -3,7 +3,7 @@ FROM ${BASE_IMAGE}
 
 RUN echo "Using base image: ${BASE_IMAGE}"
 
-ENV PATH="/miniconda3/bin:${PATH}"
+ENV PATH="/workspace/miniconda3/bin:${PATH}"
 EXPOSE 8188
 EXPOSE 8888
 EXPOSE 3000
@@ -32,7 +32,7 @@ RUN conda init bash
 RUN mkdir -p /etc/supervisor/conf.d
 COPY .devcontainer/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-WORKDIR /comfystream
-COPY docker/entrypoint.sh /comfystream/docker/entrypoint.sh
-RUN chmod +x /comfystream/docker/entrypoint.sh
-ENTRYPOINT ["/comfystream/docker/entrypoint.sh"]
+WORKDIR /workspace/comfystream
+COPY docker/entrypoint.sh /workspace/comfystream/docker/entrypoint.sh
+RUN chmod +x /workspace/comfystream/docker/entrypoint.sh
+ENTRYPOINT ["/workspace/comfystream/docker/entrypoint.sh"]
