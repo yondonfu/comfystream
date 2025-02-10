@@ -2,6 +2,19 @@
 set -e
 eval "$(conda shell.bash hook)"
 
+# Handle workspace mounting
+if [ -d "/app" ] && [ ! -d "/app/miniconda3" ]; then
+    echo "Initializing workspace in /app..."
+    cp -r /workspace/* /app
+fi
+
+if [ -d "/app" ] && [ ! -L "/workspace" ]; then
+    echo "Starting from volume mount /app..."
+    cd / && rm -rf /workspace
+    ln -sf /app /workspace
+    cd /app
+fi
+
 if [ "$1" = "--download-models" ]; then
     cd /workspace/comfystream
     conda activate comfystream
@@ -19,3 +32,5 @@ fi
 if [ "$1" = "--server" ]; then
     /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
 fi
+
+/bin/bash
