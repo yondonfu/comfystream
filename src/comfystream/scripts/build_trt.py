@@ -11,7 +11,7 @@ import argparse
 # $> python src/comfystream/scripts/build_trt.py --model /ComfyUI/models/checkpoints/SD1.5/dreamshaper-8.safetensors --out-engine /ComfyUI/output/tensorrt/static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine
 
 # Paths path explicitly to use the downloaded comfyUI installation on root
-ROOT_DIR="/"
+ROOT_DIR="/workspace"
 COMFYUI_DIR = "/workspace/ComfyUI"
 timing_cache_path = "/workspace/ComfyUI/output/tensorrt/timing_cache"
 

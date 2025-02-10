@@ -12,7 +12,7 @@ if [ -d "/app" ] && [ ! -L "/workspace" ]; then
     echo "Starting from volume mount /app..."
     cd / && rm -rf /workspace
     ln -sf /app /workspace
-    cd /app
+    cd /workspace/comfystream
 fi
 
 if [ "$1" = "--download-models" ]; then
