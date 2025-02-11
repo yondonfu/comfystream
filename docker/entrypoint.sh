@@ -29,6 +29,12 @@ if [ "$1" = "--build-engines" ]; then
     shift
 fi
 
+# Install npm packages if needed
+cd /workspace/comfystream/ui
+if [ ! -d "node_modules" ]; then
+    npm install --legacy-peer-deps   
+fi
+
 if [ "$1" = "--server" ]; then
     /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
 fi
