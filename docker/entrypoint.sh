@@ -27,7 +27,7 @@ if [ "$1" = "--build-engines" ]; then
     conda activate comfystream
 
     # Build Static Engine for Dreamshaper 
-    python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/models/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-512-w-512_00001_.engine
+    python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/output/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-512-w-512_00001_.engine
 
     # Build Engine for DepthAnything2
     cd /workspace/ComfyUI/models/tensorrt/depth-anything
@@ -45,4 +45,5 @@ if [ "$1" = "--server" ]; then
     /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
 fi
 
+cd /workspace/comfystream
 /bin/bash
