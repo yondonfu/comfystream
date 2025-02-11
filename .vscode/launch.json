@@ -8,7 +8,7 @@
             "name": "Run ComfyUI",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/ComfyUI",
+            "cwd": "/workspace/ComfyUI",
             "program": "main.py",
             "purpose": ["debug-in-terminal"],
             "env": {
@@ -18,28 +18,28 @@
                 "--listen",
                 "--disable-cuda-malloc",
             ],
-            "python": "/miniconda3/envs/comfyui/bin/python"
+            "python": "/workspace/miniconda3/envs/comfyui/bin/python"
         },
         {
             "name": "Run ComfyStream",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/comfystream/server",
+            "cwd": "/workspace/comfystream/server",
             "program": "app.py",
             "args": [
                 "--workspace=/ComfyUI",
                 "--media-ports=5678",
                 "--host=0.0.0.0",
-                "--port=8888",
+                "--port=8889",
                 "--log-level=DEBUG",
             ],
-            "python": "/miniconda3/envs/comfystream/bin/python"
+            "python": "/workspace/miniconda3/envs/comfystream/bin/python"
         },
         {
             "name": "Run ComfyStream UI (Node.js)",
             "type": "node",
             "request": "launch",
-            "cwd": "/comfystream/ui",
+            "cwd": "/workspace/comfystream/ui",
             "console": "integratedTerminal",
             "runtimeExecutable": "npm",
             "runtimeArgs": [
