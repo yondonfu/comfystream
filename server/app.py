@@ -218,7 +218,7 @@ async def on_shutdown(app: web.Application):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run comfystream server")
-    parser.add_argument("--port", default=8888, help="Set the signaling port")
+    parser.add_argument("--port", default=8889, help="Set the signaling port")
     parser.add_argument(
         "--media-ports", default=None, help="Set the UDP ports for WebRTC media"
     )

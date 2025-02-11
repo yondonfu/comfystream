@@ -5,7 +5,7 @@ RUN echo "Using base image: ${BASE_IMAGE}"
 
 ENV PATH="/workspace/miniconda3/bin:${PATH}"
 EXPOSE 8188
-EXPOSE 8888
+EXPOSE 8889
 EXPOSE 3000
 EXPOSE 1024-65535/udp
 RUN apt-get update && apt-get install -y supervisor

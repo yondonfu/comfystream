@@ -51,7 +51,7 @@ interface VideoDevice {
 
 export const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
-    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8888",
+    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8889",
   frameRate: 30,
   selectedDeviceId: undefined,
 };

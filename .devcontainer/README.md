@@ -138,7 +138,7 @@ Start ComfyStream:
 ```sh
 cd /comfystream
 conda activate comfystream
-python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8888
+python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8889
 ```
 
 Optionally, you can also start the [ComfyStream UI](../README.md#run-ui) to view the stream:

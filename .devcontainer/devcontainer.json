@@ -30,7 +30,7 @@
 	},
 	"appPort": [
 		"8188:8188",  // ComfyUI
-		"8888:8888",  // ComfyStream
+		"8889:8889",  // ComfyStream
 		"3000:3000"   // ComfyStream UI (optional)
 	],
 	"forwardPorts": [8188, 8888, 3000],
