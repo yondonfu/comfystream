@@ -40,8 +40,8 @@
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace/comfystream,type=bind",
 	"mounts": [
 		// Use 'mounts' to map to comfyui models on the host
-		"source=${localEnv:HOME}/models/ComfyUI--models,target=/ComfyUI/models,type=bind,consistency=cached",
-		"source=${localEnv:HOME}/models/ComfyUI--output,target=/ComfyUI/output,type=bind,consistency=cached"
+		"source=${localEnv:HOME}/models/ComfyUI--models,target=/workspace/ComfyUI/models,type=bind,consistency=cached",
+		"source=${localEnv:HOME}/models/ComfyUI--output,target=/workspace/ComfyUI/output,type=bind,consistency=cached"
 	],
 	"postCreateCommand": ".devcontainer/post-create.sh"
 }
