@@ -25,7 +25,13 @@ fi
 if [ "$1" = "--build-engines" ]; then
     cd /workspace/comfystream
     conda activate comfystream
+
+    # Build Static Engine for Dreamshaper 
     python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/models/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-512-w-512_00001_.engine
+
+    # Build Engine for DepthAnything2
+    cd /workspace/ComfyUI/models/tensorrt/depth-anything
+    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
     shift
 fi
 
