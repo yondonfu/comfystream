@@ -38,7 +38,7 @@ fi
 # Install npm packages if needed
 cd /workspace/comfystream/ui
 if [ ! -d "node_modules" ]; then
-    npm install --legacy-peer-deps   
+    npm install --legacy-peer-deps
 fi
 
 if [ "$1" = "--server" ]; then
