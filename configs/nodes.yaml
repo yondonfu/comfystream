@@ -19,11 +19,6 @@ nodes:
     dependencies:
       - "scikit-image"
 
-  comfyui-manager:
-    name: "ComfyUI Manager"
-    url: "https://github.com/ltdrdata/ComfyUI-Manager.git"
-    type: "utility"
-
   comfyui-misc-effects:
     name: "ComfyUI Misc Effects"
     url: "https://github.com/ryanontheinside/ComfyUI-Misc-Effects.git"
@@ -60,11 +55,6 @@ nodes:
   rgthree-comfy:
     name: "rgthree Comfy"
     url: "https://github.com/rgthree/rgthree-comfy.git"
-    type: "utility"
-
-  comfyui-kjnodes:
-    name: "ComfyUI KJNodes"
-    url: "https://github.com/kijai/ComfyUI-KJNodes.git"
     type: "utility"
 
   comfyui-background-edit:
