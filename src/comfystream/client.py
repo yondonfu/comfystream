@@ -125,7 +125,7 @@ class ComfyStreamClient:
                     
                     # Now process any nodes in our prompt that use this class_type
                     for node_id in list(remaining_nodes):
-                        node = self.prompt[node_id]
+                        node = prompt[node_id]
                         if node.get('class_type') != class_type:
                             continue
                             
@@ -149,7 +149,7 @@ class ComfyStreamClient:
 
                     all_prompts_nodes_info[prompt_index] = nodes_info
             
-            return all_prompts_nodes_info
+            return all_prompts_nodes_info[0] # TODO: make it for for multiple prompts
             
         except Exception as e:
             logger.error(f"Error getting node info: {str(e)}")

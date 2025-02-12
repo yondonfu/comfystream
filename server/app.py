@@ -153,11 +153,11 @@ async def offer(request):
                             "nodes": nodes_info
                         }
                         channel.send(json.dumps(response))
-                    elif params.get("type") == "update_prompts":
-                        if "prompts" not in params:
+                    elif params.get("type") == "update_prompt":
+                        if "prompt" not in params:
                             logger.warning("[Control] Missing prompt in update_prompt message")
                             return
-                        await pipeline.update_prompts(params["prompts"])
+                        await pipeline.update_prompts(params["prompt"])
                         response = {
                             "type": "prompts_updated",
                             "success": True
