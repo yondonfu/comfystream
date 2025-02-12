@@ -197,7 +197,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
         setSelectedAudioDevice(audioDevices[1].deviceId); // Index 1 because 0 is "No Audio"
       }
     } catch (err) {
-      console.error("Failed to get audio devices");
+      console.log(`Failed to get audio devices: ${err}`);
       // If we can't access audio devices, still provide the None option
       const audioDevices = [{ deviceId: "none", label: "No Audio" }];
       setAudioDevices(audioDevices);
