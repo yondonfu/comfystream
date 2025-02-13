@@ -57,7 +57,7 @@ async def add_model(model, workspace_dir):
         
         # check path is in workspace_dir, raises value error if not
         model_path.resolve().relative_to(Path(os.path.join(workspace_dir, "models")))
-
+        os.makedirs(model_path.parent, exist_ok=True)
         # start downloading the model in background without blocking
         asyncio.create_task(download_model(model['url'], model_path))
     except Exception as e:
@@ -81,7 +81,7 @@ async def delete_model(model, workspace_dir):
 async def download_model(url: str, save_path: Path):
     try:
         temp_file = save_path.with_suffix(save_path.suffix + ".downloading")
-
+        print("downloading")
         async with ClientSession() as session:
             logger.info(f"downloading model from {url} to {save_path}")
             # Create empty file to track download in process
