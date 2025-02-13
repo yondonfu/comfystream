@@ -38,6 +38,12 @@ class Pipeline:
         else:
             await self.client.set_prompts([prompts])
 
+    async def update_prompts(self, prompts: Union[Dict[Any, Any], List[Dict[Any, Any]]]):
+        if isinstance(prompts, list):
+            await self.client.update_prompts(prompts)
+        else:
+            await self.client.update_prompts([prompts])
+
     async def put_video_frame(self, frame: av.VideoFrame):
         inp_tensor = self.video_preprocess(frame)
         self.client.put_video_input(inp_tensor)
