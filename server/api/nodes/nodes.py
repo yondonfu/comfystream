@@ -16,6 +16,9 @@ async def list_nodes(workspace_dir):
     
     nodes = []
     for node in custom_nodes_path.iterdir():
+        if node.name == "__pycache__":
+            continue
+        
         if node.is_dir():
             logger.info(f"getting info for node: { node.name}")
             node_info = {
@@ -57,7 +60,7 @@ async def install_node(node, workspace_dir):
 
     installs requirements.txt from repository if present
     
-    paramaters:
+    # Paramaters
     url: url of the git repository
     branch: branch to install
     dependencies: comma separated list of pip dependencies to install
