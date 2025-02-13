@@ -1,14 +1,16 @@
-from pathlib import Path
-import os
-import json
-from git import Repo
-import logging
-import sys
 from aiohttp import web
 
 from api.nodes.nodes import list_nodes, install_node, delete_node
 from api.models.models import list_models, add_model, delete_model
 from api.settings.settings import set_twilio_account_info
+
+from comfy.nodes.package_typing import ExportedNodes
+from comfy.nodes.package import _comfy_nodes, import_all_nodes_in_workspace
+from comfy.cmd.execution import nodes
+
+from api.nodes.nodes import force_import_all_nodes_in_workspace
+#use a different node import
+import_all_nodes_in_workspace = force_import_all_nodes_in_workspace
 
 def add_routes(app):
     app.router.add_get("/env/list_nodes", nodes)
@@ -19,9 +21,38 @@ def add_routes(app):
     app.router.add_post("/env/add_models", add_models)
     app.router.add_post("/env/delete_models", delete_models)
 
+    app.router.add_post("/env/reload", reload)
     app.router.add_post("/env/set_account_info", set_account_info)
 
+async def reload(request):
+    '''
+    Reload ComfyUI environment
 
+    '''
+    
+    #reset embedded client
+    from comfy.client.embedded_comfy_client import EmbeddedComfyClient
+    from comfy.cli_args_types import Configuration
+    await request.app["pipeline"].client.comfy_client.__aexit__()
+    
+    #reset imports to clear imported nodes
+    global _comfy_nodes
+    if len(_comfy_nodes) > 0:
+        import sys
+        import importlib
+        del sys.modules['comfy.nodes.package']
+        del sys.modules['comfy.cmd.execution']
+        globals()['comfy.nodes.package'] = importlib.import_module('comfy.nodes.package')
+        globals()['comfy.cmd.execution'] = importlib.import_module('comfy.cmd.execution')
+        #use a different node import
+        import_all_nodes_in_workspace = force_import_all_nodes_in_workspace
+        _comfy_nodes = import_all_nodes_in_workspace()
+    
+    #load new embedded client
+    request.app["pipeline"].client.comfy_client = EmbeddedComfyClient(Configuration(cwd=request.app["workspace"], disable_cuda_malloc=True, gpu_only=True))
+        
+    return web.json_response({"success": True, "error": None})
+    
 async def nodes(request):
     '''
     List all custom nodes in the workspace
@@ -87,6 +118,24 @@ async def install_nodes(request):
         for node in nodes:
             await install_node(node, workspace_dir)
             installed_nodes.append(node['url'])
+        
+        #restart embedded client        
+        #request.app["pipeline"].client.set_prompt(request.app["pipeline"].client.prompt)
+        
+        # reimport nodes to workspace
+        #from comfy.cmd.execution import nodes
+        #from comfy.nodes.package import import_all_nodes_in_workspace
+        #update_nodes = import_all_nodes_in_workspace()
+        #nodes.update(update_nodes)
+
+        #config = request.app["pipeline"].client.comfy_client._configuration
+        #from comfy.client.embedded_comfy_client import EmbeddedComfyClient
+        #request.app["pipeline"].client.comfy_client = EmbeddedComfyClient(config)
+        #await request.app["pipeline"].warm()
+
+        #from pipeline import Pipeline
+        #request.app["pipeline"] = Pipeline(cwd=request.app["workspace"], disable_cuda_malloc=True, gpu_only=True)
+
         return web.json_response({"success": True, "error": None, "installed_nodes": installed_nodes})
     except Exception as e:
         return web.json_response({"success": False, "error": str(e), "installed_nodes": installed_nodes}, status=500)
