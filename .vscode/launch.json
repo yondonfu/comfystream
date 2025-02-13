@@ -27,7 +27,7 @@
             "cwd": "/workspace/comfystream/server",
             "program": "app.py",
             "args": [
-                "--workspace=/ComfyUI",
+                "--workspace=/workspace/ComfyUI",
                 "--media-ports=5678",
                 "--host=0.0.0.0",
                 "--port=8889",
