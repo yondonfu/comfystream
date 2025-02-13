@@ -7,6 +7,7 @@ This repo also includes a WebRTC server and UI that uses comfystream to support 
 - [comfystream](#comfystream)
   - [Quick Start](#quick-start)
     - [Docker DevContainer](#docker-devcontainer)
+    - [Docker Image](#docker-image)
   - [Download Models](#download-models)
   - [Install package](#install-package)
     - [Custom Nodes](#custom-nodes)
@@ -25,6 +26,15 @@ Refer to [.devcontainer/README.md](.devcontainer/README.md) to setup ComfyStream
 For other installation options, refer to [Install ComfyUI and ComfyStream](https://pipelines.livepeer.org/docs/technical/install/local-testing) in the Livepeer pipelines documentation.
 
 For additional information, refer to the remaining sections below.
+
+### Docker Image
+You can quickly deploy ComfyStream using the docker image `livepeer/comfystream`
+
+Refer to the documentation at [https://pipelines.livepeer.org/docs/technical/getting-started/install-comfystream](https://pipelines.livepeer.org/docs/technical/getting-started/install-comfystream) for instructions to run locally or on a remote server.
+
+#### RunPod
+
+The RunPod template [livepeer-comfystream](https://runpod.io/console/deploy?template=w01m180vxx&ref=u8tlskew) can be used to deploy to RunPod.
 
 ## Download Models
 
