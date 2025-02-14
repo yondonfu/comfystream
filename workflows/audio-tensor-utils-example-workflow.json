@@ -1,0 +1,40 @@
+{
+    "1": {
+      "inputs": {
+        "buffer_size": 500.0
+      },
+      "class_type": "LoadAudioTensor",
+      "_meta": {
+        "title": "Load Audio Tensor"
+      }
+    },
+    "2": {
+      "inputs": {
+        "audio": [
+          "1",
+          0
+        ],
+        "sample_rate": [
+          "1",
+          1
+        ],
+        "pitch_shift": 4.0
+      },
+      "class_type": "PitchShifter",
+      "_meta": {
+        "title": "Pitch Shift"
+      }
+    },
+    "3": {
+      "inputs": {
+        "audio": [
+          "2",
+          0
+        ]
+      },
+      "class_type": "SaveAudioTensor",
+      "_meta": {
+        "title": "Save Audio Tensor"
+      }
+    }
+}
