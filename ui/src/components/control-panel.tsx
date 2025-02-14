@@ -109,7 +109,7 @@ const InputControl = ({
 
 export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) => {
   const { controlChannel } = usePeerContext();
-  const { currentPrompt, setCurrentPrompt } = usePrompt();
+  const { currentPrompts, setCurrentPrompts } = usePrompt();
   const [availableNodes, setAvailableNodes] = useState<Record<string, NodeInfo>>({});
   
   // Add ref to track last sent value and timeout
@@ -139,7 +139,7 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
           const data = JSON.parse(event.data);
           if (data.type === "nodes_info") {
             setAvailableNodes(data.nodes);
-          } else if (data.type === "prompt_updated") {
+          } else if (data.type === "prompts_updated") {
             if (!data.success) {
               console.error("[ControlPanel] Failed to update prompt");
             }
@@ -171,7 +171,7 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
   // Modify the effect that sends updates with debouncing
   useEffect(() => {
     const currentInput = panelState.nodeId && panelState.fieldName ? availableNodes[panelState.nodeId]?.inputs[panelState.fieldName] : null;
-    if (!currentInput || !currentPrompt) return;
+    if (!currentInput || !currentPrompts) return;
 
     let isValidValue = true;
     let processedValue: any = panelState.value;
@@ -218,6 +218,7 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
       // Set a new timeout for the update
       updateTimeoutRef.current = setTimeout(() => {
         // Create updated prompt while maintaining current structure
+        const currentPrompt = currentPrompts[0];
         const updatedPrompt = JSON.parse(JSON.stringify(currentPrompt)); // Deep clone
         if (updatedPrompt[panelState.nodeId] && updatedPrompt[panelState.nodeId].inputs) {
           updatedPrompt[panelState.nodeId].inputs[panelState.fieldName] = processedValue;
@@ -231,17 +232,17 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
 
           // Send the full prompt update
           const message = JSON.stringify({
-            type: "update_prompt",
-            prompt: updatedPrompt
+            type: "update_prompts",
+            prompts: [updatedPrompt]
           });
           controlChannel.send(message);
           
           // Only update current prompt after sending
-          setCurrentPrompt(updatedPrompt);
+          setCurrentPrompts([updatedPrompt]);
         }
       }, currentInput.type.toLowerCase() === 'number' ? 100 : 300); // Shorter delay for numbers, longer for text
     }
-  }, [panelState.value, panelState.nodeId, panelState.fieldName, panelState.isAutoUpdateEnabled, controlChannel, availableNodes, currentPrompt, setCurrentPrompt]);
+  }, [panelState.value, panelState.nodeId, panelState.fieldName, panelState.isAutoUpdateEnabled, controlChannel, availableNodes, currentPrompts, setCurrentPrompts]);
 
   const toggleAutoUpdate = () => {
     onStateChange({ isAutoUpdateEnabled: !panelState.isAutoUpdateEnabled });
