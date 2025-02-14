@@ -1,0 +1,388 @@
+{
+  "3": {
+    "inputs": {
+      "unet_name": "ComfyUI_STAT_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+      "model_type": "SD15"
+    },
+    "class_type": "TensorRTLoader",
+    "_meta": {
+      "title": "TensorRT Loader"
+    }
+  },
+  "4": {
+    "inputs": {
+      "ckpt_name": "dreamshaper_8.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "7": {
+    "inputs": {
+      "seed": 393392643060621,
+      "steps": 1,
+      "cfg": 1,
+      "sampler_name": "lcm",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": [
+        "3",
+        0
+      ],
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "9",
+        1
+      ],
+      "latent_image": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "8": {
+    "inputs": {
+      "control_net_name": "1.5/control_v11f1p_sd15_depth_fp16.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "9": {
+    "inputs": {
+      "strength": 1,
+      "start_percent": 0,
+      "end_percent": 1,
+      "positive": [
+        "40",
+        0
+      ],
+      "negative": [
+        "40",
+        1
+      ],
+      "control_net": [
+        "10",
+        0
+      ],
+      "image": [
+        "48",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "10": {
+    "inputs": {
+      "backend": "inductor",
+      "fullgraph": false,
+      "mode": "reduce-overhead",
+      "controlnet": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "TorchCompileLoadControlNet",
+    "_meta": {
+      "title": "TorchCompileLoadControlNet"
+    }
+  },
+  "11": {
+    "inputs": {
+      "vae_name": "taesd"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "13": {
+    "inputs": {
+      "backend": "inductor",
+      "fullgraph": true,
+      "mode": "reduce-overhead",
+      "compile_encoder": true,
+      "compile_decoder": true,
+      "vae": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "TorchCompileLoadVAE",
+    "_meta": {
+      "title": "TorchCompileLoadVAE"
+    }
+  },
+  "14": {
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "15": {
+    "inputs": {
+      "images": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "16": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "27": {
+    "inputs": {
+      "text": "worst quality, low quality",
+      "clip": [
+        "39",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "29": {
+    "inputs": {
+      "mask": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "InvertMask",
+    "_meta": {
+      "title": "InvertMask"
+    }
+  },
+  "31": {
+    "inputs": {
+      "image": "binary_mask.png",
+      "channel": "red",
+      "upload": "image"
+    },
+    "class_type": "LoadImageMask",
+    "_meta": {
+      "title": "Load Image (as Mask)"
+    }
+  },
+  "35": {
+    "inputs": {
+      "text": "worst quality, low quality",
+      "clip": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "36": {
+    "inputs": {
+      "stop_at_clip_layer": -2,
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPSetLastLayer",
+    "_meta": {
+      "title": "CLIP Set Last Layer"
+    }
+  },
+  "37": {
+    "inputs": {
+      "strength": 1,
+      "set_cond_area": "default",
+      "positive_NEW": [
+        "43",
+        0
+      ],
+      "negative_NEW": [
+        "35",
+        0
+      ],
+      "mask": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "PairConditioningSetProperties",
+    "_meta": {
+      "title": "Cond Pair Set Props"
+    }
+  },
+  "38": {
+    "inputs": {
+      "apply_to_conds": true,
+      "schedule_clip": false,
+      "clip": [
+        "36",
+        0
+      ],
+      "hooks": [
+        "42",
+        0
+      ]
+    },
+    "class_type": "SetClipHooks",
+    "_meta": {
+      "title": "Set CLIP Hooks"
+    }
+  },
+  "39": {
+    "inputs": {
+      "apply_to_conds": true,
+      "schedule_clip": false,
+      "clip": [
+        "36",
+        0
+      ],
+      "hooks": [
+        "46",
+        0
+      ]
+    },
+    "class_type": "SetClipHooks",
+    "_meta": {
+      "title": "Set CLIP Hooks"
+    }
+  },
+  "40": {
+    "inputs": {
+      "strength": 1,
+      "set_cond_area": "default",
+      "positive": [
+        "37",
+        0
+      ],
+      "negative": [
+        "37",
+        1
+      ],
+      "positive_NEW": [
+        "45",
+        0
+      ],
+      "negative_NEW": [
+        "27",
+        0
+      ],
+      "mask": [
+        "29",
+        0
+      ]
+    },
+    "class_type": "PairConditioningSetPropertiesAndCombine",
+    "_meta": {
+      "title": "Cond Pair Set Props Combine"
+    }
+  },
+  "42": {
+    "inputs": {
+      "lora_name": "SD1.5/ral-chrome-sd15.safetensors",
+      "strength_model": 1.1,
+      "strength_clip": 1
+    },
+    "class_type": "CreateHookLora",
+    "_meta": {
+      "title": "Create Hook LoRA"
+    }
+  },
+  "43": {
+    "inputs": {
+      "text": "golden metallic man made of ral-chrome",
+      "clip": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "45": {
+    "inputs": {
+      "text": "abstract multicolored man made of ral-polygon",
+      "clip": [
+        "39",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "46": {
+    "inputs": {
+      "lora_name": "SD1.5/ral-polygon-sd15 (1).safetensors",
+      "strength_model": 1.1,
+      "strength_clip": 1
+    },
+    "class_type": "CreateHookLora",
+    "_meta": {
+      "title": "Create Hook LoRA"
+    }
+  },
+  "47": {
+    "inputs": {
+      "image": "example.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "48": {
+    "inputs": {
+      "engine": "depth_anything_v2_vitb-fp16.engine",
+      "images": [
+        "47",
+        0
+      ]
+    },
+    "class_type": "DepthAnythingTensorrt",
+    "_meta": {
+      "title": "Depth Anything Tensorrt"
+    }
+  }
+}
