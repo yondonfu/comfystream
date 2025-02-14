@@ -73,7 +73,7 @@ From within the **dev container**, download models to run the example workflows:
 ```sh
 cd /workspace/comfystream
 conda activate comfystream
-python src/comfystream/scripts/setup_models.py --workspace /ComfyUI
+python src/comfystream/scripts/setup_models.py --workspace /workspace/ComfyUI
 ```
 
 For more info about configuring model downloads, see [src/comfystream/scripts/README.md](../src/comfystream/scripts/README.md)
