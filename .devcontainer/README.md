@@ -65,53 +65,7 @@ Replace `/path/to/your/model-files` and `path/to/your/output-files` with the pat
 2. From VS Code, reload the folder as a devcontainer:
    - Open the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P` on macOS).
    - Select `Remote-Containers: Reopen in Container`.
-
-### Download models
-
-From within the **dev container**, download models to run the example workflows:
-
-```sh
-cd /workspace/comfystream
-conda activate comfystream
-python src/comfystream/scripts/setup_models.py --workspace /workspace/ComfyUI
-```
-
-For more info about configuring model downloads, see [src/comfystream/scripts/README.md](../src/comfystream/scripts/README.md)
-
-By following these steps, you should be able to set up and run your development container for ComfyStream efficiently.
-
-### Building the DepthAnything Engine
-
-After downloading models, it is necessary to compile TensorRT engines for the example workflow.
-
-> [!NOTE]
-> Engine files must be compiled on the same GPU hardware/architecture that they will be used on. This step must be run manually after starting the devcontainer. You may use either conda environment for this step.
-
-1. Run the **export_trt.py** script from the directory of the onnx file:
-
-    ```sh
-    cd /workspace/ComfyUI/models/tensorrt/depth-anything
-    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
-    ```
-
-## Debugging ComfyStream and ComfyUI
-
-The `launch.json` includes sample launch configurations for ComfyStream and ComfyUI.
-
-## Setting the Python Environment
-
-Conda is initialized in the bash shell with no environment activated to provide better interoperability with VS Code Shell Integration.
-
-VS Code will automatically activate the `comfystream` environment, unless you change it:
-
-1. From VSCode, press `Ctrl-Shift-P`.
-2. Choose `Python: Select Interpreter`.
-3. Select `comfystream` or `comfyui`.
-4. Open a new terminal, you will see the environment name to the left of the bash terminal.
-
-Alternatively, you may activate an environment manually with `conda activate comfyui` or `conda activate comfystream`
-
-> [!NOTE] For more information, see [Python environments in VS Code](https://code.visualstudio.com/docs/python/environments)
+3. Wait for the container to build and start.
 
 ### Starting ComfyUI
 
@@ -147,6 +101,64 @@ Optionally, you can also start the [ComfyStream UI](../README.md#run-ui) to view
 cd /workspace/comfystream/ui
 npm run dev:https
 ```
+
+### Running Example Workflows
+
+To run example workflows, you need to download models and build TensorRT engines. You can do this from within the dev container by running the following command in the terminal:
+
+```sh
+prepare_examples
+```
+
+Alternatively, you can follow the steps below.
+
+#### Download models
+
+From within the **dev container**, download models to run the example workflows:
+
+```sh
+cd /workspace/comfystream
+conda activate comfystream
+python src/comfystream/scripts/setup_models.py --workspace /workspace/ComfyUI
+```
+
+For more info about configuring model downloads, see [src/comfystream/scripts/README.md](../src/comfystream/scripts/README.md)
+
+By following these steps, you should be able to set up and run your development container for ComfyStream efficiently.
+
+#### Building the DepthAnything Engine
+
+After downloading models, it is necessary to compile TensorRT engines for the example workflow.
+
+> [!NOTE]
+> Engine files must be compiled on the same GPU hardware/architecture that they will be used on. This step must be run manually after starting the devcontainer. You may use either conda environment for this step.
+
+1. Run the **export_trt.py** script from the directory of the onnx file:
+
+    ```sh
+    cd /workspace/ComfyUI/models/tensorrt/depth-anything
+    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
+    ```
+
+## Debugging ComfyStream and ComfyUI
+
+The `launch.json` includes sample launch configurations for ComfyStream and ComfyUI.
+
+## Setting the Python Environment
+
+Conda is initialized in the bash shell with no environment activated to provide better interoperability with VS Code Shell Integration.
+
+VS Code will automatically activate the `comfystream` environment, unless you change it:
+
+1. From VSCode, press `Ctrl-Shift-P`.
+2. Choose `Python: Select Interpreter`.
+3. Select `comfystream` or `comfyui`.
+4. Open a new terminal, you will see the environment name to the left of the bash terminal.
+
+Alternatively, you may activate an environment manually with `conda activate comfyui` or `conda activate comfystream`
+
+> [!NOTE] For more information, see [Python environments in VS Code](https://code.visualstudio.com/docs/python/environments)
+
 
 ## Additional Resources
 
