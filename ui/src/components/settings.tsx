@@ -195,7 +195,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       setAudioDevices(audioDevices);
       // Set default to first available microphone if no selection yet
       if (!selectedAudioDevice && audioDevices.length > 1) {
-        setSelectedAudioDevice(audioDevices[1].deviceId); // Index 1 because 0 is "No Audio"
+        setSelectedAudioDevice(audioDevices[0].deviceId); // Default to "No Audio" for now
       }
     } catch (err) {
       console.error("Failed to get audio devices");
