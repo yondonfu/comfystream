@@ -28,6 +28,7 @@ For other installation options, refer to [Install ComfyUI and ComfyStream](https
 For additional information, refer to the remaining sections below.
 
 ### Docker Image
+
 You can quickly deploy ComfyStream using the docker image `livepeer/comfystream`
 
 Refer to the documentation at [https://pipelines.livepeer.org/docs/technical/getting-started/install-comfystream](https://pipelines.livepeer.org/docs/technical/getting-started/install-comfystream) for instructions to run locally or on a remote server.
