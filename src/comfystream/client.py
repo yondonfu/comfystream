@@ -18,6 +18,7 @@ class ComfyStreamClient:
         self.comfy_client = EmbeddedComfyClient(config, max_workers=max_workers)
         self.running_prompts = {} # To be used for cancelling tasks
         self.current_prompts = []
+        self.cleanup_lock = asyncio.Lock()
 
     async def set_prompts(self, prompts: List[PromptDictInput]):
         self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
@@ -38,16 +39,39 @@ class ComfyStreamClient:
             try:
                 await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
             except Exception as e:
+                await self.cleanup()
                 logger.error(f"Error running prompt: {str(e)}")
-                logger.error(f"Error type: {type(e)}")
                 raise
 
     async def cleanup(self):
-        for task in self.running_prompts.values():
-            await task.cancel()
+        async with self.cleanup_lock:
+            for task in self.running_prompts.values():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+            self.running_prompts.clear()
 
-        if self.comfy_client.is_running:
-            await self.comfy_client.__aexit__()
+            if self.comfy_client.is_running:
+                await self.comfy_client.__aexit__()
+
+            await self.cleanup_queues()
+            logger.info("Client cleanup complete")
+
+        
+    async def cleanup_queues(self):
+        while not tensor_cache.image_inputs.empty():
+            tensor_cache.image_inputs.get()
+
+        while not tensor_cache.audio_inputs.empty():
+            tensor_cache.audio_inputs.get()
+
+        while not tensor_cache.image_outputs.empty():
+            await tensor_cache.image_outputs.get()
+
+        while not tensor_cache.audio_outputs.empty():
+            await tensor_cache.audio_outputs.get()
 
     def put_video_input(self, frame):
         if tensor_cache.image_inputs.full():

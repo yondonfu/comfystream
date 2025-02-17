@@ -38,8 +38,12 @@ class VideoStreamTrack(MediaStreamTrack):
 
     async def collect_frames(self):
         while True:
-            frame = await self.track.recv()
-            await self.pipeline.put_video_frame(frame)
+            try:
+                frame = await self.track.recv()
+                await self.pipeline.put_video_frame(frame)
+            except Exception as e:
+                await self.pipeline.cleanup()
+                raise Exception(f"Error collecting video frames: {str(e)}")
 
     async def recv(self):
         return await self.pipeline.get_processed_video_frame()
@@ -55,8 +59,12 @@ class AudioStreamTrack(MediaStreamTrack):
 
     async def collect_frames(self):
         while True:
-            frame = await self.track.recv()
-            await self.pipeline.put_audio_frame(frame)
+            try:
+                frame = await self.track.recv()
+                await self.pipeline.put_audio_frame(frame)
+            except Exception as e:
+                await self.pipeline.cleanup()
+                raise Exception(f"Error collecting audio frames: {str(e)}")
 
     async def recv(self):
         return await self.pipeline.get_processed_audio_frame()
