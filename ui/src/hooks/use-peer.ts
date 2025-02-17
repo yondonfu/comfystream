@@ -6,7 +6,7 @@ const MAX_OFFER_RETRIES = 5;
 const OFFER_RETRY_INTERVAL = 500;
 
 export function usePeer(props: PeerProps): Peer {
-  const { url, prompt, connect, onConnected, onDisconnected, localStream } =
+  const { url, prompts, connect, onConnected, onDisconnected, localStream } =
     props;
 
   const [peerConnection, setPeerConnection] =
@@ -31,7 +31,7 @@ export function usePeer(props: PeerProps): Peer {
         },
         body: JSON.stringify({
           endpoint: url,
-          prompt,
+          prompts: prompts,
           offer,
         }),
       });
@@ -81,7 +81,9 @@ export function usePeer(props: PeerProps): Peer {
       const pc = new RTCPeerConnection(configuration);
       setPeerConnection(pc);
 
-      pc.addTransceiver("video");
+      if (localStream.getVideoTracks().length > 0) {
+        pc.addTransceiver("video");
+      }
 
       localStream.getTracks().forEach((track) => {
         pc.addTrack(track, localStream);
@@ -100,18 +102,18 @@ export function usePeer(props: PeerProps): Peer {
         setControlChannel(null);
       };
 
+      pc.ontrack = (event) => {
+        if (event.streams && event.streams[0]) {
+          setRemoteStream(event.streams[0]);
+        }
+      };
+
       channel.onerror = (error) => {
         console.error("Control channel error:", error);
       };
 
       channel.onmessage = (event) => {
         console.log("Received message on control channel:", event.data);
-      };
-
-      pc.ontrack = (event) => {
-        if (event.track.kind == "video") {
-          setRemoteStream(event.streams[0]);
-        }
       };
 
       pc.onicecandidate = async (event) => {
