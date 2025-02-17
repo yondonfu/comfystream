@@ -89,13 +89,16 @@ export function usePeer(props: PeerProps): Peer {
         pc.addTrack(track, localStream);
       });
 
+      // Create control channel for both negotiation and control
       const channel = pc.createDataChannel("control");
       
       channel.onopen = () => {
+        console.log("[usePeer] Control channel opened, readyState:", channel.readyState);
         setControlChannel(channel);
       };
 
       channel.onclose = () => {
+        console.log("[usePeer] Control channel closed");
         setControlChannel(null);
       };
 
@@ -103,6 +106,14 @@ export function usePeer(props: PeerProps): Peer {
         if (event.streams && event.streams[0]) {
           setRemoteStream(event.streams[0]);
         }
+      };
+
+      channel.onerror = (error) => {
+        console.error("Control channel error:", error);
+      };
+
+      channel.onmessage = (event) => {
+        console.log("Received message on control channel:", event.data);
       };
 
       pc.onicecandidate = async (event) => {
@@ -121,7 +132,7 @@ export function usePeer(props: PeerProps): Peer {
         await pc.setLocalDescription(offer);
       };
 
-      createOffer();
+      createOffer().catch(console.error);
     } else {
       if (connectionStateTimeoutRef.current) {
         clearTimeout(connectionStateTimeoutRef.current);
