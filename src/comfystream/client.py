@@ -1,60 +1,90 @@
-import torch
 import asyncio
-from typing import Any
-import json
+from typing import List
 import logging
+
+from comfystream import tensor_cache
+from comfystream.utils import convert_prompt
 
 from comfy.api.components.schema.prompt import PromptDictInput
 from comfy.cli_args_types import Configuration
 from comfy.client.embedded_comfy_client import EmbeddedComfyClient
-from comfystream import tensor_cache
-from comfystream.utils import convert_prompt
 
 logger = logging.getLogger(__name__)
 
 
 class ComfyStreamClient:
-    def __init__(self, **kwargs):
+    def __init__(self, max_workers: int = 1, **kwargs):
         config = Configuration(**kwargs)
-        self.comfy_client = EmbeddedComfyClient(config)
-        self.prompt = None
-        self._lock = asyncio.Lock()
+        self.comfy_client = EmbeddedComfyClient(config, max_workers=max_workers)
+        self.running_prompts = {} # To be used for cancelling tasks
+        self.current_prompts = []
 
-    def set_prompt(self, prompt: PromptDictInput):
-        self.prompt = convert_prompt(prompt)
+    async def set_prompts(self, prompts: List[PromptDictInput]):
+        self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
+        for idx in range(len(self.current_prompts)):
+            task = asyncio.create_task(self.run_prompt(idx))
+            self.running_prompts[idx] = task
 
-    async def queue_prompt(self, input: torch.Tensor) -> torch.Tensor:
-        async with self._lock:
-            tensor_cache.inputs.append(input)
-            output_fut = asyncio.Future()
-            tensor_cache.outputs.append(output_fut)
+    async def update_prompts(self, prompts: List[PromptDictInput]):
+        # TODO: currently under the assumption that only already running prompts are updated
+        if len(prompts) != len(self.current_prompts):
+            raise ValueError(
+                "Number of updated prompts must match the number of currently running prompts."
+            )
+        self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
+
+    async def run_prompt(self, prompt_index: int):
+        while True:
             try:
-                await self.comfy_client.queue_prompt(self.prompt)
+                await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
             except Exception as e:
-                logger.error(f"Error queueing prompt: {str(e)}")
+                logger.error(f"Error running prompt: {str(e)}")
                 logger.error(f"Error type: {type(e)}")
                 raise
-            return await output_fut
+
+    async def cleanup(self):
+        for task in self.running_prompts.values():
+            await task.cancel()
+
+        if self.comfy_client.is_running:
+            await self.comfy_client.__aexit__()
+
+    def put_video_input(self, frame):
+        if tensor_cache.image_inputs.full():
+            tensor_cache.image_inputs.get(block=True)
+        tensor_cache.image_inputs.put(frame)
+    
+    def put_audio_input(self, frame):
+        tensor_cache.audio_inputs.put(frame)
+
+    async def get_video_output(self):
+        return await tensor_cache.image_outputs.get()
+    
+    async def get_audio_output(self):
+        return await tensor_cache.audio_outputs.get()
 
     async def get_available_nodes(self):
         """Get metadata and available nodes info in a single pass"""
-        async with self._lock:
-            if not self.prompt:
-                return {}
+        # TODO: make it for for multiple prompts
+        if not self.running_prompts:
+            return {}
 
-            try:
-                from comfy.nodes.package import import_all_nodes_in_workspace
-                nodes = import_all_nodes_in_workspace()
-                
+        try:
+            from comfy.nodes.package import import_all_nodes_in_workspace
+            nodes = import_all_nodes_in_workspace()
+
+            all_prompts_nodes_info = {}
+            
+            for prompt_index, prompt in enumerate(self.current_prompts):
                 # Get set of class types we need metadata for, excluding LoadTensor and SaveTensor
                 needed_class_types = {
                     node.get('class_type') 
-                    for node in self.prompt.values() 
+                    for node in prompt.values() 
                     if node.get('class_type') not in ('LoadTensor', 'SaveTensor')
                 }
                 remaining_nodes = {
                     node_id 
-                    for node_id, node in self.prompt.items() 
+                    for node_id, node in prompt.items() 
                     if node.get('class_type') not in ('LoadTensor', 'SaveTensor')
                 }
                 nodes_info = {}
@@ -103,7 +133,7 @@ class ComfyStreamClient:
                     
                     # Now process any nodes in our prompt that use this class_type
                     for node_id in list(remaining_nodes):
-                        node = self.prompt[node_id]
+                        node = prompt[node_id]
                         if node.get('class_type') != class_type:
                             continue
                             
@@ -124,9 +154,11 @@ class ComfyStreamClient:
                         
                         nodes_info[node_id] = node_info
                         remaining_nodes.remove(node_id)
-                
-                return nodes_info
-                
-            except Exception as e:
-                logger.error(f"Error getting node info: {str(e)}")
-                return {}
+
+                    all_prompts_nodes_info[prompt_index] = nodes_info
+            
+            return all_prompts_nodes_info[0] # TODO: make it for for multiple prompts
+            
+        except Exception as e:
+            logger.error(f"Error getting node info: {str(e)}")
+            return {}
