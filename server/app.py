@@ -4,6 +4,7 @@ import os
 import json
 import logging
 
+from collections import deque
 from twilio.rest import Client
 from aiohttp import web
 from aiortc import (
@@ -22,8 +23,8 @@ from utils import patch_loop_datagram, StreamStats, add_prefix_to_app_routes
 import time
 
 logger = logging.getLogger(__name__)
-logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
-logging.getLogger('aiortc.rtcrtpreceiver').setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
 
 
 MAX_BITRATE = 2000000
@@ -51,27 +52,29 @@ class VideoStreamTrack(MediaStreamTrack):
         super().__init__()
         self.track = track
         self.pipeline = pipeline
+
+        self._running = True
+        self._lock = threading.Lock()
         self._fps_interval_frame_count = 0
         self._last_fps_calculation_time = time.monotonic()
-        self._lock = threading.Lock()
         self._fps = 0.0
-        self._running = True
-        self._start_fps_thread()
+        self._fps_measurements = deque(maxlen=60)
 
-    def _start_fps_thread(self):
-        """Start a separate thread to calculate FPS periodically."""
-        self._fps_thread = threading.Thread(target=self._calculate_fps_loop, daemon=True)
-        self._fps_thread.start()
+        # Start metrics collection tasks.
+        self._fps_stats_task = asyncio.create_task(self._calculate_fps_loop())
 
-    def _calculate_fps_loop(self):
+    async def _calculate_fps_loop(self):
         """Loop to calculate FPS periodically."""
         while self._running:
-            time.sleep(1)  # Calculate FPS every second.
+            await asyncio.sleep(1)  # Calculate FPS every second.
             with self._lock:
                 current_time = time.monotonic()
                 time_diff = current_time - self._last_fps_calculation_time
                 if time_diff > 0:
                     self._fps = self._fps_interval_frame_count / time_diff
+                    self._fps_measurements.append(
+                        self._fps
+                    )  # Store the FPS measurement
 
                     # Reset start_time and frame_count for the next interval.
                     self._last_fps_calculation_time = current_time
@@ -80,7 +83,6 @@ class VideoStreamTrack(MediaStreamTrack):
     def stop(self):
         """Stop the FPS calculation thread."""
         self._running = False
-        self._fps_thread.join()
 
     @property
     def fps(self) -> float:
@@ -91,6 +93,28 @@ class VideoStreamTrack(MediaStreamTrack):
         """
         with self._lock:
             return self._fps
+
+    @property
+    def fps_measurements(self) -> list:
+        """Get the array of FPS measurements for the last minute.
+
+        Returns:
+            The array of FPS measurements for the last minute.
+        """
+        with self._lock:
+            return list(self._fps_measurements)
+
+    @property
+    def average_fps(self) -> float:
+        """Calculate the average FPS from the measurements.
+
+        Returns:
+            The average FPS.
+        """
+        with self._lock:
+            if not self._fps_measurements:
+                return 0.0
+            return sum(self._fps_measurements) / len(self._fps_measurements)
 
     async def recv(self) -> av.VideoFrame:
         """Receive and process a video frame. Called by the WebRTC library when a frame
@@ -187,30 +211,29 @@ async def offer(request):
     @pc.on("datachannel")
     def on_datachannel(channel):
         if channel.label == "control":
+
             @channel.on("message")
             async def on_message(message):
                 try:
                     params = json.loads(message)
-                    
+
                     if params.get("type") == "get_nodes":
                         nodes_info = await pipeline.get_nodes_info()
-                        response = {
-                            "type": "nodes_info",
-                            "nodes": nodes_info
-                        }
+                        response = {"type": "nodes_info", "nodes": nodes_info}
                         channel.send(json.dumps(response))
                     elif params.get("type") == "update_prompt":
                         if "prompt" not in params:
-                            logger.warning("[Control] Missing prompt in update_prompt message")
+                            logger.warning(
+                                "[Control] Missing prompt in update_prompt message"
+                            )
                             return
                         pipeline.set_prompt(params["prompt"])
-                        response = {
-                            "type": "prompt_updated",
-                            "success": True
-                        }
+                        response = {"type": "prompt_updated", "success": True}
                         channel.send(json.dumps(response))
                     else:
-                        logger.warning("[Server] Invalid message format - missing required fields")
+                        logger.warning(
+                            "[Server] Invalid message format - missing required fields"
+                        )
                 except json.JSONDecodeError:
                     logger.error("[Server] Invalid JSON received")
                 except Exception as e:
@@ -310,8 +333,8 @@ if __name__ == "__main__":
 
     logging.basicConfig(
         level=args.log_level.upper(),
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        datefmt='%H:%M:%S'
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S",
     )
 
     app = web.Application()
@@ -329,8 +352,8 @@ if __name__ == "__main__":
 
     # Add routes for getting stream statistics.
     stream_stats = StreamStats(app)
-    app.router.add_get("/streams/stats", stream_stats.get_stats)
-    app.router.add_get("/stream/{stream_id}/stats", stream_stats.get_stats_by_id)
+    app.router.add_get("/streams/stats", stream_stats.collect_all_stream_metrics)
+    app.router.add_get("/stream/{stream_id}/stats", stream_stats.collect_stream_metrics_by_id)
 
     # Add hosted platform route prefix.
     # NOTE: This ensures that the local and hosted experiences have consistent routes.

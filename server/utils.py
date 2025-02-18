@@ -68,33 +68,37 @@ def add_prefix_to_app_routes(app: web.Application, prefix: str):
 
 
 class StreamStats:
-    """Class to get stream statistics."""
+    """Handles real-time video stream statistics collection."""
 
     def __init__(self, app: web.Application):
-        """Initialize the StreamStats class."""
-        self._app = app
-
-    def get_video_track_stats(self, video_track: MediaStreamTrack) -> Dict[str, Any]:
-        """Get statistics for a video track.
+        """Initializes the StreamMetrics class.
 
         Args:
-            video_track: The VideoStreamTrack instance.
+            app: The web application instance storing video streams under the
+                "video_tracks" key.
+        """
+        self._app = app
+
+    def collect_video_metrics(self, video_track: MediaStreamTrack) -> Dict[str, Any]:
+        """Collects real-time statistics for a video track.
+
+        Args:
+            video_track: The video stream track instance.
 
         Returns:
-            A dictionary containing the statistics.
+            A dictionary containing FPS-related statistics.
         """
         return {
             "fps": video_track.fps,
+            "minute_avg_fps": video_track.minute_avg_fps,
+            "minute_fps_array": video_track.minute_fps_array,
         }
 
-    async def get_stats(self, _) -> web.Response:
-        """Get the current stream statistics for all streams.
-
-        Args:
-            request: The HTTP GET request.
+    async def collect_all_stream_metrics(self, _) -> web.Response:
+        """Retrieves real-time metrics for all active video streams.
 
         Returns:
-            The HTTP response containing the statistics.
+            A JSON response containing FPS statistics for all streams.
         """
         video_tracks = self._app.get("video_tracks", {})
         all_stats = {
@@ -107,14 +111,14 @@ class StreamStats:
             text=json.dumps(all_stats),
         )
 
-    async def get_stats_by_id(self, request: web.Request) -> web.Response:
-        """Get the statistics for a specific stream by ID.
+    async def collect_stream_metrics_by_id(self, request: web.Request) -> web.Response:
+        """Retrieves real-time metrics for a specific video stream by ID.
 
         Args:
-            request: The HTTP GET request.
+            request: The HTTP request containing the stream ID.
 
         Returns:
-            The HTTP response containing the statistics.
+            A JSON response with stream metrics or an error message.
         """
         stream_id = request.match_info.get("stream_id")
         video_track = self._app["video_tracks"].get(stream_id)
