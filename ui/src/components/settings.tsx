@@ -158,50 +158,54 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       const videoDevices = [
         { deviceId: "none", label: "No Video" },
         ...devices
-          .filter((device) => device.kind === "videoinput")
+          .filter((device) => device.kind === "videoinput" && device.deviceId)
           .map((device) => ({
             deviceId: device.deviceId,
             label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`,
           }))
       ];
-
       setVideoDevices(videoDevices);
+
       // Set default to first available camera if no selection yet
       if (!selectedDevice && videoDevices.length > 1) {
         setSelectedDevice(videoDevices[1].deviceId); // Index 1 because 0 is "No Video"
       }
-    } catch (err) {
-      console.error("Failed to get video devices");
+    } catch (error) {
+      console.info("Failed to get video devices: ", error);
       // If we can't access video devices, still provide the None option
-      const videoDevices = [{ deviceId: "none", label: "No Video" }];
-      setVideoDevices(videoDevices);
+      setVideoDevices([{ deviceId: "none", label: "No Video" }]);
       setSelectedDevice("none");
     }
   }, [selectedDevice]);
 
+  /**
+   * Retrieves the list of audio devices available on the user's device.
+   */
   const getAudioDevices = useCallback(async () => {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioDevices = [
         { deviceId: "none", label: "No Audio" },
         ...devices
-          .filter((device) => device.kind === "audioinput")
+          .filter((device) => device.kind === "audioinput" && device.deviceId)
           .map((device) => ({
             deviceId: device.deviceId,
             label: device.label || `Microphone ${device.deviceId.slice(0, 5)}...`,
           }))
       ];
-
       setAudioDevices(audioDevices);
+
       // Set default to first available microphone if no selection yet
       if (!selectedAudioDevice && audioDevices.length > 1) {
         setSelectedAudioDevice(audioDevices[0].deviceId); // Default to "No Audio" for now
+      } else {
+        setAudioDevices([{ deviceId: "none", label: "No Audio" }]);
+        setSelectedAudioDevice("none");
       }
-    } catch (err) {
-      console.error("Failed to get audio devices");
+    } catch (error) {
+      console.error("Failed to get audio devices: ", error);
       // If we can't access audio devices, still provide the None option
-      const audioDevices = [{ deviceId: "none", label: "No Audio" }];
-      setAudioDevices(audioDevices);
+      setAudioDevices([{ deviceId: "none", label: "No Audio" }]);
       setSelectedAudioDevice("none");
     }
   }, [selectedAudioDevice]);
@@ -346,6 +350,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             accept=".json"
             multiple
             onChange={handlePromptsChange}
+            required={true}
           />
         </div>
 
