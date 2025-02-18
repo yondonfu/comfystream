@@ -5,6 +5,37 @@ if (!app) {
     console.error("[ComfyStream] Failed to get app instance!");
 }
 
+async function controlServer(action) {
+    try {
+        const response = await fetch('/comfystream/control', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ action })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            try {
+                const errorData = JSON.parse(errorText);
+                throw new Error(errorData.error || `Server error: ${response.status}`);
+            } catch (e) {
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
+            }
+        }
+
+        const data = await response.json();
+        console.log("[ComfyStream] Server control response:", data);
+        return data;
+    } catch (error) {
+        console.error('[ComfyStream] Error controlling server:', error);
+        app.ui.dialog.show('Error', error.message || 'Failed to control ComfyStream server');
+        throw error;
+    }
+}
+
 // Register our custom widget
 app.registerExtension({
     name: "ComfyStream.LauncherButton",
@@ -62,14 +93,20 @@ app.registerExtension({
                 onNodeCreated.apply(this);
             }
 
-            // Add the button widget directly
-            console.log("[ComfyStream] Adding button widget");
-            const widget = this.addWidget("button", "Launch ComfyStream", null, () => {
-                this.launchComfyStream();
+            // Add all four buttons
+            const buttons = [
+                ["Open UI", () => this.launchComfyStream()],
+                ["Start Server", () => controlServer('start')],
+                ["Stop Server", () => controlServer('stop')],
+                ["Restart Server", () => controlServer('restart')]
+            ];
+
+            // Add each button
+            buttons.forEach(([name, callback]) => {
+                const widget = this.addWidget("button", name, null, callback);
+                widget.serialize = false;
             });
-            widget.serialize = false;
-            console.log("[ComfyStream] Button widget added:", widget);
+            console.log("[ComfyStream] Node setup complete");
         };
-        console.log("[ComfyStream] Node setup complete");
     }
 }); 
