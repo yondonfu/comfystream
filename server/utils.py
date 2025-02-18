@@ -1,5 +1,4 @@
 """Utility functions for the server."""
-
 import asyncio
 import random
 import types

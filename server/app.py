@@ -14,7 +14,6 @@ from aiortc import (
     RTCIceServer,
     MediaStreamTrack,
 )
-import threading
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
 from pipeline import Pipeline
@@ -22,8 +21,8 @@ from utils import patch_loop_datagram, StreamStats, add_prefix_to_app_routes
 import time
 
 logger = logging.getLogger(__name__)
-logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
-logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
+logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
+logging.getLogger('aiortc.rtcrtpreceiver').setLevel(logging.WARNING)
 
 
 MAX_BITRATE = 2000000
@@ -38,9 +37,7 @@ class VideoStreamTrack(MediaStreamTrack):
         track (MediaStreamTrack): The underlying media stream track.
         pipeline (Pipeline): The processing pipeline to apply to each video frame.
     """
-
     kind = "video"
-
     def __init__(self, track: MediaStreamTrack, pipeline: Pipeline):
         """Initialize the VideoStreamTrack.
 
@@ -53,7 +50,7 @@ class VideoStreamTrack(MediaStreamTrack):
         self.pipeline = pipeline
 
         self._running = True
-        self._lock = threading.Lock()
+        self._lock = asyncio.Lock()
         self._fps_interval_frame_count = 0
         self._last_fps_calculation_time = time.monotonic()
         self._fps = 0.0
@@ -235,15 +232,16 @@ async def offer(request):
     @pc.on("datachannel")
     def on_datachannel(channel):
         if channel.label == "control":
-
             @channel.on("message")
             async def on_message(message):
                 try:
                     params = json.loads(message)
-
                     if params.get("type") == "get_nodes":
                         nodes_info = await pipeline.get_nodes_info()
-                        response = {"type": "nodes_info", "nodes": nodes_info}
+                        response = {
+                            "type": "nodes_info",
+                            "nodes": nodes_info
+                        }
                         channel.send(json.dumps(response))
                     elif params.get("type") == "update_prompts":
                         if "prompts" not in params:
@@ -256,9 +254,7 @@ async def offer(request):
                         }
                         channel.send(json.dumps(response))
                     else:
-                        logger.warning(
-                            "[Server] Invalid message format - missing required fields"
-                        )
+                        logger.warning("[Server] Invalid message format - missing required fields")
                 except json.JSONDecodeError:
                     logger.error("[Server] Invalid JSON received")
                 except Exception as e:
@@ -367,8 +363,8 @@ if __name__ == "__main__":
 
     logging.basicConfig(
         level=args.log_level.upper(),
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%H:%M:%S",
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%H:%M:%S'
     )
 
     app = web.Application()
