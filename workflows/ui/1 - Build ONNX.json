@@ -28,7 +28,7 @@
         "Node name for S&R": "ONNX_FP8_EXPORT"
       },
       "widgets_values": [
-        "/comfystream/ComfyUI/models/onnx",
+        "/workspace/ComfyUI/models/onnx",
         "dreamshaper8_fp8.onnx"
       ]
     },

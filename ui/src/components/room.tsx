@@ -19,21 +19,70 @@ interface MediaStreamPlayerProps {
 
 function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [needsPlayButton, setNeedsPlayButton] = useState(false);
+  const hasVideo = stream.getVideoTracks().length > 0;
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-    }
+    if (!videoRef.current || !stream) return;
+
+    const video = videoRef.current;
+    video.srcObject = stream;
+    setNeedsPlayButton(false);
+
+    // Handle autoplay
+    const playStream = async () => {
+      try {
+        // Only attempt to play if the video element exists and has a valid srcObject
+        if (video && video.srcObject) {
+          await video.play();
+          setNeedsPlayButton(false);
+        }
+      } catch (error) {
+        // Log error but don't throw - this is likely due to browser autoplay policy
+        console.warn("Autoplay prevented:", error);
+        setNeedsPlayButton(true);
+      }
+    };
+    playStream();
+
+    return () => {
+      if (video) {
+        video.srcObject = null;
+        video.pause();
+      }
+    };
   }, [stream]);
 
+  const handlePlayClick = async () => {
+    try {
+      if (videoRef.current) {
+        await videoRef.current.play();
+        setNeedsPlayButton(false);
+      }
+    } catch (error) {
+      console.warn("Manual play failed:", error);
+    }
+  };
+
   return (
-    <video
-      ref={videoRef}
-      autoPlay
-      playsInline
-      muted
-      className="w-full h-full"
-    />
+    <div className="relative w-full h-full">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        className="w-full h-full"
+      />
+      {needsPlayButton && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <button
+            onClick={handlePlayClick}
+            className="px-4 py-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors"
+          >
+            Click to Play
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -76,7 +125,6 @@ function Stage({ connected, onStreamReady }: StageProps) {
           className="w-full h-full object-cover"
           autoPlay
           loop
-          muted
           playsInline
         >
           <source src="/loading.mp4" type="video/mp4" />
@@ -85,19 +133,23 @@ function Stage({ connected, onStreamReady }: StageProps) {
     );
   }
 
+  const hasVideo = remoteStream.getVideoTracks().length > 0;
+
   return (
     <div className="relative w-full h-full">
       <MediaStreamPlayer stream={remoteStream} />
-      <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>{frameRate} FPS</TooltipTrigger>
-            <TooltipContent>
-              <p>This is the FPS of the output stream.</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      {hasVideo && (
+        <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>{frameRate} FPS</TooltipTrigger>
+              <TooltipContent>
+                <p>This is the FPS of the output stream.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
     </div>
   );
 }
@@ -120,7 +172,8 @@ export const Room = () => {
     streamUrl: "",
     frameRate: 0,
     selectedDeviceId: "",
-    prompt: null,
+    selectedAudioDeviceId: "", // New property for audio device
+    prompts: null,
   });
 
   const connectingRef = useRef(false);
@@ -155,17 +208,15 @@ export const Room = () => {
 
   const handleConnected = useCallback(() => {
     setIsConnected(true);
-
-    console.debug("Connected!");
-
     connectingRef.current = false;
   }, []);
 
   const handleDisconnected = useCallback(() => {
     setIsConnected(false);
-
-    console.debug("Disconnected!");
   }, []);
+
+  // Check if we have video tracks in the local stream
+  const hasLocalVideo = localStream && localStream.getVideoTracks().length > 0;
 
   return (
     <main className="fixed inset-0 overflow-hidden overscroll-none">
@@ -176,7 +227,7 @@ export const Room = () => {
       <div className="fixed inset-0 z-[-1] bg-cover bg-[black]">
         <PeerConnector
           url={config.streamUrl}
-          prompt={config.prompt}
+          prompts={config.prompts}
           connect={connect}
           onConnected={handleConnected}
           onDisconnected={handleDisconnected}
@@ -196,6 +247,7 @@ export const Room = () => {
                     onStreamReady={onStreamReady}
                     deviceId={config.selectedDeviceId}
                     frameRate={config.frameRate}
+                    selectedAudioDeviceId={config.selectedAudioDeviceId}
                   />
                 </div>
               </div>
@@ -205,6 +257,7 @@ export const Room = () => {
                   onStreamReady={onStreamReady}
                   deviceId={config.selectedDeviceId}
                   frameRate={config.frameRate}
+                  selectedAudioDeviceId={config.selectedAudioDeviceId}
                 />
               </div>
             </div>

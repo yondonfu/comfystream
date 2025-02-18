@@ -15,7 +15,6 @@ from aiortc import (
     MediaStreamTrack,
 )
 import threading
-import av
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
 from pipeline import Pipeline
@@ -60,9 +59,20 @@ class VideoStreamTrack(MediaStreamTrack):
         self._fps = 0.0
         self._fps_measurements = deque(maxlen=60)
 
+        asyncio.create_task(self.collect_frames())
+
         # Start metrics collection tasks.
         self._fps_stats_task = asyncio.create_task(self._calculate_fps_loop())
 
+    async def collect_frames(self):
+        while True:
+            try:
+                frame = await self.track.recv()
+                await self.pipeline.put_video_frame(frame)
+            except Exception as e:
+                await self.pipeline.cleanup()
+                raise Exception(f"Error collecting video frames: {str(e)}")
+            
     async def _calculate_fps_loop(self):
         """Loop to calculate FPS periodically."""
         while self._running:
@@ -79,7 +89,7 @@ class VideoStreamTrack(MediaStreamTrack):
                     # Reset start_time and frame_count for the next interval.
                     self._last_fps_calculation_time = current_time
                     self._fps_interval_frame_count = 0
-
+    
     def stop(self):
         """Stop the FPS calculation thread."""
         self._running = False
@@ -116,21 +126,34 @@ class VideoStreamTrack(MediaStreamTrack):
                 return 0.0
             return sum(self._fps_measurements) / len(self._fps_measurements)
 
-    async def recv(self) -> av.VideoFrame:
-        """Receive and process a video frame. Called by the WebRTC library when a frame
-        is received.
-
-        Returns:
-            The processed video frame.
-        """
-        input_frame = await self.track.recv()
-        processed_frame = await self.pipeline(input_frame)
-
+    async def recv(self):
+        processed_frame = await self.pipeline.get_processed_video_frame()
+        
         # Increment frame count for FPS calculation.
         with self._lock:
             self._fps_interval_frame_count += 1
-
+        
         return processed_frame
+
+class AudioStreamTrack(MediaStreamTrack):
+    kind = "audio"
+    def __init__(self, track: MediaStreamTrack, pipeline):
+        super().__init__()
+        self.track = track
+        self.pipeline = pipeline
+        asyncio.create_task(self.collect_frames())
+
+    async def collect_frames(self):
+        while True:
+            try:
+                frame = await self.track.recv()
+                await self.pipeline.put_audio_frame(frame)
+            except Exception as e:
+                await self.pipeline.cleanup()
+                raise Exception(f"Error collecting audio frames: {str(e)}")
+
+    async def recv(self):
+        return await self.pipeline.get_processed_audio_frame()
 
 
 def force_codec(pc, sender, forced_codec):
@@ -179,8 +202,7 @@ async def offer(request):
 
     params = await request.json()
 
-    pipeline.set_prompt(params["prompt"])
-    await pipeline.warm()
+    await pipeline.set_prompts(params["prompts"])
 
     offer_params = params["offer"]
     offer = RTCSessionDescription(sdp=offer_params["sdp"], type=offer_params["type"])
@@ -195,17 +217,19 @@ async def offer(request):
 
     pcs.add(pc)
 
-    tracks = {"video": None}
+    tracks = {"video": None, "audio": None}
 
-    # Prefer h264
-    transceiver = pc.addTransceiver("video")
-    caps = RTCRtpSender.getCapabilities("video")
-    prefs = list(filter(lambda x: x.name == "H264", caps.codecs))
-    transceiver.setCodecPreferences(prefs)
+    # Only add video transceiver if video is present in the offer
+    if "m=video" in offer.sdp:
+        # Prefer h264
+        transceiver = pc.addTransceiver("video")
+        caps = RTCRtpSender.getCapabilities("video")
+        prefs = list(filter(lambda x: x.name == "H264", caps.codecs))
+        transceiver.setCodecPreferences(prefs)
 
-    # Monkey patch max and min bitrate to ensure constant bitrate
-    h264.MAX_BITRATE = MAX_BITRATE
-    h264.MIN_BITRATE = MIN_BITRATE
+        # Monkey patch max and min bitrate to ensure constant bitrate
+        h264.MAX_BITRATE = MAX_BITRATE
+        h264.MIN_BITRATE = MIN_BITRATE
 
     # Handle control channel from client
     @pc.on("datachannel")
@@ -221,14 +245,15 @@ async def offer(request):
                         nodes_info = await pipeline.get_nodes_info()
                         response = {"type": "nodes_info", "nodes": nodes_info}
                         channel.send(json.dumps(response))
-                    elif params.get("type") == "update_prompt":
-                        if "prompt" not in params:
-                            logger.warning(
-                                "[Control] Missing prompt in update_prompt message"
-                            )
+                    elif params.get("type") == "update_prompts":
+                        if "prompts" not in params:
+                            logger.warning("[Control] Missing prompt in update_prompt message")
                             return
-                        pipeline.set_prompt(params["prompt"])
-                        response = {"type": "prompt_updated", "success": True}
+                        await pipeline.update_prompts(params["prompts"])
+                        response = {
+                            "type": "prompts_updated",
+                            "success": True
+                        }
                         channel.send(json.dumps(response))
                     else:
                         logger.warning(
@@ -253,6 +278,10 @@ async def offer(request):
 
             codec = "video/H264"
             force_codec(pc, sender, codec)
+        elif track.kind == "audio":
+            audioTrack = AudioStreamTrack(track, pipeline)
+            tracks["audio"] = audioTrack
+            pc.addTrack(audioTrack)
 
         @track.on("ended")
         async def on_ended():
@@ -271,6 +300,11 @@ async def offer(request):
 
     await pc.setRemoteDescription(offer)
 
+    if "m=audio" in pc.remoteDescription.sdp:
+        await pipeline.warm_audio()
+    if "m=video" in pc.remoteDescription.sdp:
+        await pipeline.warm_video()
+
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
 
@@ -286,7 +320,7 @@ async def set_prompt(request):
     pipeline = request.app["pipeline"]
 
     prompt = await request.json()
-    pipeline.set_prompt(prompt)
+    await pipeline.set_prompts(prompt)
 
     return web.Response(content_type="application/json", text="OK")
 
@@ -315,7 +349,7 @@ async def on_shutdown(app: web.Application):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run comfystream server")
-    parser.add_argument("--port", default=8888, help="Set the signaling port")
+    parser.add_argument("--port", default=8889, help="Set the signaling port")
     parser.add_argument(
         "--media-ports", default=None, help="Set the UDP ports for WebRTC media"
     )

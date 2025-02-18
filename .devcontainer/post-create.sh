@@ -1,15 +1,8 @@
 #!/bin/bash
+chmod +x /workspace/comfystream/docker/entrypoint.sh
+cd /workspace/comfystream
 
-# Install npm packages if needed
-cd /comfystream/ui
-if [ ! -d "node_modules" ]; then
-    npm install --legacy-peer-deps   
-fi
+echo 'alias prepare_examples="/workspace/comfystream/docker/entrypoint.sh --download-models --build-engines"' >> ~/.bashrc
+echo -e "\e[32mContainer ready! Run 'prepare_examples' to download models and build engines for example workflows.\e[0m"
 
-# Create a symlink to the ComfyUI workspace
-if [ ! -d "/comfystream/ComfyUI" ]; then
-    ln -s /ComfyUI /comfystream/ComfyUI
-fi
-
-cd /comfystream
 /bin/bash

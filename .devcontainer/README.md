@@ -40,7 +40,7 @@ docker build -f docker/Dockerfile.base -t livepeer/comfyui-base:latest .
 On your **host** system, create directories to store models and engines:
 
 ```sh
-mkdir -p ~/models/ComfyUI--models && mkdir -p ~/models/ComfyUI--output
+mkdir -p ~/models/ComfyUI--models ~/models/ComfyUI--output
 ```
 
 > [!NOTE]
@@ -65,22 +65,68 @@ Replace `/path/to/your/model-files` and `path/to/your/output-files` with the pat
 2. From VS Code, reload the folder as a devcontainer:
    - Open the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P` on macOS).
    - Select `Remote-Containers: Reopen in Container`.
+3. Wait for the container to build and start.
 
-### Download models
+### Starting ComfyUI
+
+Start ComfyUI:
+
+```sh
+cd /workspace/comfystream/ComfyUI
+conda activate comfyui
+python main.py --listen
+```
+
+When using TensorRT engine enabled workflows, you should include the `---disable-cuda-malloc` flag as shown below:
+
+```sh
+cd /workspace/comfystream/ComfyUI
+conda activate comfyui
+python main.py --listen --disable-cuda-malloc
+```
+
+### Starting ComfyStream
+
+Start ComfyStream:
+
+```sh
+cd /workspace/comfystream
+conda activate comfystream
+python server/app.py --workspace /workspace/ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8889
+```
+
+Optionally, you can also start the [ComfyStream UI](../README.md#run-ui) to view the stream:
+
+```sh
+cd /workspace/comfystream/ui
+npm run dev:https
+```
+
+### Running Example Workflows
+
+To run example workflows, you need to download models and build TensorRT engines. You can do this from within the dev container by running the following command in the terminal:
+
+```sh
+prepare_examples
+```
+
+Alternatively, you can follow the steps below.
+
+#### Download models
 
 From within the **dev container**, download models to run the example workflows:
 
 ```sh
-cd /comfystream
+cd /workspace/comfystream
 conda activate comfystream
-python src/comfystream/scripts/setup_models.py --workspace /ComfyUI
+python src/comfystream/scripts/setup_models.py --workspace /workspace/ComfyUI
 ```
 
 For more info about configuring model downloads, see [src/comfystream/scripts/README.md](../src/comfystream/scripts/README.md)
 
 By following these steps, you should be able to set up and run your development container for ComfyStream efficiently.
 
-### Building the DepthAnything Engine
+#### Building the DepthAnything Engine
 
 After downloading models, it is necessary to compile TensorRT engines for the example workflow.
 
@@ -90,8 +136,8 @@ After downloading models, it is necessary to compile TensorRT engines for the ex
 1. Run the **export_trt.py** script from the directory of the onnx file:
 
     ```sh
-    cd /ComfyUI/models/tensorrt/depth-anything
-    python /ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
+    cd /workspace/ComfyUI/models/tensorrt/depth-anything
+    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
     ```
 
 ## Debugging ComfyStream and ComfyUI
@@ -113,40 +159,6 @@ Alternatively, you may activate an environment manually with `conda activate com
 
 > [!NOTE] For more information, see [Python environments in VS Code](https://code.visualstudio.com/docs/python/environments)
 
-### Starting ComfyUI
-
-Start ComfyUI:
-
-```sh
-cd /comfystream/ComfyUI
-conda activate comfyui
-python main.py --listen
-```
-
-When using TensorRT engine enabled workflows, you should include the `---disable-cuda-malloc` flag as shown below:
-
-```sh
-cd /comfystream/ComfyUI
-conda activate comfyui
-python main.py --listen --disable-cuda-malloc
-```
-
-### Starting ComfyStream
-
-Start ComfyStream:
-
-```sh
-cd /comfystream
-conda activate comfystream
-python server/app.py --workspace /ComfyUI --media-ports=5678 --host=0.0.0.0 --port 8888
-```
-
-Optionally, you can also start the [ComfyStream UI](../README.md#run-ui) to view the stream:
-
-```sh
-cd /comfystream/ui
-npm run dev:https
-```
 
 ## Additional Resources
 
