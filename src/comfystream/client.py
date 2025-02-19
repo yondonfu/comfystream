@@ -4,6 +4,7 @@ import logging
 
 from comfystream import tensor_cache
 from comfystream.utils import convert_prompt
+from comfystream.executors import DedicatedThreadPoolExecutor
 
 from comfy.api.components.schema.prompt import PromptDictInput
 from comfy.cli_args_types import Configuration
@@ -13,9 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class ComfyStreamClient:
-    def __init__(self, max_workers: int = 1, **kwargs):
+    def __init__(self, max_workers: int = 2, **kwargs):
         config = Configuration(**kwargs)
-        self.comfy_client = EmbeddedComfyClient(config, max_workers=max_workers)
+        self.executor = DedicatedThreadPoolExecutor(max_workers=max_workers)  # Changed executor
+        self.comfy_client = EmbeddedComfyClient(config, executor=self.executor)
         self.running_prompts = {} # To be used for cancelling tasks
         self.current_prompts = []
         self.cleanup_lock = asyncio.Lock()
@@ -23,9 +25,13 @@ class ComfyStreamClient:
     async def set_prompts(self, prompts: List[PromptDictInput]):
         self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
         for idx in range(len(self.current_prompts)):
+            # Assign video prompts to worker 'video' and audio prompts to worker 'audio'
+            worker_id = 'video' if idx == 0 else 'audio'
+            self.executor.assign_prompt(str(idx), worker_id)
             task = asyncio.create_task(self.run_prompt(idx))
             self.running_prompts[idx] = task
 
+    # TODO: update the correct prompt/queue by worker type, otherwise the model loads twice and causes runtime error. Partly a UI issue.
     async def update_prompts(self, prompts: List[PromptDictInput]):
         # TODO: currently under the assumption that only already running prompts are updated
         if len(prompts) != len(self.current_prompts):
@@ -37,7 +43,11 @@ class ComfyStreamClient:
     async def run_prompt(self, prompt_index: int):
         while True:
             try:
-                await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
+                # Pass prompt_id to match worker assignment
+                await self.comfy_client.queue_prompt(
+                    self.current_prompts[prompt_index],
+                    prompt_id=str(prompt_index)
+                )
             except Exception as e:
                 await self.cleanup()
                 logger.error(f"Error running prompt: {str(e)}")
@@ -54,12 +64,12 @@ class ComfyStreamClient:
             self.running_prompts.clear()
 
             if self.comfy_client.is_running:
-                await self.comfy_client.__aexit__()
+                await self.comfy_client.__aexit__(None, None, None)
+                self.executor.shutdown()
 
             await self.cleanup_queues()
             logger.info("Client cleanup complete")
 
-        
     async def cleanup_queues(self):
         while not tensor_cache.image_inputs.empty():
             tensor_cache.image_inputs.get()

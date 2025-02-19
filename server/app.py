@@ -116,6 +116,13 @@ async def offer(request):
 
     params = await request.json()
 
+
+    # Then assign workers and set prompts
+    for idx, _ in enumerate(params["prompts"]):
+        worker_id = 'video' if idx == 0 else 'audio'
+        logger.debug(f"Assigning prompt {idx} to {worker_id} worker")
+        pipeline.assign_worker(str(idx), worker_id)
+
     await pipeline.set_prompts(params["prompts"])
 
     offer_params = params["offer"]
@@ -242,8 +249,12 @@ async def on_startup(app: web.Application):
     if app["media_ports"]:
         patch_loop_datagram(app["media_ports"])
 
+    # Modified to ensure consistent worker assignment
     app["pipeline"] = Pipeline(
-        cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True
+        cwd=app["workspace"], 
+        disable_cuda_malloc=True, 
+        gpu_only=True,
+        max_workers=2  # Ensure we have enough workers for both video and audio
     )
     app["pcs"] = set()
 
