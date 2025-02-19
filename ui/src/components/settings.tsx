@@ -176,11 +176,6 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       toast.error("Failed to get video devices", {
         description: "Please make sure your camera is connected and enabled.",
       });
-
-      // If we can't access video devices, still provide the None option
-      const videoDevices = [{ deviceId: "none", label: "No Video" }];
-      setVideoDevices(videoDevices);
-      setSelectedVideoDevice("none");
     }
   }, []);
 
@@ -208,11 +203,6 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       toast.error("Failed to get audio devices", {
         description: "Please make sure your microphone is connected and enabled.",
       });
-
-      // If we can't access audio devices, still provide the None option
-      const audioDevices = [{ deviceId: "none", label: "No Audio" }];
-      setAudioDevices(audioDevices);
-      setSelectedAudioDevice("none");
     }
   }, []);
 
