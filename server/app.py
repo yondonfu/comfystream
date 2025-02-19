@@ -6,7 +6,7 @@ import logging
 
 import torch
 
-# Initialize CUDA before any other imports
+# Initialize CUDA before any other imports to prevent core dump.
 if torch.cuda.is_available():
     torch.cuda.init()
 
