@@ -44,7 +44,7 @@
             "runtimeExecutable": "npm",
             "runtimeArgs": [
                 "run",
-                "dev"
+                "dev:https"
             ],
             "serverReadyAction": {
                 "pattern": "listening on",
