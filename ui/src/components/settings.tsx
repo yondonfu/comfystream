@@ -180,7 +180,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       // If we can't access video devices, still provide the None option
       const videoDevices = [{ deviceId: "none", label: "No Video" }];
       setVideoDevices(videoDevices);
-      setSelectedDevice("none");
+      setSelectedVideoDevice("none");
     }
   }, []);
 
