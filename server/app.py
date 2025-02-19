@@ -4,6 +4,7 @@ import os
 import json
 import logging
 
+from collections import deque
 from twilio.rest import Client
 from aiohttp import web
 from aiortc import (
@@ -12,12 +13,12 @@ from aiortc import (
     RTCConfiguration,
     RTCIceServer,
     MediaStreamTrack,
-    RTCDataChannel,
 )
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
 from pipeline import Pipeline
-from utils import patch_loop_datagram
+from utils import patch_loop_datagram, StreamStats, add_prefix_to_app_routes
+import time
 
 logger = logging.getLogger(__name__)
 logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
@@ -29,12 +30,36 @@ MIN_BITRATE = 2000000
 
 
 class VideoStreamTrack(MediaStreamTrack):
+    """video stream track that processes video frames using a pipeline.
+
+    Attributes:
+        kind (str): The kind of media, which is "video" for this class.
+        track (MediaStreamTrack): The underlying media stream track.
+        pipeline (Pipeline): The processing pipeline to apply to each video frame.
+    """
     kind = "video"
-    def __init__(self, track: MediaStreamTrack, pipeline):
+    def __init__(self, track: MediaStreamTrack, pipeline: Pipeline):
+        """Initialize the VideoStreamTrack.
+
+        Args:
+            track: The underlying media stream track.
+            pipeline: The processing pipeline to apply to each video frame.
+        """
         super().__init__()
         self.track = track
         self.pipeline = pipeline
+
+        self._running = True
+        self._lock = asyncio.Lock()
+        self._fps_interval_frame_count = 0
+        self._last_fps_calculation_time = time.monotonic()
+        self._fps = 0.0
+        self._fps_measurements = deque(maxlen=60)
+
         asyncio.create_task(self.collect_frames())
+
+        # Start metrics collection tasks.
+        self._fps_stats_task = asyncio.create_task(self._calculate_fps_loop())
 
     async def collect_frames(self):
         while True:
@@ -44,10 +69,68 @@ class VideoStreamTrack(MediaStreamTrack):
             except Exception as e:
                 await self.pipeline.cleanup()
                 raise Exception(f"Error collecting video frames: {str(e)}")
+            
+    async def _calculate_fps_loop(self):
+        """Loop to calculate FPS periodically."""
+        while self._running:
+            await asyncio.sleep(1)  # Calculate FPS every second.
+            with self._lock:
+                current_time = time.monotonic()
+                time_diff = current_time - self._last_fps_calculation_time
+                if time_diff > 0:
+                    self._fps = self._fps_interval_frame_count / time_diff
+                    self._fps_measurements.append(
+                        self._fps
+                    )  # Store the FPS measurement
+
+                    # Reset start_time and frame_count for the next interval.
+                    self._last_fps_calculation_time = current_time
+                    self._fps_interval_frame_count = 0
+    
+    def stop(self):
+        """Stop the FPS calculation thread."""
+        self._running = False
+
+    @property
+    def fps(self) -> float:
+        """Get the current output frames per second (FPS).
+
+        Returns:
+            The current output FPS.
+        """
+        with self._lock:
+            return self._fps
+
+    @property
+    def fps_measurements(self) -> list:
+        """Get the array of FPS measurements for the last minute.
+
+        Returns:
+            The array of FPS measurements for the last minute.
+        """
+        with self._lock:
+            return list(self._fps_measurements)
+
+    @property
+    def average_fps(self) -> float:
+        """Calculate the average FPS from the measurements.
+
+        Returns:
+            The average FPS.
+        """
+        with self._lock:
+            if not self._fps_measurements:
+                return 0.0
+            return sum(self._fps_measurements) / len(self._fps_measurements)
 
     async def recv(self):
-        return await self.pipeline.get_processed_video_frame()
-    
+        processed_frame = await self.pipeline.get_processed_video_frame()
+        
+        # Increment frame count for FPS calculation.
+        with self._lock:
+            self._fps_interval_frame_count += 1
+        
+        return processed_frame
 
 class AudioStreamTrack(MediaStreamTrack):
     kind = "audio"
@@ -153,7 +236,6 @@ async def offer(request):
             async def on_message(message):
                 try:
                     params = json.loads(message)
-                    
                     if params.get("type") == "get_nodes":
                         nodes_info = await pipeline.get_nodes_info()
                         response = {
@@ -186,6 +268,10 @@ async def offer(request):
             tracks["video"] = videoTrack
             sender = pc.addTrack(videoTrack)
 
+            # Store video track in app for stats.
+            stream_id = track.id
+            request.app["video_tracks"][stream_id] = videoTrack
+
             codec = "video/H264"
             force_codec(pc, sender, codec)
         elif track.kind == "audio":
@@ -196,6 +282,7 @@ async def offer(request):
         @track.on("ended")
         async def on_ended():
             logger.info(f"{track.kind} track ended")
+            request.app["video_tracks"].pop(track.id, None)
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -246,6 +333,7 @@ async def on_startup(app: web.Application):
         cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True
     )
     app["pcs"] = set()
+    app["video_tracks"] = {}
 
 
 async def on_shutdown(app: web.Application):
@@ -286,9 +374,20 @@ if __name__ == "__main__":
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
 
-    app.router.add_post("/offer", offer)
-    app.router.add_post("/prompt", set_prompt)
     app.router.add_get("/", health)
     app.router.add_get("/health", health)
+
+    # WebRTC signalling and control routes.
+    app.router.add_post("/offer", offer)
+    app.router.add_post("/prompt", set_prompt)
+
+    # Add routes for getting stream statistics.
+    stream_stats = StreamStats(app)
+    app.router.add_get("/streams/stats", stream_stats.collect_all_stream_metrics)
+    app.router.add_get("/stream/{stream_id}/stats", stream_stats.collect_stream_metrics_by_id)
+
+    # Add hosted platform route prefix.
+    # NOTE: This ensures that the local and hosted experiences have consistent routes.
+    add_prefix_to_app_routes(app, "/live")
 
     web.run_app(app, host=args.host, port=int(args.port))
