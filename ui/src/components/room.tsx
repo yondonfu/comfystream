@@ -171,7 +171,7 @@ export const Room = () => {
   const [config, setConfig] = useState<StreamConfig>({
     streamUrl: "",
     frameRate: 0,
-    selectedDeviceId: "",
+    selectedVideoDeviceId: "",
     selectedAudioDeviceId: "", // New property for audio device
     prompts: null,
   });
@@ -245,7 +245,7 @@ export const Room = () => {
                 <div className="absolute bottom-[8px] right-[8px] w-[70px] h-[70px] sm:w-[90px] sm:h-[90px] bg-slate-800 block md:hidden">
                   <Webcam
                     onStreamReady={onStreamReady}
-                    deviceId={config.selectedDeviceId}
+                    deviceId={config.selectedVideoDeviceId}
                     frameRate={config.frameRate}
                     selectedAudioDeviceId={config.selectedAudioDeviceId}
                   />
@@ -255,7 +255,7 @@ export const Room = () => {
               <div className="hidden md:flex w-full sm:w-full md:w-full h-[50dvh] sm:h-auto md:h-auto max-w-[512px] max-h-[512px] aspect-square justify-center items-center lg:border-2 lg:rounded-md bg-slate-800">
                 <Webcam
                   onStreamReady={onStreamReady}
-                  deviceId={config.selectedDeviceId}
+                  deviceId={config.selectedVideoDeviceId}
                   frameRate={config.frameRate}
                   selectedAudioDeviceId={config.selectedAudioDeviceId}
                 />

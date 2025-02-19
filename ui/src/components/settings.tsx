@@ -41,11 +41,11 @@ export interface StreamConfig {
   streamUrl: string;
   frameRate: number;
   prompts?: any;
-  selectedDeviceId: string | undefined;
-  selectedAudioDeviceId: string | undefined;
+  selectedVideoDeviceId: string;
+  selectedAudioDeviceId: string;
 }
 
-interface VideoDevice {
+interface AVDevice {
   deviceId: string;
   label: string;
 }
@@ -54,8 +54,8 @@ export const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
     process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8889",
   frameRate: 30,
-  selectedDeviceId: undefined,
-  selectedAudioDeviceId: undefined,
+  selectedVideoDeviceId: "none",
+  selectedAudioDeviceId: "none",
 };
 
 interface StreamSettingsProps {
@@ -137,10 +137,10 @@ export const usePrompt = () => useContext(PromptContext);
 function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const [prompts, setPrompts] = useState<any[]>([]);
   const { setOriginalPrompts } = usePrompt();
-  const [videoDevices, setVideoDevices] = useState<VideoDevice[]>([]);
-  const [audioDevices, setAudioDevices] = useState<VideoDevice[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<string | undefined>(config.selectedDeviceId);
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | undefined>(config.selectedDeviceId);
+  const [videoDevices, setVideoDevices] = useState<AVDevice[]>([]);
+  const [audioDevices, setAudioDevices] = useState<AVDevice[]>([]);
+  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string | undefined>(config.selectedVideoDeviceId);
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | undefined>(config.selectedAudioDeviceId);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -152,35 +152,32 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
    */
   const getVideoDevices = useCallback(async () => {
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      await navigator.mediaDevices.getUserMedia({ video: true });
 
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = [
         { deviceId: "none", label: "No Video" },
         ...devices
-          .filter((device) => device.kind === "videoinput")
-          .map((device) => ({
-            deviceId: device.deviceId,
-            label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`,
-          }))
+        .filter((device) => device.kind === "videoinput")
+        .map((device) => ({
+          deviceId: device.deviceId,
+          label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`,
+        }))
       ];
 
       setVideoDevices(videoDevices);
       // Set default to first available camera if no selection yet
-      if (!selectedDevice && videoDevices.length > 1) {
-        setSelectedDevice(videoDevices[1].deviceId); // Index 1 because 0 is "No Video"
+      if (selectedVideoDevice == "none" && videoDevices.length > 1) {
+        setSelectedVideoDevice(videoDevices[1].deviceId); // Index 1 because 0 is "No Video"
       }
-    } catch (err) {
-      console.error("Failed to get video devices");
-      // If we can't access video devices, still provide the None option
-      const videoDevices = [{ deviceId: "none", label: "No Video" }];
-      setVideoDevices(videoDevices);
-      setSelectedDevice("none");
+    } catch (err){
+      console.log(`Failed to get video devices: ${err}`);
     }
-  }, [selectedDevice]);
+  }, []);
 
   const getAudioDevices = useCallback(async () => {
     try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioDevices = [
         { deviceId: "none", label: "No Audio" },
@@ -194,17 +191,13 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
 
       setAudioDevices(audioDevices);
       // Set default to first available microphone if no selection yet
-      if (!selectedAudioDevice && audioDevices.length > 1) {
-        setSelectedAudioDevice(audioDevices[0].deviceId); // Default to "No Audio" for now
+      if (selectedAudioDevice == "none" && audioDevices.length > 1) {
+        setSelectedAudioDevice(audioDevices[1].deviceId);  // Index 1 because 0 is "No Audio"
       }
     } catch (err) {
-      console.error("Failed to get audio devices");
-      // If we can't access audio devices, still provide the None option
-      const audioDevices = [{ deviceId: "none", label: "No Audio" }];
-      setAudioDevices(audioDevices);
-      setSelectedAudioDevice("none");
+      console.log(`Failed to get audio devices: ${err}`);
     }
-  }, [selectedAudioDevice]);
+  }, []);
 
   // Handle device change events.
   useEffect(() => {
@@ -232,9 +225,9 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
         ? values.streamUrl.replace(/\/+$/, "")
         : values.streamUrl,
       prompts: prompts,
-      selectedDeviceId: selectedDevice,
-      selectedAudioDeviceId: selectedAudioDevice,
-    });
+      selectedVideoDeviceId: selectedVideoDevice || "none",
+      selectedAudioDeviceId: selectedAudioDevice || "none",
+      });
   };
 
   const handlePromptsChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,10 +253,17 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
    * @param deviceId
    */
   const handleCameraSelect = (deviceId: string) => {
-    if (deviceId !== selectedDevice) {
-      setSelectedDevice(deviceId);
+    if (deviceId !== selectedVideoDevice) {
+      setSelectedVideoDevice(deviceId);
     }
   };
+
+  const handleMicrophoneSelect = (deviceId: string) => {
+    if (deviceId !== selectedAudioDevice) {
+      setSelectedAudioDevice(deviceId);
+    }
+  };
+
 
   return (
     <Form {...form}>
@@ -300,11 +300,11 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
           <Label>Camera</Label>
           <Select
             required={true}
-            value={selectedDevice}
+            value={selectedVideoDevice}
             onValueChange={handleCameraSelect}
           >
             <Select.Trigger className="w-full mt-2">
-              {selectedDevice ? (videoDevices.find((d) => d.deviceId === selectedDevice)?.label || "None") : "None"}
+              {selectedVideoDevice ? (videoDevices.find((d) => d.deviceId === selectedVideoDevice)?.label || "None") : "None"}
             </Select.Trigger>
             <Select.Content>
               {videoDevices.length === 0 ? (
@@ -324,16 +324,24 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
 
         <div className="mt-4 mb-4">
           <Label>Microphone</Label>
-          <Select value={selectedAudioDevice} onValueChange={setSelectedAudioDevice}>
+          <Select value={selectedAudioDevice} onValueChange={handleMicrophoneSelect}>
             <Select.Trigger className="w-full mt-2">
               {selectedAudioDevice ? (audioDevices.find((d) => d.deviceId === selectedAudioDevice)?.label || "None") : "None"}
             </Select.Trigger>
             <Select.Content>
-              {audioDevices.map((device) => (
-                <Select.Option key={device.deviceId} value={device.deviceId}>
-                  {device.label}
+            {audioDevices.length === 0 ? (
+                <Select.Option disabled value="no-devices">
+                  No audio devices found
                 </Select.Option>
-              ))}
+              ) : (
+                audioDevices
+                .filter((device) => device.deviceId !== undefined && device.deviceId != "")
+                .map((device) => (
+                  <Select.Option key={device.deviceId} value={device.deviceId}>
+                    {device.label}
+                  </Select.Option>
+                ))
+              )}
             </Select.Content>
           </Select>
         </div>
@@ -341,11 +349,12 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
         <div className="mt-4 mb-4 grid max-w-sm items-center gap-3">
           <Label>Comfy Workflows</Label>
           <Input
-            id="video-workflow"
+            id="workflow"
             type="file"
             accept=".json"
             multiple
             onChange={handlePromptsChange}
+            required={true}
           />
         </div>
 
