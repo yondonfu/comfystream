@@ -68,16 +68,17 @@ class ComfyStreamServer:
         try:
             self.port = port or self.find_available_port()
             
-            # Get the path to the ComfyStream server directory
+            # Get the path to the ComfyStream server directory and script
             server_dir = Path(__file__).parent.parent / "server"
-            logging.info(f"Server directory: {server_dir}")
+            server_script = server_dir / "app.py"
+            logging.info(f"Server script: {server_script}")
             
-            # Get ComfyUI workspace path
+            # Get ComfyUI workspace path (which is where we'll run from)
             comfyui_workspace = Path(__file__).parent.parent.parent.parent
             logging.info(f"ComfyUI workspace: {comfyui_workspace}")
             
             # Use the system Python (which should have ComfyStream installed)
-            cmd = [sys.executable, "-u", str(server_dir / "app.py"),
+            cmd = [sys.executable, "-u", str(server_script),
                   "--port", str(self.port),
                   "--workspace", str(comfyui_workspace)]
             
@@ -88,7 +89,7 @@ class ComfyStreamServer:
                 cmd,
                 stdout=sys.stdout,
                 stderr=sys.stderr,
-                cwd=str(server_dir),
+                cwd=str(comfyui_workspace),  # Run from ComfyUI root
                 env={**os.environ, 'PYTHONUNBUFFERED': '1'}
             )
             
