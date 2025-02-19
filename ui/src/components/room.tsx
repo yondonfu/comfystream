@@ -70,7 +70,7 @@ function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
         ref={videoRef}
         autoPlay
         playsInline
-        className="w-full h-full"
+        className="w-full h-full object-cover"
       />
       {needsPlayButton && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
