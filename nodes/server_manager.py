@@ -6,7 +6,23 @@ import socket
 import signal
 import atexit
 import logging
+import urllib.request
+import urllib.error
 from pathlib import Path
+import time
+import asyncio
+
+# Configure logging to output to console
+logging.basicConfig(
+    level=logging.INFO,
+    format='[ComfyStream] %(message)s',
+    stream=sys.stdout
+)
+
+# Set up Windows specific event loop policy
+if sys.platform == 'win32':
+    if hasattr(asyncio, 'WindowsSelectorEventLoopPolicy'):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 class ComfyStreamServer:
     """Manages the ComfyStream server process"""
@@ -15,67 +31,82 @@ class ComfyStreamServer:
         self.process = None
         self.port = None
         self.is_running = False
-        # Register cleanup on exit
         atexit.register(self.cleanup)
+        logging.info("ComfyStream server manager initialized")
         
-    def find_available_port(self, start_port=3000):
+    def find_available_port(self, start_port=8889):
         """Find an available port starting from start_port"""
         port = start_port
         while port < 65535:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(('', port))
+                    logging.info(f"Found available port: {port}")
                     return port
             except OSError:
                 port += 1
         raise RuntimeError("No available ports found")
 
-    def cleanup(self):
-        """Cleanup server process on exit"""
-        if self.process:
-            try:
-                if sys.platform == "win32":
-                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(self.process.pid)])
-                else:
-                    os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
-            except Exception as e:
-                logging.error(f"Error cleaning up server process: {str(e)}")
-            self.process = None
-            self.is_running = False
+    def check_server_health(self):
+        """Check if server is responding to health checks"""
+        if not self.port:
+            return False
+        
+        url = f"http://127.0.0.1:{self.port}"
+        try:
+            response = urllib.request.urlopen(url)
+            return response.code == 200
+        except urllib.error.URLError:
+            return False
 
     async def start(self, port=None):
         """Start the ComfyStream server"""
         if self.is_running:
+            logging.info("Server is already running")
             return False
 
         try:
             self.port = port or self.find_available_port()
             
             # Get the path to the ComfyStream server directory
-            # Go up to the package root where server/ is located
-            server_dir = Path(__file__).parent.parent.parent / "server"
+            server_dir = Path(__file__).parent.parent / "server"
+            logging.info(f"Server directory: {server_dir}")
             
-            # Ensure the directory exists
-            if not server_dir.exists():
-                raise RuntimeError(f"Server directory not found at {server_dir}")
-                
-            # Ensure server.py exists
-            server_script = server_dir / "server.py"
-            if not server_script.exists():
-                raise RuntimeError(f"server.py not found at {server_script}")
+            # Get ComfyUI workspace path
+            comfyui_workspace = Path(__file__).parent.parent.parent.parent
+            logging.info(f"ComfyUI workspace: {comfyui_workspace}")
             
-            # Start the server process
+            # Use the system Python (which should have ComfyStream installed)
+            cmd = [sys.executable, "-u", str(server_dir / "app.py"),
+                  "--port", str(self.port),
+                  "--workspace", str(comfyui_workspace)]
+            
+            logging.info(f"Starting server with command: {' '.join(cmd)}")
+            
+            # Start process with output going to stdout/stderr
             self.process = subprocess.Popen(
-                [sys.executable, str(server_script), "--port", str(self.port)],
+                cmd,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
                 cwd=str(server_dir),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
+                env={**os.environ, 'PYTHONUNBUFFERED': '1'}
             )
             
-            # TODO: Wait for server to be ready by checking output or port
+            # Wait for server to start responding
+            logging.info("Waiting for server to start...")
+            for _ in range(30):  # Try for 30 seconds
+                if self.check_server_health():
+                    logging.info("Server is running!")
+                    break
+                await asyncio.sleep(1)
+            else:
+                raise RuntimeError("Server failed to start after 30 seconds")
+            
+            if self.process.poll() is not None:
+                raise RuntimeError(f"Server failed to start (exit code: {self.process.poll()})")
+            
             self.is_running = True
-            logging.info(f"ComfyStream server started on port {self.port}")
+            logging.info(f"ComfyStream server started on port {self.port} (PID: {self.process.pid})")
             return True
             
         except Exception as e:
@@ -86,6 +117,7 @@ class ComfyStreamServer:
     async def stop(self):
         """Stop the ComfyStream server"""
         if not self.is_running:
+            logging.info("Server is not running")
             return False
             
         try:
@@ -98,14 +130,31 @@ class ComfyStreamServer:
 
     async def restart(self):
         """Restart the ComfyStream server"""
+        logging.info("Restarting ComfyStream server...")
         current_port = self.port
         await self.stop()
         return await self.start(current_port)
 
     def get_status(self):
         """Get current server status"""
-        return {
+        status = {
             "running": self.is_running,
             "port": self.port,
             "pid": self.process.pid if self.process else None
-        } 
+        }
+        logging.info(f"Server status: {status}")
+        return status
+
+    def cleanup(self):
+        """Cleanup server process on exit"""
+        if self.process:
+            try:
+                logging.info(f"Cleaning up server process (PID: {self.process.pid})")
+                if sys.platform == "win32":
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(self.process.pid)])
+                else:
+                    os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+            except Exception as e:
+                logging.error(f"Error cleaning up server process: {str(e)}")
+            self.process = None
+            self.is_running = False 

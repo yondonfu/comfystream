@@ -5,6 +5,7 @@ from server import PromptServer
 from aiohttp import web
 import pathlib
 import logging
+import aiohttp
 from ..server_manager import ComfyStreamServer
 
 routes = PromptServer.instance.routes
@@ -18,6 +19,31 @@ routes.static('/extensions/comfystream_inside/static', str(STATIC_DIR))
 # Create server manager instance
 server_manager = ComfyStreamServer()
 
+@routes.post('/api/offer')
+async def proxy_offer(request):
+    """Proxy offer requests to the ComfyStream server"""
+    try:
+        data = await request.json()
+        target_url = data.get("endpoint")
+        if not target_url:
+            return web.json_response({"error": "No endpoint provided"}, status=400)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{target_url}/offer",
+                json={"prompt": data.get("prompt"), "offer": data.get("offer")},
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                if not response.ok:
+                    return web.json_response(
+                        {"error": f"Server error: {response.status}"}, 
+                        status=response.status
+                    )
+                return web.json_response(await response.json())
+    except Exception as e:
+        logging.error(f"Error proxying offer: {str(e)}")
+        return web.json_response({"error": str(e)}, status=500)
+
 @routes.post('/comfystream/control')
 async def control_server(request):
     """Handle server control requests"""
@@ -27,15 +53,10 @@ async def control_server(request):
         
         if action == "start":
             success = await server_manager.start()
-            if success:
-                # Open browser to ComfyStream UI on its own port
-                webbrowser.open(f"http://localhost:{server_manager.port}")
         elif action == "stop":
             success = await server_manager.stop()
         elif action == "restart":
             success = await server_manager.restart()
-            if success:
-                webbrowser.open(f"http://localhost:{server_manager.port}")
         else:
             return web.json_response({"error": "Invalid action"}, status=400)
 

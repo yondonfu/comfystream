@@ -3,6 +3,7 @@ import argparse
 import os
 import json
 import logging
+import sys
 
 import torch
 
@@ -298,4 +299,8 @@ if __name__ == "__main__":
     app.router.add_get("/", health)
     app.router.add_get("/health", health)
 
-    web.run_app(app, host=args.host, port=int(args.port))
+    def force_print(*args, **kwargs):
+        print(*args, **kwargs, flush=True)
+        sys.stdout.flush()
+
+    web.run_app(app, host=args.host, port=int(args.port), print=force_print)
