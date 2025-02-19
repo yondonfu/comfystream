@@ -36,6 +36,7 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Select } from "./ui/select";
+import { toast } from "sonner";
 
 export interface StreamConfig {
   streamUrl: string;
@@ -170,8 +171,16 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       if (selectedVideoDevice == "none" && videoDevices.length > 1) {
         setSelectedVideoDevice(videoDevices[1].deviceId); // Index 1 because 0 is "No Video"
       }
-    } catch (err){
-      console.log(`Failed to get video devices: ${err}`);
+    } catch (error) {
+      console.log(`Failed to get video devices: ${error}`);
+      toast.error("Failed to get video devices", {
+        description: "Please make sure your camera is connected and enabled.",
+      });
+
+      // If we can't access video devices, still provide the None option
+      const videoDevices = [{ deviceId: "none", label: "No Video" }];
+      setVideoDevices(videoDevices);
+      setSelectedVideoDevice("none");
     }
   }, []);
 
@@ -194,8 +203,16 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       if (selectedAudioDevice == "none" && audioDevices.length > 1) {
         setSelectedAudioDevice(audioDevices[1].deviceId);  // Index 1 because 0 is "No Audio"
       }
-    } catch (err) {
-      console.log(`Failed to get audio devices: ${err}`);
+    } catch (error) {
+      console.error("Failed to get audio devices: ", error);
+      toast.error("Failed to get audio devices", {
+        description: "Please make sure your microphone is connected and enabled.",
+      });
+
+      // If we can't access audio devices, still provide the None option
+      const audioDevices = [{ deviceId: "none", label: "No Audio" }];
+      setAudioDevices(audioDevices);
+      setSelectedAudioDevice("none");
     }
   }, []);
 
@@ -245,6 +262,9 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       setOriginalPrompts(allPrompts);
     } catch (err) {
       console.error("Failed to parse one or more JSON files.", err);
+      toast.error("Failed to Parse Workflow", {
+        description: "Please upload a valid JSON file.",
+      });
     }
   };
 
