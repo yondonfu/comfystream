@@ -30,11 +30,11 @@ RUN conda init bash
 
 # Create the supervisor configuration file for ComfyUI and ComfyStream 
 RUN mkdir -p /etc/supervisor/conf.d
-COPY .devcontainer/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 WORKDIR /workspace/comfystream
-COPY .devcontainer/entrypoint.sh /workspace/comfystream/.devcontainer/entrypoint.sh
-RUN chmod +x /workspace/comfystream/.devcontainer/entrypoint.sh
+COPY docker/entrypoint.sh /workspace/comfystream/docker/entrypoint.sh
+RUN chmod +x /workspace/comfystream/docker/entrypoint.sh
 
-ENTRYPOINT ["/workspace/comfystream/.devcontainer/entrypoint.sh"]
+ENTRYPOINT ["/workspace/comfystream/docker/entrypoint.sh"]
 CMD ["/bin/bash"]
