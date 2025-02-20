@@ -44,13 +44,6 @@ if [ "$1" = "--build-engines" ]; then
     shift
 fi
 
-if [ "$1" = "--editable" ]; then
-    cd /workspace/comfystream
-    conda activate comfystream
-    pip install -e .
-    shift
-fi
-
 # Install npm packages if needed
 cd /workspace/comfystream/ui
 if [ ! -d "node_modules" ]; then
@@ -63,4 +56,5 @@ if [ "$1" = "--server" ]; then
 fi
 
 cd /workspace/comfystream
-/bin/bash
+
+exec "$@"
