@@ -52,7 +52,9 @@ fi
 
 if [ "$1" = "--server" ]; then
     /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+    shift
 fi
 
 cd /workspace/comfystream
-/bin/bash
+
+exec "$@"
