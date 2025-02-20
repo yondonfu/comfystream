@@ -11,6 +11,7 @@ import urllib.error
 from pathlib import Path
 import time
 import asyncio
+from abc import ABC, abstractmethod
 
 # Configure logging to output to console
 logging.basicConfig(
@@ -23,21 +24,84 @@ logging.basicConfig(
 if sys.platform == 'win32':
     if hasattr(asyncio, 'WindowsSelectorEventLoopPolicy'):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-class ComfyStreamServer:
-    """Manages the ComfyStream server process"""
-    
-    def __init__(self):
-        self.process = None
-        self.port = None
-        self.is_running = False
-        atexit.register(self.cleanup)
-        logging.info("ComfyStream server manager initialized")
         
-    def find_available_port(self, start_port=8889):
+
+class ComfyStreamServerBase(ABC):
+    """Abstract base class for ComfyStream server management"""
+    
+    def __init__(self, host="127.0.0.1", port=None):
+        self.host = host
+        self.port = port
+        self.is_running = False
+        logging.info(f"Initializing {self.__class__.__name__}")
+    
+    @abstractmethod
+    async def start(self, port=None) -> bool:
+        """Start the ComfyStream server
+        
+        Args:
+            port: Optional port to use. If None, implementation should choose a port.
+            
+        Returns:
+            bool: True if server started successfully, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    async def stop(self) -> bool:
+        """Stop the ComfyStream server
+        
+        Returns:
+            bool: True if server stopped successfully, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def get_status(self) -> dict:
+        """Get current server status
+        
+        Returns:
+            dict: Server status information
+        """
+        pass
+    
+    @abstractmethod
+    def check_server_health(self) -> bool:
+        """Check if server is responding to health checks
+        
+        Returns:
+            bool: True if server is healthy, False otherwise
+        """
+        pass
+    
+    async def restart(self) -> bool:
+        """Restart the ComfyStream server
+        
+        Returns:
+            bool: True if server restarted successfully, False otherwise
+        """
+        logging.info("Restarting ComfyStream server...")
+        current_port = self.port
+        await self.stop()
+        return await self.start(current_port)
+
+class LocalComfyStreamServer(ComfyStreamServerBase):
+    """Local ComfyStream server implementation"""
+    
+    def __init__(self, host="127.0.0.1", start_port=8889, max_port=65535, 
+                 health_check_timeout=30, health_check_interval=1):
+        super().__init__(host=host)
+        self.process = None
+        self.start_port = start_port
+        self.max_port = max_port
+        self.health_check_timeout = health_check_timeout
+        self.health_check_interval = health_check_interval
+        atexit.register(self.cleanup)
+        
+    def find_available_port(self):
         """Find an available port starting from start_port"""
-        port = start_port
-        while port < 65535:
+        port = self.start_port
+        while port < self.max_port:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(('', port))
@@ -52,7 +116,7 @@ class ComfyStreamServer:
         if not self.port:
             return False
         
-        url = f"http://127.0.0.1:{self.port}"
+        url = f"http://{self.host}:{self.port}"
         try:
             response = urllib.request.urlopen(url)
             return response.code == 200
@@ -80,6 +144,7 @@ class ComfyStreamServer:
             # Use the system Python (which should have ComfyStream installed)
             cmd = [sys.executable, "-u", str(server_script),
                   "--port", str(self.port),
+                  "--host", str(self.host),
                   "--workspace", str(comfyui_workspace)]
             
             logging.info(f"Starting server with command: {' '.join(cmd)}")
@@ -95,13 +160,13 @@ class ComfyStreamServer:
             
             # Wait for server to start responding
             logging.info("Waiting for server to start...")
-            for _ in range(30):  # Try for 30 seconds
+            for _ in range(self.health_check_timeout):
                 if self.check_server_health():
                     logging.info("Server is running!")
                     break
-                await asyncio.sleep(1)
+                await asyncio.sleep(self.health_check_interval)
             else:
-                raise RuntimeError("Server failed to start after 30 seconds")
+                raise RuntimeError(f"Server failed to start after {self.health_check_timeout} seconds")
             
             if self.process.poll() is not None:
                 raise RuntimeError(f"Server failed to start (exit code: {self.process.poll()})")
@@ -129,19 +194,13 @@ class ComfyStreamServer:
             logging.error(f"Error stopping ComfyStream server: {str(e)}")
             return False
 
-    async def restart(self):
-        """Restart the ComfyStream server"""
-        logging.info("Restarting ComfyStream server...")
-        current_port = self.port
-        await self.stop()
-        return await self.start(current_port)
-
     def get_status(self):
         """Get current server status"""
         status = {
             "running": self.is_running,
             "port": self.port,
-            "pid": self.process.pid if self.process else None
+            "pid": self.process.pid if self.process else None,
+            "type": "local"
         }
         logging.info(f"Server status: {status}")
         return status
