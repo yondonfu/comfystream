@@ -12,13 +12,6 @@ if torch.cuda.is_available():
     torch.cuda.init()
 
 
-import torch
-
-# Initialize CUDA before any other imports to prevent core dump.
-if torch.cuda.is_available():
-    torch.cuda.init()
-
-
 from twilio.rest import Client
 from aiohttp import web
 from aiortc import (
@@ -249,6 +242,7 @@ async def offer(request):
             async def on_message(message):
                 try:
                     params = json.loads(message)
+
                     if params.get("type") == "get_nodes":
                         nodes_info = await pipeline.get_nodes_info()
                         response = {
@@ -387,12 +381,12 @@ if __name__ == "__main__":
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
 
-    app.router.add_post("/offer", offer)
-    app.router.add_post("/prompt", set_prompt)
-
-    # WebRTC signalling and control routes.
     app.router.add_get("/", health)
     app.router.add_get("/health", health)
+
+    # WebRTC signalling and control routes.
+    app.router.add_post("/offer", offer)
+    app.router.add_post("/prompt", set_prompt)
 
     # Add routes for getting stream statistics.
     stream_stats = StreamStats(app)
