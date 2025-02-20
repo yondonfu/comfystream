@@ -14,9 +14,8 @@ logger = logging.getLogger(__name__)
 
 class ComfyStreamClient:
     def __init__(self, max_workers: int = 1, **kwargs):
-        config = Configuration(**kwargs)
-        self.comfy_client = EmbeddedComfyClient(config, max_workers=max_workers)
-        self.running_prompts = {} # To be used for cancelling tasks
+        self.config = Configuration(**kwargs)
+        self.running_prompts = {}
         self.current_prompts = []
         self.cleanup_lock = asyncio.Lock()
 
@@ -35,13 +34,15 @@ class ComfyStreamClient:
         self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
 
     async def run_prompt(self, prompt_index: int):
-        while True:
-            try:
-                await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
-            except Exception as e:
-                await self.cleanup()
-                logger.error(f"Error running prompt: {str(e)}")
-                raise
+        # TODO: Figure out a way to use the same client for multiple prompts
+        async with EmbeddedComfyClient(self.config) as comfy_client:
+            while True:
+                try:
+                    await comfy_client.queue_prompt(self.current_prompts[prompt_index])
+                except Exception as e:
+                    await self.cleanup()
+                    logger.error(f"Error running prompt: {str(e)}")
+                    raise
 
     async def cleanup(self):
         async with self.cleanup_lock:
@@ -52,9 +53,6 @@ class ComfyStreamClient:
                 except asyncio.CancelledError:
                     pass
             self.running_prompts.clear()
-
-            if self.comfy_client.is_running:
-                await self.comfy_client.__aexit__()
 
             await self.cleanup_queues()
             logger.info("Client cleanup complete")
