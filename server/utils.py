@@ -78,7 +78,7 @@ class StreamStats:
         """
         self._app = app
 
-    def collect_video_metrics(self, video_track: MediaStreamTrack) -> Dict[str, Any]:
+    async def collect_video_metrics(self, video_track: MediaStreamTrack) -> Dict[str, Any]:
         """Collects real-time statistics for a video track.
 
         Args:
@@ -88,9 +88,9 @@ class StreamStats:
             A dictionary containing FPS-related statistics.
         """
         return {
-            "fps": video_track.fps,
-            "minute_avg_fps": video_track.minute_avg_fps,
-            "minute_fps_array": video_track.minute_fps_array,
+            "fps": await video_track.fps,
+            "minute_avg_fps": await video_track.average_fps,
+            "minute_fps_array": await video_track.fps_measurements,
         }
 
     async def collect_all_stream_metrics(self, _) -> web.Response:
@@ -101,7 +101,7 @@ class StreamStats:
         """
         video_tracks = self._app.get("video_tracks", {})
         all_stats = {
-            stream_id: self.get_video_track_stats(track)
+            stream_id: await self.collect_video_metrics(track)
             for stream_id, track in video_tracks.items()
         }
 
@@ -123,7 +123,7 @@ class StreamStats:
         video_track = self._app["video_tracks"].get(stream_id)
 
         if video_track:
-            stats = self.get_video_track_stats(video_track)
+            stats = await self.collect_video_metrics(video_track)
         else:
             stats = {"error": "Stream not found"}
 

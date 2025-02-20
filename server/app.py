@@ -3,8 +3,15 @@ import argparse
 import os
 import json
 import logging
-
 from collections import deque
+
+import torch
+
+# Initialize CUDA before any other imports to prevent core dump.
+if torch.cuda.is_available():
+    torch.cuda.init()
+
+
 from twilio.rest import Client
 from aiohttp import web
 from aiortc import (
@@ -49,12 +56,12 @@ class VideoStreamTrack(MediaStreamTrack):
         self.track = track
         self.pipeline = pipeline
 
-        self._running = True
         self._lock = asyncio.Lock()
         self._fps_interval_frame_count = 0
         self._last_fps_calculation_time = time.monotonic()
         self._fps = 0.0
         self._fps_measurements = deque(maxlen=60)
+        self._running_event = asyncio.Event()
 
         asyncio.create_task(self.collect_frames())
 
@@ -72,9 +79,10 @@ class VideoStreamTrack(MediaStreamTrack):
             
     async def _calculate_fps_loop(self):
         """Loop to calculate FPS periodically."""
-        while self._running:
+        await self._running_event.wait()
+        while self.readyState != "ended":
             await asyncio.sleep(1)  # Calculate FPS every second.
-            with self._lock:
+            async with self._lock:
                 current_time = time.monotonic()
                 time_diff = current_time - self._last_fps_calculation_time
                 if time_diff > 0:
@@ -87,38 +95,34 @@ class VideoStreamTrack(MediaStreamTrack):
                     self._last_fps_calculation_time = current_time
                     self._fps_interval_frame_count = 0
     
-    def stop(self):
-        """Stop the FPS calculation thread."""
-        self._running = False
-
     @property
-    def fps(self) -> float:
+    async def fps(self) -> float:
         """Get the current output frames per second (FPS).
 
         Returns:
             The current output FPS.
         """
-        with self._lock:
+        async with self._lock:
             return self._fps
 
     @property
-    def fps_measurements(self) -> list:
+    async def fps_measurements(self) -> list:
         """Get the array of FPS measurements for the last minute.
 
         Returns:
             The array of FPS measurements for the last minute.
         """
-        with self._lock:
+        async with self._lock:
             return list(self._fps_measurements)
 
     @property
-    def average_fps(self) -> float:
-        """Calculate the average FPS from the measurements.
+    async def average_fps(self) -> float:
+        """Calculate the average FPS from the measurements taken in the last minute.
 
         Returns:
-            The average FPS.
+            The average FPS over the last minute.
         """
-        with self._lock:
+        async with self._lock:
             if not self._fps_measurements:
                 return 0.0
             return sum(self._fps_measurements) / len(self._fps_measurements)
@@ -127,8 +131,10 @@ class VideoStreamTrack(MediaStreamTrack):
         processed_frame = await self.pipeline.get_processed_video_frame()
         
         # Increment frame count for FPS calculation.
-        with self._lock:
+        async with self._lock:
             self._fps_interval_frame_count += 1
+            if not self._running_event.is_set():
+                self._running_event.set()
         
         return processed_frame
 
@@ -375,6 +381,7 @@ if __name__ == "__main__":
     app.on_shutdown.append(on_shutdown)
 
     app.router.add_get("/", health)
+    app.router.add_get("/health", health)
 
     # WebRTC signalling and control routes.
     app.router.add_post("/offer", offer)
