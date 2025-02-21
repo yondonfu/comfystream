@@ -59,6 +59,7 @@ class VideoStreamTrack(MediaStreamTrack):
         self._lock = asyncio.Lock()
         self._fps_interval_frame_count = 0
         self._last_fps_calculation_time = time.monotonic()
+        self._fps_loop_start_time = self._last_fps_calculation_time
         self._fps = 0.0
         self._fps_measurements = deque(maxlen=60)
         self._running_event = asyncio.Event()
@@ -76,15 +77,16 @@ class VideoStreamTrack(MediaStreamTrack):
             except Exception as e:
                 await self.pipeline.cleanup()
                 raise Exception(f"Error collecting video frames: {str(e)}")
-            
+
     async def _calculate_fps_loop(self):
         """Loop to calculate FPS periodically."""
         await self._running_event.wait()
+        self._fps_loop_start_time = time.monotonic()
         while self.readyState != "ended":
             await asyncio.sleep(1)  # Calculate FPS every second.
             async with self._lock:
-                current_time = time.monotonic()
-                time_diff = current_time - self._last_fps_calculation_time
+                current_time_monotonic = time.monotonic()
+                time_diff = current_time_monotonic - self._last_fps_calculation_time
                 if time_diff > 0:
                     self._fps = self._fps_interval_frame_count / time_diff
                     self._fps_measurements.append(
@@ -92,9 +94,9 @@ class VideoStreamTrack(MediaStreamTrack):
                     )  # Store the FPS measurement
 
                     # Reset start_time and frame_count for the next interval.
-                    self._last_fps_calculation_time = current_time
+                    self._last_fps_calculation_time = current_time_monotonic
                     self._fps_interval_frame_count = 0
-    
+
     @property
     async def fps(self) -> float:
         """Get the current output frames per second (FPS).
@@ -127,16 +129,27 @@ class VideoStreamTrack(MediaStreamTrack):
                 return 0.0
             return sum(self._fps_measurements) / len(self._fps_measurements)
 
+    @property
+    async def last_fps_calculation_time(self) -> float:
+        """Get the elapsed time since the last FPS calculation.
+
+        Returns:
+            The elapsed time in seconds since the last FPS calculation.
+        """
+        async with self._lock:
+            return self._last_fps_calculation_time - self._fps_loop_start_time
+
     async def recv(self):
         processed_frame = await self.pipeline.get_processed_video_frame()
-        
+
         # Increment frame count for FPS calculation.
         async with self._lock:
             self._fps_interval_frame_count += 1
             if not self._running_event.is_set():
                 self._running_event.set()
-        
+
         return processed_frame
+
 
 class AudioStreamTrack(MediaStreamTrack):
     kind = "audio"

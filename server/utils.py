@@ -88,6 +88,7 @@ class StreamStats:
             A dictionary containing FPS-related statistics.
         """
         return {
+            "timestamp": await video_track.last_fps_calculation_time,
             "fps": await video_track.fps,
             "minute_avg_fps": await video_track.average_fps,
             "minute_fps_array": await video_track.fps_measurements,
