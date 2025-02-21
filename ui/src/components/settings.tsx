@@ -196,7 +196,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       setAudioDevices(audioDevices);
       // Set default to first available microphone if no selection yet
       if (selectedAudioDevice == "none" && audioDevices.length > 1) {
-        setSelectedAudioDevice(audioDevices[1].deviceId);  // Index 1 because 0 is "No Audio"
+        setSelectedAudioDevice(audioDevices[0].deviceId);  // Default to "No Audio" due to https://github.com/yondonfu/comfystream/issues/64
       }
     } catch (error) {
       console.error("Failed to get audio devices: ", error);
@@ -265,12 +265,20 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const handleCameraSelect = (deviceId: string) => {
     if (deviceId !== selectedVideoDevice) {
       setSelectedVideoDevice(deviceId);
+      // Unselect audio device when video is selected
+      if (deviceId !== "none") {
+        setSelectedAudioDevice("none");
+      }
     }
   };
 
   const handleMicrophoneSelect = (deviceId: string) => {
     if (deviceId !== selectedAudioDevice) {
       setSelectedAudioDevice(deviceId);
+      // Unselect video device when audio is selected
+      if (deviceId !== "none") {
+        setSelectedVideoDevice("none");
+      }
     }
   };
 
