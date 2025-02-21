@@ -44,4 +44,16 @@ models:
     url: "https://huggingface.co/CrucibleAI/ControlNetMediaPipeFace/resolve/main/control_v2p_sd15_mediapipe_face.safetensors"
     path: "controlnet/control_v2p_sd15_mediapipe_face.safetensors"
     type: "controlnet"
-    
+
+  # Lora models
+  ral-polygon-sd15:
+    name: "ral-polygon-sd15"
+    url: "https://huggingface.co/Livepeer-Studio/comfystream_loras/resolve/main/ral-polygon-sd15.safetensors"
+    path: "loras/SD1.5/ral-polygon-sd15.safetensors"
+    type: "lora"
+
+  ral-chrome-sdxl:
+    name: "ral-chrome-sd15"
+    url: "https://civitai.com/api/download/models/276570?type=Model&format=SafeTensor"
+    path: "loras/SD1.5/ral-chrome-sd15.safetensors"
+    type: "lora"
