@@ -120,7 +120,30 @@ const extension = {
                 "ComfyStream.RestartServer"
             ]
         }
-    ]
+    ],
+
+    // Setup function to handle menu registration based on settings
+    setup() {
+        console.log("[ComfyStream] Setting up extension");
+        const useNewMenu = app.ui.settings.store.get("Comfy.UseNewMenu");
+        console.log("[ComfyStream] Menu setting:", useNewMenu);
+
+        if (useNewMenu === "Disabled") {
+            // Old menu system
+            console.log("[ComfyStream] Using old menu system");
+            const menu = app.ui.menu;
+            menu.addSeparator();
+            const comfyStreamMenu = menu.addMenu("ComfyStream");
+            comfyStreamMenu.addItem("Open UI", openUI, { icon: "pi pi-external-link" });
+            comfyStreamMenu.addSeparator();
+            comfyStreamMenu.addItem("Start Server", () => controlServer('start'), { icon: "pi pi-play" });
+            comfyStreamMenu.addItem("Stop Server", () => controlServer('stop'), { icon: "pi pi-stop" });
+            comfyStreamMenu.addItem("Restart Server", () => controlServer('restart'), { icon: "pi pi-refresh" });
+        } else {
+            // New menu system is handled automatically by the menuCommands registration
+            console.log("[ComfyStream] Using new menu system");
+        }
+    }
 };
 
 console.log("[ComfyStream] Registering extension:", extension);
