@@ -6,7 +6,7 @@ from aiohttp import web
 import pathlib
 import logging
 import aiohttp
-from ..server_manager import ComfyStreamServer
+from ..server_manager import LocalComfyStreamServer
 
 routes = None
 server_manager = None
@@ -22,7 +22,7 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     routes.static('/extensions/comfystream_inside/static', str(STATIC_DIR))
     
     # Create server manager instance
-    server_manager = ComfyStreamServer()
+    server_manager = LocalComfyStreamServer()
     
     @routes.post('/api/offer')
     async def proxy_offer(request):

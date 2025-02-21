@@ -1,11 +1,9 @@
+// Wait for ComfyUI to be ready
 const app = window.comfyAPI?.app?.app;
-console.log("[ComfyStream] Launcher extension loading, app:", app);
-
-if (!app) {
-    console.error("[ComfyStream] Failed to get app instance!");
-}
+console.log("[ComfyStream] Initializing with app:", app);
 
 async function controlServer(action) {
+    console.log("[ComfyStream] Controlling server with action:", action);
     try {
         const response = await fetch('/comfystream/control', {
             method: 'POST',
@@ -18,6 +16,7 @@ async function controlServer(action) {
         
         if (!response.ok) {
             const errorText = await response.text();
+            console.error("[ComfyStream] Server returned error response:", response.status, errorText);
             try {
                 const errorData = JSON.parse(errorText);
                 throw new Error(errorData.error || `Server error: ${response.status}`);
@@ -36,77 +35,94 @@ async function controlServer(action) {
     }
 }
 
-// Register our custom widget
-app.registerExtension({
-    name: "ComfyStream.LauncherButton",
-    async beforeRegisterNodeDef(nodeType, nodeData) {
-        // Only handle our launcher node
-        if (nodeData.name !== "ComfyStreamLauncher") return;
+async function openUI() {
+    console.log("[ComfyStream] Attempting to open UI");
+    try {
+        const response = await fetch('/launch_comfystream', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
         
-        console.log("[ComfyStream] Processing ComfyStreamLauncher node");
-
-        // Add launch method to handle server communication
-        nodeType.prototype.launchComfyStream = async function() {
-            console.log("[ComfyStream] launchComfyStream called");
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("[ComfyStream] UI launch returned error response:", response.status, errorText);
             try {
-                const response = await fetch('/launch_comfystream', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        node_id: this.id 
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        throw new Error(errorData.error || `Server error: ${response.status}`);
-                    } catch (e) {
-                        throw new Error(`Server error: ${response.status} - ${errorText}`);
-                    }
-                }
-
-                const data = await response.json();
-                console.log("[ComfyStream] Launch response:", data);
-                if (!data.success) {
-                    throw new Error(data.error || 'Unknown error launching ComfyStream');
-                }
-            } catch (error) {
-                console.error('[ComfyStream] Error launching ComfyStream:', error);
-                app.ui.dialog.show('Error', error.message || 'Failed to launch ComfyStream');
+                const errorData = JSON.parse(errorText);
+                throw new Error(errorData.error || `Server error: ${response.status}`);
+            } catch (e) {
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
             }
-        };
+        }
 
-        // Override the onNodeCreated method
-        const onNodeCreated = nodeType.prototype.onNodeCreated;
-        console.log("[ComfyStream] Original onNodeCreated:", onNodeCreated);
-        
-        nodeType.prototype.onNodeCreated = function() {
-            console.log("[ComfyStream] onNodeCreated called");
-            // Call the original onNodeCreated if it exists
-            if (onNodeCreated) {
-                console.log("[ComfyStream] Calling original onNodeCreated");
-                onNodeCreated.apply(this);
-            }
-
-            // Add all four buttons
-            const buttons = [
-                ["Open UI", () => this.launchComfyStream()],
-                ["Start Server", () => controlServer('start')],
-                ["Stop Server", () => controlServer('stop')],
-                ["Restart Server", () => controlServer('restart')]
-            ];
-
-            // Add each button
-            buttons.forEach(([name, callback]) => {
-                const widget = this.addWidget("button", name, null, callback);
-                widget.serialize = false;
-            });
-            console.log("[ComfyStream] Node setup complete");
-        };
+        const data = await response.json();
+        console.log("[ComfyStream] Launch response:", data);
+        if (!data.success) {
+            throw new Error(data.error || 'Unknown error launching ComfyStream');
+        }
+    } catch (error) {
+        console.error('[ComfyStream] Error launching ComfyStream:', error);
+        app.ui.dialog.show('Error', error.message || 'Failed to launch ComfyStream');
+        throw error;
     }
-}); 
+}
+
+// Register our extension
+const extension = {
+    name: "ComfyStream.Menu",
+    
+    // Define commands that will be used by menu items
+    commands: [
+        {
+            id: "ComfyStream.OpenUI",
+            icon: "pi pi-external-link",
+            label: "Open ComfyStream UI",
+            function: openUI
+        },
+        {
+            id: "ComfyStream.StartServer", 
+            icon: "pi pi-play",
+            label: "Start ComfyStream Server",
+            function: async () => {
+                await controlServer('start');
+            }
+        },
+        {
+            id: "ComfyStream.StopServer",
+            icon: "pi pi-stop", 
+            label: "Stop ComfyStream Server",
+            function: async () => {
+                await controlServer('stop');
+            }
+        },
+        {
+            id: "ComfyStream.RestartServer",
+            icon: "pi pi-refresh",
+            label: "Restart ComfyStream Server", 
+            function: async () => {
+                await controlServer('restart');
+            }
+        }
+    ],
+
+    // Define where these commands appear in the menu
+    menuCommands: [
+        {
+            path: ["ComfyStream"],
+            commands: [
+                "ComfyStream.OpenUI",
+                null, // Separator
+                "ComfyStream.StartServer",
+                "ComfyStream.StopServer", 
+                "ComfyStream.RestartServer"
+            ]
+        }
+    ]
+};
+
+console.log("[ComfyStream] Registering extension:", extension);
+app.registerExtension(extension);
+console.log("[ComfyStream] Extension registered"); 
