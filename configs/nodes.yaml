@@ -61,3 +61,10 @@ nodes:
     name: "ComfyUI Background Edit"
     url: "https://github.com/yondonfu/ComfyUI-Background-Edit"
     type: "utility"
+
+  comfyui_controlnet_aux:
+    name: "ComfyUI ControlNet Auxiliary"
+    url: "https://github.com/Fannovel16/comfyui_controlnet_aux"
+    type: "utility"
+    dependencies: 
+      - "mediapipe==0.10.8"
