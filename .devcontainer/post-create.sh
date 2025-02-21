@@ -5,7 +5,7 @@ cd /workspace/comfystream
 
 # Install Comfystream in editable mode.
 echo -e "\e[32mInstalling Comfystream in editable mode...\e[0m"
-/workspace/miniconda3/envs/comfystream/bin/python3 -m pip install -e . > /dev/null
+/workspace/miniconda3/envs/comfystream/bin/python3 -m pip install -e . --root-user-action=ignore > /dev/null
 
 # Create a symlink to the entrypoint script.
 echo 'alias prepare_examples="/workspace/comfystream/docker/entrypoint.sh --download-models --build-engines"' >> ~/.bashrc
