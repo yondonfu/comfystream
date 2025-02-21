@@ -38,3 +38,10 @@ models:
     url: "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11f1p_sd15_depth_fp16.safetensors"
     path: "controlnet/control_v11f1p_sd15_depth_fp16.safetensors"
     type: "controlnet" 
+
+  controlnet-mediapipe-face:
+    name: "ControlNet MediaPipe Face"
+    url: "https://huggingface.co/CrucibleAI/ControlNetMediaPipeFace/resolve/main/control_v2p_sd15_mediapipe_face.safetensors"
+    path: "controlnet/control_v2p_sd15_mediapipe_face.safetensors"
+    type: "controlnet"
+    
