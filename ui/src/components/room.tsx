@@ -1,10 +1,10 @@
 "use client";
 
 import { PeerConnector } from "@/components/peer";
-import { StreamConfig, StreamSettings } from "@/components/settings";
+import { StreamConfig, StreamSettings, DEFAULT_CONFIG } from "@/components/settings";
 import { Webcam } from "@/components/webcam";
 import { usePeerContext } from "@/context/peer-context";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ControlPanelsContainer } from "@/components/control-panels-container";
+
 interface MediaStreamPlayerProps {
   stream: MediaStream;
 }
@@ -154,26 +155,38 @@ function Stage({ connected, onStreamReady }: StageProps) {
   );
 }
 
+interface RoomProps {
+  initialParams?: {
+    streamUrl?: string;
+    frameRate?: number;
+    videoDevice?: string;
+    audioDevice?: string;
+  };
+}
+
 /**
  * Creates a room component for the user to stream their webcam to ComfyStream and
  * see the output stream.
  */
-export const Room = () => {
+export const Room = ({ initialParams }: RoomProps) => {
   const [connect, setConnect] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [isStreamSettingsOpen, setIsStreamSettingsOpen] =
-    useState<boolean>(true);
+  const [isStreamSettingsOpen, setIsStreamSettingsOpen] = useState<boolean>(true);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [loadingToastId, setLoadingToastId] = useState<
-    string | number | undefined
-  >(undefined);
+  const [loadingToastId, setLoadingToastId] = useState<string | number | undefined>(undefined);
 
-  const [config, setConfig] = useState<StreamConfig>({
-    streamUrl: "",
-    frameRate: 0,
-    selectedVideoDeviceId: "",
-    selectedAudioDeviceId: "", // New property for audio device
-    prompts: null,
+  const [config, setConfig] = useState<StreamConfig>(() => {
+    // Initialize config with initial values, merging with defaults
+    const config = {
+      ...DEFAULT_CONFIG,
+      ...(initialParams?.streamUrl ? { streamUrl: initialParams.streamUrl } : {}),
+      ...(initialParams?.frameRate ? { frameRate: initialParams.frameRate } : {}),
+      ...(initialParams?.videoDevice ? { selectedVideoDeviceId: initialParams.videoDevice } : {}),
+      ...(initialParams?.audioDevice ? { selectedAudioDeviceId: initialParams.audioDevice } : {}),
+    };
+    console.log('Room: initializing with params:', initialParams);
+    console.log('Room: initial config:', config);
+    return config;
   });
 
   const connectingRef = useRef(false);
@@ -268,6 +281,7 @@ export const Room = () => {
               open={isStreamSettingsOpen}
               onOpenChange={setIsStreamSettingsOpen}
               onSave={onStreamConfigSave}
+              currentConfig={config}
             />
           </div>
         </PeerConnector>
