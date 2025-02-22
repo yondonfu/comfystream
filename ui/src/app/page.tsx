@@ -6,18 +6,18 @@ import { useState, useEffect } from "react";
 
 // Read query params once at page load
 function getQueryParams() {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') return undefined;
   
   const searchParams = new URLSearchParams(window.location.search);
   const frameRateParam = searchParams.get('frameRate');
   const workflowParam = searchParams.get('workflow');
   
   return {
-    streamUrl: searchParams.get('streamUrl'),
+    streamUrl: searchParams.get('streamUrl') || undefined,
     frameRate: frameRateParam ? parseInt(frameRateParam) : undefined,
-    videoDevice: searchParams.get('videoDevice'),
-    audioDevice: searchParams.get('audioDevice'),
-    workflowUrl: searchParams.get('workflowUrl'),
+    videoDevice: searchParams.get('videoDevice') || undefined,
+    audioDevice: searchParams.get('audioDevice') || undefined,
+    workflowUrl: searchParams.get('workflowUrl') || undefined,
     workflow: workflowParam ? JSON.parse(decodeURIComponent(workflowParam)) : undefined,
     skipDialog: searchParams.get('skipDialog') === 'true'
   };
