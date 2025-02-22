@@ -10,6 +10,7 @@ function getQueryParams() {
   
   const searchParams = new URLSearchParams(window.location.search);
   const frameRateParam = searchParams.get('frameRate');
+  const workflowParam = searchParams.get('workflow');
   
   return {
     streamUrl: searchParams.get('streamUrl'),
@@ -17,6 +18,7 @@ function getQueryParams() {
     videoDevice: searchParams.get('videoDevice'),
     audioDevice: searchParams.get('audioDevice'),
     workflowUrl: searchParams.get('workflowUrl'),
+    workflow: workflowParam ? JSON.parse(decodeURIComponent(workflowParam)) : undefined,
     skipDialog: searchParams.get('skipDialog') === 'true'
   };
 }

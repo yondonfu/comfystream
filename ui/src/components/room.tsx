@@ -161,6 +161,9 @@ interface RoomProps {
     frameRate?: number;
     videoDevice?: string;
     audioDevice?: string;
+    workflowUrl?: string;
+    workflow?: any;
+    skipDialog?: boolean;
   };
 }
 
@@ -183,6 +186,7 @@ export const Room = ({ initialParams }: RoomProps) => {
       ...(initialParams?.frameRate ? { frameRate: initialParams.frameRate } : {}),
       ...(initialParams?.videoDevice ? { selectedVideoDeviceId: initialParams.videoDevice } : {}),
       ...(initialParams?.audioDevice ? { selectedAudioDeviceId: initialParams.audioDevice } : {}),
+      ...(initialParams?.workflow ? { prompts: [initialParams.workflow] } : {}),
     };
     console.log('Room: initializing with params:', initialParams);
     console.log('Room: initial config:', config);
