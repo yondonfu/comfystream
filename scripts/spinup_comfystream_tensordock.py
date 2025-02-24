@@ -23,7 +23,7 @@ TENSORDOCK_ENDPOINTS = {
 
 
 # Requirements for host nodes.
-MAX_PRICE = 0.5  # USD per hour
+DEFAULT_MAX_PRICE = 0.5  # USD per hour
 MIN_REQUIREMENTS = {
     "minvCPUs": 4,
     "minRAM": 16,  # GB
@@ -39,7 +39,7 @@ VM_SPECS = {
     "vcpus": MIN_REQUIREMENTS["minvCPUs"],
     "ram": MIN_REQUIREMENTS["minRAM"],
     "storage": MIN_REQUIREMENTS["minStorage"],
-    "internal_ports": str(set([22, 3000, 8889])),
+    "internal_ports": str(set([22, 3000, 8188, 8889])),
     "operating_system": "Ubuntu 22.04 LTS",
 }
 CLOUD_INIT_PATH = os.path.join(
@@ -50,20 +50,19 @@ CLOUD_INIT_PATH = os.path.join(
 class ColorFormatter(logging.Formatter):
     """Custom log formatter to add color to log messages based on log level."""
 
-    # Define colors for each log level
     COLORS = {
         "DEBUG": Fore.CYAN,
         "INFO": Fore.RESET,
         "WARNING": Fore.YELLOW,
         "ERROR": Fore.RED,
         "CRITICAL": Fore.MAGENTA,
-        "SUCCESS": Fore.GREEN,  # Custom log level (not built-in)
+        "SUCCESS": Fore.GREEN,  # Custom log level (not built-in).
     }
 
     def __init__(self, fmt="%(levelname)s - %(message)s"):
         """Initialize formatter with optional format."""
         super().__init__(fmt)
-        init(autoreset=True)  # Initialize colorama for cross-platform support
+        init(autoreset=True)  # Initialize colorama for cross-platform support.
 
     def format(self, record):
         """Apply color to log messages dynamically based on log level."""
@@ -72,7 +71,6 @@ class ColorFormatter(logging.Formatter):
         return super().format(record)
 
 
-# Configure logger.
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
@@ -86,6 +84,7 @@ geolocator = Nominatim(user_agent="tensordock_locator", timeout=5)
 
 def load_cloud_init(cloud_init_path: str) -> str:
     """Load the cloud-init script from a file and convert it to a single string.
+
     Args:
         cloud_init_path: The path to the cloud-init script file.
 
@@ -216,7 +215,7 @@ def geocode_location(
             time.sleep(backoff_factor * (2**attempt))
         except Exception as e:
             logger.error(f"Geocoding error: {e}")
-            break  # Don't retry if it's a non-timeout error
+            break  # Don't retry if it's a non-timeout error.
     return None, None
 
 
@@ -246,12 +245,11 @@ def sort_nodes_by_distance(host_nodes: Dict) -> Dict:
             node["id"] = node_id
             nodes_with_distance.append((distance, node))
 
-    # Sort nodes by distance
     nodes_with_distance.sort(key=lambda x: x[0])
     return [node for _, node in nodes_with_distance]
 
 
-def read_ssh_key(public_ssh_key) -> str:
+def read_ssh_key(public_ssh_key: str) -> str:
     """Retrieve the public SSH key from a file or directly.
 
     Args:
@@ -261,7 +259,7 @@ def read_ssh_key(public_ssh_key) -> str:
         The public SSH key as a string.
     """
     if public_ssh_key:
-        if os.path.isfile(public_ssh_key):  # Check if it's a file path
+        if os.path.isfile(public_ssh_key):  # Check if it's a file path.
             try:
                 with open(public_ssh_key, "r") as key_file:
                     return key_file.read().strip()
@@ -269,7 +267,7 @@ def read_ssh_key(public_ssh_key) -> str:
                 logger.error(f"Failed to read SSH key file: {e}")
                 sys.exit(1)
         else:
-            return public_ssh_key.strip()  # Use the provided key directly
+            return public_ssh_key.strip()  # Use the provided key directly.
     return None
 
 
@@ -289,6 +287,97 @@ def is_strong_password(password: str, min_length: int = 35) -> bool:
         and any(char.isdigit() for char in password)
         and len(password) >= min_length
     )
+
+
+def get_vm_access_info(
+    node_info: Dict, available_ports: list[int]
+) -> Tuple[str, str, str, str]:
+    """Get the access URLs and SSH command for the VM.
+
+    Args:
+        node_info: Dictionary of node information.
+        available_ports: List of available ports.
+
+    Returns:
+        Tuple of Comfystream UI URL, ComfyUI URL, Comfystream Server URL, and SSH
+        command.
+    """
+    comfystream_ui_url = f"http://{node_info['ip']}:{available_ports[1]}"
+    comfyui_url = f"http://{node_info['ip']}:{available_ports[2]}"
+    comfystream_server_url = f"http://{node_info['ip']}:{available_ports[3]}"
+    ssh_command = f"ssh root@{node_info['ip']} -p {available_ports[0]}"
+    return comfystream_ui_url, comfyui_url, comfystream_server_url, ssh_command
+
+
+def generate_comfystream_access_qr_codes(
+    comfystream_ui_url: str, comfy_ui_url: str, comfystream_server_url: str
+):
+    """Generates QR codes for easy access to Comfystream services.
+
+    Args:
+        comfystream_ui_url: URL to the Comfystream UI.
+        comfy_ui_url: URL to the ComfyUI.
+        comfystream_server_url: URL to the Comfystream Server.
+    """
+    try:
+        import qrcode_terminal
+
+        logger.info("Comfystream UI QR Code:")
+        qrcode_terminal.draw(comfystream_ui_url)
+        logger.info("ComfyUI QR Code:")
+        qrcode_terminal.draw(comfy_ui_url)
+        logger.info("Comfystream Server QR Code:")
+        qrcode_terminal.draw(comfystream_server_url)
+    except ImportError:
+        logger.warning(
+            "qrcode_terminal module is not installed. Skipping QR code generation."
+        )
+
+
+def wait_for_comfystream(
+    comfystream_server_url: str, retry_interval: int = 60, max_wait_time: int = 1800
+):
+    """Waits for the Comfystream container to start by pinging the server.
+
+    Args:
+        comfystream_server_url: URL of the Comfystream server.
+        retry_interval: Time (in seconds) between retries. Default is 60s.
+        max_wait_time: Maximum time (in seconds) to wait before failing. Default is
+            1800s (30 min).
+
+    Returns:
+        bool: True if the server started successfully, False otherwise.
+    """
+    logger.info("Waiting for the Comfystream container to start...")
+    start_time = time.time()
+    time.sleep(retry_interval)
+    while True:
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= max_wait_time:
+            logger.error(
+                f"{Fore.RED}Comfystream container did not start within "
+                f"{max_wait_time // 60} minutes.{Style.RESET_ALL}"
+            )
+            logger.warning(
+                f"{Fore.YELLOW}Please SSH into the VM and check logs for possible "
+                f"issues.{Style.RESET_ALL}"
+            )
+            return False
+        try:
+            response = requests.get(comfystream_server_url, timeout=5)
+            response.raise_for_status()
+            if response.status_code == 200:
+                logger.info(
+                    f"{Fore.GREEN}Comfystream container is up and running! 🚀"
+                    f"{Style.RESET_ALL}"
+                )
+                return True
+        except requests.RequestException:
+            logger.warning(
+                f"Comfystream server not yet up. Retrying in {retry_interval} "
+                "seconds..."
+            )
+            time.sleep(retry_interval)
 
 
 class TensorDockController:
@@ -355,17 +444,15 @@ class TensorDockController:
             Dictionary of compatible host nodes.
         """
         host_nodes = self._fetch_host_nodes(min_host_requirements)
-        logger.debug(f"Found {len(host_nodes)} host nodes.")
+        logger.debug(f"Initial host nodes count: {len(host_nodes)}")
         host_nodes = filter_nodes_by_price(host_nodes, max_price)
-        logger.debug(f"Found {len(host_nodes)} host nodes within price range.")
+        logger.debug(f"Host nodes within price range: {len(host_nodes)}")
         host_nodes = filter_nodes_by_gpu_availability(host_nodes)
-        logger.debug(f"Found {len(host_nodes)} host nodes with available GPUs.")
+        logger.debug(f"Host nodes with available GPUs: {len(host_nodes)}")
         host_nodes = filter_nodes_by_min_system_requirements(
             host_nodes, min_host_requirements
         )
-        logger.debug(
-            f"Found {len(host_nodes)} host nodes meeting minimum requirements."
-        )
+        logger.debug(f"Host nodes meeting minimum requirements: {len(host_nodes)}")
         return host_nodes
 
     def deploy_vm(
@@ -378,7 +465,7 @@ class TensorDockController:
         public_ssh_key: str = None,
         cloud_init_path: str = CLOUD_INIT_PATH,
     ) -> Dict:
-        """Deploy a VM on a host node with the specified location, OS, and password.
+        """Deploy a VM on a host node with the specified settings and cloud init script.
 
         Args:
             name: The name of the VM.
@@ -393,7 +480,6 @@ class TensorDockController:
             The response from the TensorDock API if successful, otherwise an empty
             dictionary.
         """
-
         vm_specs = {
             "api_key": self.api_key,
             "api_token": self.api_token,
@@ -446,6 +532,79 @@ class TensorDockController:
             logger.error(f"Error deleting VM: {e}")
         return False
 
+    def deploy_comfystream_vm(self, host_nodes, vm_name, password, public_ssh_key):
+        """Deploys Comfystream on a VM, selecting the closest available host node.
+
+        Args:
+            controller: The TensorDockController instance.
+            host_nodes: List of compatible host nodes.
+            vm_name: Name of the VM.
+            password: Password for the VM (if provided).
+            public_ssh_key: Public SSH key for the VM (if provided).
+
+        Returns:
+            dict: Information about the deployed node, or None if deployment failed.
+        """
+        logger.info("Sorting nodes by distance from current location...")
+        sorted_host_nodes = sort_nodes_by_distance(host_nodes)
+        if not sorted_host_nodes:
+            logger.error("Something went wrong while sorting host nodes by distance.")
+            return None
+
+        logger.info(
+            f"Attempting VM deployment on {len(sorted_host_nodes)} closest node..."
+        )
+        for node_idx, node in enumerate(sorted_host_nodes):
+            compatible_gpus = [
+                gpu
+                for gpu, details in node["specs"]["gpu"].items()
+                if details["vram"] >= MIN_REQUIREMENTS["minVRAM"]
+            ]
+            if not compatible_gpus:
+                logger.warning(
+                    f"No compatible GPU found on {node['id']} "
+                    f"({node['location']['city']}). Skipping."
+                )
+                continue
+
+            # Loop through compatible GPUs and try to deploy on the node.
+            for gpu_idx, gpu in enumerate(compatible_gpus):
+                logger.info(
+                    f"Attempting deployment on node '{node['id']}' in "
+                    f"{node['location']['city']}, {node['location']['country']} using "
+                    f"GPU '{gpu}'."
+                )
+                available_ports = node["networking"]["ports"][:4]
+                formatted_ports = str(set(available_ports))
+                node_info = self.deploy_vm(
+                    name=vm_name,
+                    hostnode_id=node["id"],
+                    gpu_model=gpu,
+                    external_ports=formatted_ports,
+                    password=password,
+                    public_ssh_key=public_ssh_key,
+                )
+
+                if node_info:
+                    logger.info(
+                        f"{ColorFormatter.COLORS['SUCCESS']}VM successfully deployed "
+                        f"on '{node['id']}' ({node['location']['city']})."
+                        f"{Style.RESET_ALL}"
+                    )
+                    return node_info
+                if gpu_idx < len(compatible_gpus) - 1:
+                    logger.warning(
+                        f"Deployment failed on {node['location']['city']} using GPU "
+                        f"'{gpu}'. Trying next GPU..."
+                    )
+            if node_idx < len(sorted_host_nodes) - 1:
+                logger.warning(
+                    f"Deployment failed on {node['location']['city']} for all GPUs. "
+                    "Trying next node..."
+                )
+        logger.error("All deployment attempts failed. No VM was deployed.")
+        return None
+
 
 @click.command()
 @click.option(
@@ -471,7 +630,7 @@ class TensorDockController:
 )
 @click.option(
     "--max-price",
-    default=MAX_PRICE,
+    default=DEFAULT_MAX_PRICE,
     help="Maximum price per hour.",
 )
 @click.option(
@@ -498,8 +657,8 @@ def main(
     public_ssh_key,
     delete,
 ):
-    """Main function that collects command line arguments and deploys Comfystream on a
-    suitable VM on TensorDock close to the user's location.
+    """Main function that collects command line arguments and deploys or deletes a VM
+    with Comfystream on TensorDock close to the user's location.
 
     Args:
         api_key: The TensorDock API key.
@@ -514,11 +673,13 @@ def main(
     api_token = api_token or click.prompt("TensorDock API Token", hide_input=True)
 
     controller = TensorDockController(api_key, api_token)
+
     if delete:
         logger.info(f"Deleting VM '{delete}'...")
         if controller.delete_vm(delete):
             logger.info(
-                f"{ColorFormatter.COLORS['SUCCESS']}Successfully deleted VM '{delete}'.{Style.RESET_ALL}"
+                f"{ColorFormatter.COLORS['SUCCESS']}Successfully deleted VM '{delete}'."
+                f"{Style.RESET_ALL}"
             )
         else:
             logger.error(f"Failed to delete VM '{delete}'.")
@@ -535,7 +696,6 @@ def main(
         logger.error("The password is not strong enough.")
         sys.exit(1)
 
-    # Fetch and filter host nodes.
     logger.info(f"Looking for a suitable host within ${max_price} per hour...")
     logger.info("Fetching host nodes and filtering by requirements...")
     filtered_nodes = controller.fetch_compatible_host_nodes(MIN_REQUIREMENTS, max_price)
@@ -544,131 +704,38 @@ def main(
         sys.exit(1)
     logger.info(f"Found {len(filtered_nodes)} suitable host nodes.")
 
-    logger.info("Sort nodes by distance from current location...")
-    sorted_host_nodes = sort_nodes_by_distance(filtered_nodes)
-    if not sorted_host_nodes:
-        logger.error("Something went wrong while sorting host nodes by distance.")
-        sys.exit(1)
-
-    # Try to deploy VM on the closest nodes until successful.
-    logger.info(
-        f"Attempting VM deployment on {len(sorted_host_nodes)} closest nodes..."
+    logger.info(f"Attempting Comfystream deployment on the close host nodes...")
+    node_info = controller.deploy_comfystream_vm(
+        filtered_nodes, vm_name, password, public_ssh_key
     )
-    for ii, node in enumerate(sorted_host_nodes):
-        compatible_gpus = [
-            gpu
-            for gpu, details in node["specs"]["gpu"].items()
-            if details["vram"] >= MIN_REQUIREMENTS["minVRAM"]
-        ]
-        if not compatible_gpus:
-            logger.warning(
-                f"No compatible GPU found on {node['id']} "
-                f"({node['location']['city']}). Skipping."
-            )
-            continue
-        for jj, gpu in enumerate(compatible_gpus):
-            logger.info(
-                f"Attempting deployment on node '{node['id']}' located in "
-                f"{node['location']['city']}, {node['location']['country']} using "
-                f"GPU '{gpu}'..."
-            )
-            available_ports = node["networking"]["ports"][:3]
-            formatted_ports = str(set(available_ports))
-            node_info = controller.deploy_vm(
-                name=vm_name,
-                hostnode_id=node["id"],
-                gpu_model=gpu,
-                external_ports=formatted_ports,
-                password=password,
-                public_ssh_key=public_ssh_key,
-            )
-            if node_info:
-                logger.info(
-                    f"{ColorFormatter.COLORS['SUCCESS']}successfully deployed on "
-                    f"'{node['id']}' ({node['location']['city']}).{Style.RESET_ALL}"
-                )
-                break
-            else:
-                warning_msg = (
-                    f"Deployment failed on {node['location']['city']} using GPU "
-                    f"'{gpu}'."
-                )
-                if jj < len(compatible_gpus) - 1:
-                    warning_msg += " Trying next GPU..."
-                logger.warning(warning_msg)
-        else:
-            warning_msg = (
-                f"Deployment failed on {node['location']['city']} for all GPUs. "
-            )
-            if ii < len(sorted_host_nodes) - 1:
-                warning_msg += "Trying next node..."
-            logger.warning(warning_msg)
-            continue
-        break
-    else:
-        logger.error("All deployment attempts failed. No VM was deployed.")
+    if not node_info:
+        logger.error("Failed to deploy Comfystream VM.")
         sys.exit(1)
 
     logger.warning(
         "Remember to remove the VM after use to avoid unnecessary costs. Run "
-        f"'spinup_comfystream_tensordock.py --delete {node['id']}' to remove the VM."
+        f"'spinup_comfystream_tensordock.py --delete {node_info['server']}' to remove "
+        "the VM."
     )
 
-    # Print VM URLs and QR codes for easy access.
-    logger.info(
-        "Comfystream container will be downloaded and started on the VM. This might "
-        "take a few minutes..."
+    logger.info("Provisioning Comfystream on the VM. This may take a few minutes...")
+    logger.info("Once ready, you can access Comfystream using the following URLs:")
+    comfystream_ui_url, comfyui_url, comfystream_server_url, ssh_command = (
+        get_vm_access_info(node_info, list(node_info["port_forwards"].keys()))
     )
-    logger.info(
-        "Once the container is running, you can access the Comfystream UI and server "
-        "at the following URLs:"
-    )
-    comfystream_ui_url = f"http://{node_info['ip']}:{available_ports[1]}"
-    comfystream_server_url = f"http://{node_info['ip']}:{available_ports[2]}"
-    ssh_command = f"ssh root@{node_info['ip']} -p {available_ports[0]}"
     logger.info(f"{Fore.GREEN}Comfystream UI:{Style.RESET_ALL} {comfystream_ui_url}")
+    logger.info(f"{Fore.GREEN}ComfyUI:{Style.RESET_ALL} {comfyui_url}")
     logger.info(
         f"{Fore.GREEN}Comfystream Server:{Style.RESET_ALL} {comfystream_server_url}"
     )
     logger.info(f"{Fore.GREEN}SSH into the VM:{Style.RESET_ALL} {ssh_command}")
 
-    # Ping the server to check if it's up.
-    logger.info("Waiting for the Comfystream container to start...")
-    retry_interval = 30  # s
-    time.sleep(retry_interval)
-    started = False
-    while not started:
-        try:
-            response = requests.get(comfystream_server_url)
-            response.raise_for_status()
-            if response.status_code == 200:
-                logger.info(
-                    f"{Fore.GREEN}Comfystream container is up and running! 🚀{Style.RESET_ALL}"
-                )
-                started = True
-                break
-        except requests.RequestException as e:
-            logger.warning(
-                f"Comfystream server not yet up. Retrying ping in {retry_interval} seconds..."
-            )
-            time.sleep(retry_interval)
+    result = wait_for_comfystream(comfystream_server_url)
 
-    try:
-        import qrcode
-        import qrcode_terminal
-
+    if result:
         logger.info("Generating QR codes for easy access:")
-        logger.info("Comfystream UI QR Code:")
-        qrcode_terminal.draw(comfystream_ui_url)
-
-        logger.info("Comfystream Server QR Code:")
-        qrcode_terminal.draw(comfystream_server_url)
-
-        logger.info("SSH into the VM QR Code:")
-        qrcode_terminal.draw(ssh_command)
-    except ImportError:
-        logger.warning(
-            "qrcode and qrcode_terminal modules are not installed. Skipping QR code generation."
+        generate_comfystream_access_qr_codes(
+            comfystream_ui_url, comfyui_url, comfystream_server_url
         )
 
 
