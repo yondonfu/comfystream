@@ -39,7 +39,7 @@ VM_SPECS = {
     "vcpus": MIN_REQUIREMENTS["minvCPUs"],
     "ram": MIN_REQUIREMENTS["minRAM"],
     "storage": MIN_REQUIREMENTS["minStorage"],
-    "internal_ports": str(set([22, 3000, 8188, 8889])),
+    "internal_ports": str(set([22, 3000, 8889])),
     "operating_system": "Ubuntu 22.04 LTS",
 }
 CLOUD_INIT_PATH = os.path.join(
@@ -299,24 +299,22 @@ def get_vm_access_info(
         available_ports: List of available ports.
 
     Returns:
-        Tuple of Comfystream UI URL, ComfyUI URL, Comfystream Server URL, and SSH
+        Tuple of Comfystream UI URL, Comfystream Server URL, and SSH
         command.
     """
     comfystream_ui_url = f"http://{node_info['ip']}:{available_ports[1]}"
-    comfyui_url = f"http://{node_info['ip']}:{available_ports[2]}"
-    comfystream_server_url = f"http://{node_info['ip']}:{available_ports[3]}"
+    comfystream_server_url = f"http://{node_info['ip']}:{available_ports[2]}"
     ssh_command = f"ssh root@{node_info['ip']} -p {available_ports[0]}"
-    return comfystream_ui_url, comfyui_url, comfystream_server_url, ssh_command
+    return comfystream_ui_url, comfystream_server_url, ssh_command
 
 
 def generate_comfystream_access_qr_codes(
-    comfystream_ui_url: str, comfy_ui_url: str, comfystream_server_url: str
+    comfystream_ui_url: str, comfystream_server_url: str
 ):
     """Generates QR codes for easy access to Comfystream services.
 
     Args:
         comfystream_ui_url: URL to the Comfystream UI.
-        comfy_ui_url: URL to the ComfyUI.
         comfystream_server_url: URL to the Comfystream Server.
     """
     try:
@@ -324,8 +322,6 @@ def generate_comfystream_access_qr_codes(
 
         logger.info("Comfystream UI QR Code:")
         qrcode_terminal.draw(comfystream_ui_url)
-        logger.info("ComfyUI QR Code:")
-        qrcode_terminal.draw(comfy_ui_url)
         logger.info("Comfystream Server QR Code:")
         qrcode_terminal.draw(comfystream_server_url)
     except ImportError:
@@ -348,7 +344,9 @@ def wait_for_comfystream(
     Returns:
         bool: True if the server started successfully, False otherwise.
     """
-    logger.info("Waiting for the Comfystream container to start...")
+    logger.info(
+        "Waiting for the Comfystream container to start (timeout: 30 minutes)..."
+    )
     start_time = time.time()
     time.sleep(retry_interval)
     while True:
@@ -574,7 +572,7 @@ class TensorDockController:
                     f"{node['location']['city']}, {node['location']['country']} using "
                     f"GPU '{gpu}'."
                 )
-                available_ports = node["networking"]["ports"][:4]
+                available_ports = node["networking"]["ports"][:3]
                 formatted_ports = str(set(available_ports))
                 node_info = self.deploy_vm(
                     name=vm_name,
@@ -720,11 +718,14 @@ def main(
 
     logger.info("Provisioning Comfystream on the VM. This may take a few minutes...")
     logger.info("Once ready, you can access Comfystream using the following URLs:")
-    comfystream_ui_url, comfyui_url, comfystream_server_url, ssh_command = (
-        get_vm_access_info(node_info, list(node_info["port_forwards"].keys()))
+    comfystream_ui_url, comfystream_server_url, ssh_command = get_vm_access_info(
+        node_info, list(node_info["port_forwards"].keys())
     )
     logger.info(f"{Fore.GREEN}Comfystream UI:{Style.RESET_ALL} {comfystream_ui_url}")
-    logger.info(f"{Fore.GREEN}ComfyUI:{Style.RESET_ALL} {comfyui_url}")
+    logger.info(
+        f"{Fore.GREEN}ComfyUI:{Style.RESET_ALL} is currently not exposed publicly yet. "
+        "Please use SSH to access it."
+    )
     logger.info(
         f"{Fore.GREEN}Comfystream Server:{Style.RESET_ALL} {comfystream_server_url}"
     )
@@ -734,9 +735,7 @@ def main(
 
     if result:
         logger.info("Generating QR codes for easy access:")
-        generate_comfystream_access_qr_codes(
-            comfystream_ui_url, comfyui_url, comfystream_server_url
-        )
+        generate_comfystream_access_qr_codes(comfystream_ui_url, comfystream_server_url)
 
 
 if __name__ == "__main__":
