@@ -1,0 +1,5 @@
+# TensorDock Spinup requirements.
+geopy
+colorama
+qrcode
+qrcode_terminal

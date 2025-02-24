@@ -1,0 +1,3 @@
+runcmd:
+  - docker pull livepeer/comfystream:latest
+  - docker run --restart unless-stopped --stop-timeout 300 --gpus all --name comfystream -v ${HOME}/models/ComfyUI--models:/workspace/ComfyUI/models -v ${HOME}/models/ComfyUI--output:/workspace/ComfyUI/output -p 8889:8889 livepeer/comfystream:latest --download-models --build-engines --server --port=8889
