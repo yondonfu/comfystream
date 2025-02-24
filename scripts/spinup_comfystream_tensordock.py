@@ -304,7 +304,7 @@ def get_vm_access_info(
     """
     comfystream_ui_url = f"http://{node_info['ip']}:{available_ports[1]}"
     comfystream_server_url = f"http://{node_info['ip']}:{available_ports[2]}"
-    ssh_command = f"ssh root@{node_info['ip']} -p {available_ports[0]}"
+    ssh_command = f"ssh -p {available_ports[0]} user@{node_info['ip']}"
     return comfystream_ui_url, comfystream_server_url, ssh_command
 
 
