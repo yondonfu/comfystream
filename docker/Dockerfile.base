@@ -1,5 +1,3 @@
-# Add this at the top of your Dockerfile
-# syntax=docker/dockerfile:1.4
 ARG BASE_IMAGE=nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 FROM ${BASE_IMAGE}
 
@@ -21,7 +19,7 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -
 
 ENV PATH="/workspace/miniconda3/bin:${PATH}"
 RUN eval "$(/workspace/miniconda3/bin/conda shell.bash hook)"
-RUN conda create -n comfyui python=3.11 -y
+RUN conda create -n comfystream python=3.11 -y
 
 # Clone ComfyUI
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
@@ -32,25 +30,22 @@ COPY ./configs /workspace/comfystream/configs
 COPY ./nodes/ /workspace/ComfyUI/custom_nodes/
 
 # Install base dependencies
-RUN conda run -n comfyui --no-capture-output pip install aiortc aiohttp requests tqdm pyyaml --root-user-action=ignore
+RUN conda run -n comfystream --no-capture-output pip install aiortc aiohttp requests tqdm pyyaml --root-user-action=ignore
 
 # Run setup_nodes (cached unless setup_nodes.py or nodes/ changes)
-RUN conda run -n comfyui --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
-
-# Clone environment after setup
-RUN conda create -n comfystream --clone comfyui
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
 
 # Copy comfystream and example workflows to ComfyUI 
 COPY . /workspace/comfystream
 COPY ./workflows/ui* /workspace/ComfyUI/user/default/workflows/examples
 
 # Install ComfyUI requirements
-RUN conda run -n comfyui --no-capture-output --cwd /workspace/ComfyUI pip install -r requirements.txt --root-user-action=ignore
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip install -r requirements.txt --root-user-action=ignore
 
 # Install ComfyStream requirements
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install -r requirements.txt --root-user-action=ignore
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install . --root-user-action=ignore
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python install.py --workspace /workspace/ComfyUI --root-user-action=ignore
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python install.py --workspace /workspace/ComfyUI
 RUN conda run -n comfystream --no-capture-output pip install --upgrade tensorrt-cu12-bindings tensorrt-cu12-libs --root-user-action=ignore
 RUN conda run -n comfystream --no-capture-output pip install mediapipe==0.10.8 --root-user-action=ignore
 
