@@ -17,8 +17,9 @@
             "args": [
                 "--listen",
                 "--disable-cuda-malloc",
+                "--front-end-version=Comfy-Org/ComfyUI_frontend@latest"
             ],
-            "python": "/workspace/miniconda3/envs/comfyui/bin/python"
+            "python": "/workspace/miniconda3/envs/comfystream/bin/python"
         },
         {
             "name": "Run ComfyStream",
