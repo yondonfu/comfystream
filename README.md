@@ -187,7 +187,7 @@ npm run dev
 
 By default the app will be available at <http://localhost:3000>.
 
-The Stream URL is the URL of the [server](#run-server) which defaults to <http://127.0.0.1:8888>.
+The Stream URL is the URL of the [server](#run-server) which defaults to <http://127.0.0.1:8889>.
 
 > [!NOTE]
 > To run the UI on HTTPS (necessary for webcam functionality), use `npm run dev:https`. You'll need to accept the self-signed certificate in your browser.
