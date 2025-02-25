@@ -29,7 +29,7 @@ if sys.platform == 'win32':
 class ComfyStreamServerBase(ABC):
     """Abstract base class for ComfyStream server management"""
     
-    def __init__(self, host="127.0.0.1", port=None):
+    def __init__(self, host="0.0.0.0", port=None):
         self.host = host
         self.port = port
         self.is_running = False
@@ -88,7 +88,7 @@ class ComfyStreamServerBase(ABC):
 class LocalComfyStreamServer(ComfyStreamServerBase):
     """Local ComfyStream server implementation"""
     
-    def __init__(self, host="127.0.0.1", start_port=8889, max_port=65535, 
+    def __init__(self, host="0.0.0.0", start_port=8889, max_port=65535, 
                  health_check_timeout=30, health_check_interval=1):
         super().__init__(host=host)
         self.process = None
