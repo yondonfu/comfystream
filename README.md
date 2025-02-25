@@ -170,6 +170,7 @@ Install dependencies
 ```bash
 cd ui
 npm install --legacy-peer-deps
+npm install --save-dev cross-env
 ```
 
 Run local dev server:

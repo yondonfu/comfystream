@@ -19,13 +19,21 @@ const getExtensionName = () => {
 
 const extensionName = getExtensionName();
 
+// Check if we're in development mode
+// This is set by the NEXT_PUBLIC_DEV environment variable in package.json scripts
+const isDev = process.env.NEXT_PUBLIC_DEV === 'true';
+console.log(`Running in ${isDev ? 'DEVELOPMENT' : 'PRODUCTION'} mode`);
+console.log(`Output directory: ${isDev ? './.next' : '../nodes/web/static'}`);
+
+const distDir = isDev ? './.next' : '../nodes/web/static';
+
 const nextConfig: NextConfig = {
-  output: 'export',
-  distDir: '../nodes/web/static',
+  output: isDev ? undefined : 'export',
+  distDir: distDir,
   // Set base path for the app when served from ComfyUI
-  basePath: `/extensions/${extensionName}/static`,
+  basePath: isDev ? '' : `/extensions/${extensionName}/static`,
   // Set asset prefix for static files
-  assetPrefix: `/extensions/${extensionName}/static`,
+  assetPrefix: isDev ? '' : `/extensions/${extensionName}/static`,
   // Disable image optimization since we're doing static export
   images: {
     unoptimized: true,
@@ -34,11 +42,13 @@ const nextConfig: NextConfig = {
     // Only run ESLint during development, not during builds
     ignoreDuringBuilds: true,
   },
-  // Test comment
 };
 
 export default nextConfig;
 
-//to build:
-// cd ui
-// ./node_modules/.bin/next build
+/*
+Build Commands:
+--------------
+- Development: npm run dev (uses ./.next directory)
+- Production: npm run build (uses ../nodes/web/static directory)
+*/
