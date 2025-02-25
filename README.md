@@ -8,6 +8,8 @@ This repo also includes a WebRTC server and UI that uses comfystream to support 
   - [Quick Start](#quick-start)
     - [Docker DevContainer](#docker-devcontainer)
     - [Docker Image](#docker-image)
+      - [RunPod](#runpod)
+      - [Tensordock](#tensordock)
   - [Download Models](#download-models)
   - [Install package](#install-package)
     - [Custom Nodes](#custom-nodes)
@@ -21,6 +23,7 @@ This repo also includes a WebRTC server and UI that uses comfystream to support 
 ## Quick Start
 
 ### Docker DevContainer
+
 Refer to [.devcontainer/README.md](.devcontainer/README.md) to setup ComfyStream in a devcontainer using a pre-configured ComfyUI docker environment.
 
 For other installation options, refer to [Install ComfyUI and ComfyStream](https://pipelines.livepeer.org/docs/technical/install/local-testing) in the Livepeer pipelines documentation.
@@ -36,6 +39,10 @@ Refer to the documentation at [https://pipelines.livepeer.org/docs/technical/get
 #### RunPod
 
 The RunPod template [livepeer-comfystream](https://runpod.io/console/deploy?template=w01m180vxx&ref=u8tlskew) can be used to deploy to RunPod.
+
+#### Tensordock
+
+We also have a python script that can be used to spin up a ComfyStream instance on a [Tensordock server](https://tensordock.com/). Refer to [scripts/README.md](scripts/README.md) for instructions.
 
 ## Download Models
 
@@ -180,7 +187,7 @@ npm run dev
 
 By default the app will be available at <http://localhost:3000>.
 
-The Stream URL is the URL of the [server](#run-server) which defaults to <http://127.0.0.1:8888>.
+The Stream URL is the URL of the [server](#run-server) which defaults to <http://127.0.0.1:8889>.
 
 > [!NOTE]
 > To run the UI on HTTPS (necessary for webcam functionality), use `npm run dev:https`. You'll need to accept the self-signed certificate in your browser.
