@@ -63,22 +63,16 @@ interface StreamSettingsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (config: StreamConfig) => void;
+  currentConfig?: StreamConfig;
 }
 
 export function StreamSettings({
   open,
   onOpenChange,
   onSave,
+  currentConfig,
 }: StreamSettingsProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
-
-  const [config, setConfig] = useState<StreamConfig>(DEFAULT_CONFIG);
-
-  const handleSubmit = (config: StreamConfig) => {
-    setConfig(config);
-    onSave(config);
-    onOpenChange(false);
-  };
 
   if (isDesktop) {
     return (
@@ -89,7 +83,7 @@ export function StreamSettings({
               <div className="mt-4">Stream Settings</div>
             </DialogTitle>
           </DialogHeader>
-          <ConfigForm config={config} onSubmit={handleSubmit} />
+          <ConfigForm onSubmit={onSave} currentConfig={currentConfig} />
         </DialogContent>
       </Dialog>
     );
@@ -102,7 +96,7 @@ export function StreamSettings({
           <DrawerTitle>Stream Settings</DrawerTitle>
         </DrawerHeader>
         <div className="px-4">
-          <ConfigForm config={config} onSubmit={handleSubmit} />
+          <ConfigForm onSubmit={onSave} currentConfig={currentConfig} />
         </div>
       </DrawerContent>
     </Drawer>
@@ -115,8 +109,8 @@ const formSchema = z.object({
 });
 
 interface ConfigFormProps {
-  config: StreamConfig;
   onSubmit: (config: StreamConfig) => void;
+  currentConfig?: StreamConfig;
 }
 
 interface PromptContextType {
@@ -135,17 +129,24 @@ export const PromptContext = createContext<PromptContextType>({
 
 export const usePrompt = () => useContext(PromptContext);
 
-function ConfigForm({ config, onSubmit }: ConfigFormProps) {
+function ConfigForm({ onSubmit, currentConfig }: ConfigFormProps) {
   const [prompts, setPrompts] = useState<any[]>([]);
   const { setOriginalPrompts } = usePrompt();
   const [videoDevices, setVideoDevices] = useState<AVDevice[]>([]);
   const [audioDevices, setAudioDevices] = useState<AVDevice[]>([]);
-  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string | undefined>(config.selectedVideoDeviceId);
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | undefined>(config.selectedAudioDeviceId);
+  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string | undefined>(
+    currentConfig?.selectedVideoDeviceId || DEFAULT_CONFIG.selectedVideoDeviceId
+  );
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | undefined>(
+    currentConfig?.selectedAudioDeviceId || DEFAULT_CONFIG.selectedAudioDeviceId
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: config,
+    defaultValues: {
+      streamUrl: currentConfig?.streamUrl || DEFAULT_CONFIG.streamUrl,
+      frameRate: currentConfig?.frameRate || DEFAULT_CONFIG.frameRate,
+    },
   });
 
   /**
