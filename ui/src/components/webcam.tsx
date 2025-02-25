@@ -21,21 +21,25 @@ function StreamCanvas({
   onStreamReady: (stream: MediaStream) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Only set up canvas animation if we have video
   useEffect(() => {
-    if (!stream || stream.getVideoTracks().length === 0) return;
+    if (!stream || stream.getVideoTracks().length === 0) {
+      return;
+    }
 
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
+    const video = videoRef.current!;
 
     let isActive = true;
+    
     const drawFrame = () => {
-      if (!isActive || !videoRef.current) {
+      if (!isActive || !video) {
         return;
       }
-      const video = videoRef.current;
+      
       if (!video?.videoWidth) {
         requestAnimationFrame(drawFrame);
         return;
@@ -50,6 +54,7 @@ function StreamCanvas({
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, 512, 512);
       ctx.drawImage(video, offsetX, offsetY, scaledWidth, scaledHeight);
+      
       requestAnimationFrame(drawFrame);
     };
     drawFrame();
@@ -61,15 +66,13 @@ function StreamCanvas({
 
   // Only set up video element if we have video
   useEffect(() => {
-    if (!stream || stream.getVideoTracks().length === 0) return;
-    
-    if (!videoRef.current) {
-      videoRef.current = document.createElement("video");
-      videoRef.current.muted = true;
+    if (!stream || stream.getVideoTracks().length === 0 || !videoRef.current) {
+      return;
     }
-
+    
     const video = videoRef.current;
     video.srcObject = stream;
+    
     video.onloadedmetadata = () => {
       video.play().catch((error) => {
         console.error("Video play failed:", error);
@@ -86,12 +89,24 @@ function StreamCanvas({
 
   // Only render canvas if we have video
   if (!stream || stream.getVideoTracks().length === 0) {
-    return null;
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-800 text-white">
+        <span>No video available</span>
+      </div>
+    );
   }
 
   return (
     <>
       <div className="relative">
+        {/* Hidden video element that will be used as the source for the canvas */}
+        <video 
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="hidden"
+        />
         <canvas
           ref={canvasRef}
           width={512}
