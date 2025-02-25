@@ -73,19 +73,48 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
             
             if action == "start":
                 success = await server_manager.start()
+                return web.json_response({
+                    "success": success,
+                    "status": server_manager.get_status()
+                })
             elif action == "stop":
-                success = await server_manager.stop()
+                try:
+                    success = await server_manager.stop()
+                    return web.json_response({
+                        "success": success,
+                        "status": server_manager.get_status()
+                    })
+                except Exception as e:
+                    logging.error(f"Error stopping server: {str(e)}")
+                    # Force cleanup even if the normal stop fails
+                    server_manager.cleanup()
+                    return web.json_response({
+                        "success": True,
+                        "status": {"running": False, "port": None, "pid": None, "type": "local"},
+                        "message": "Forced server shutdown due to error"
+                    })
             elif action == "restart":
                 success = await server_manager.restart()
+                return web.json_response({
+                    "success": success,
+                    "status": server_manager.get_status()
+                })
             else:
                 return web.json_response({"error": "Invalid action"}, status=400)
-
-            return web.json_response({
-                "success": success,
-                "status": server_manager.get_status()
-            })
         except Exception as e:
             logging.error(f"Error controlling server: {str(e)}")
+            # If we're trying to stop the server and get an error, force cleanup
+            if data and data.get("action") == "stop":
+                try:
+                    server_manager.cleanup()
+                    return web.json_response({
+                        "success": True,
+                        "status": {"running": False, "port": None, "pid": None, "type": "local"},
+                        "message": "Forced server shutdown due to error"
+                    })
+                except Exception as cleanup_error:
+                    logging.error(f"Error during forced cleanup: {str(cleanup_error)}")
+            
             return web.json_response({"error": str(e)}, status=500)
 
     @routes.post('/launch_comfystream')

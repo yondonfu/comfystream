@@ -211,9 +211,19 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
             try:
                 logging.info(f"Cleaning up server process (PID: {self.process.pid})")
                 if sys.platform == "win32":
-                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(self.process.pid)])
+                    # On Windows, use taskkill but only for the specific process
+                    subprocess.run(["taskkill", "/F", "/PID", str(self.process.pid)])
                 else:
-                    os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                    # On Unix, use SIGTERM directly on the process instead of the process group
+                    # This avoids killing the parent ComfyUI process
+                    self.process.terminate()
+                    # Give it a moment to terminate gracefully
+                    try:
+                        self.process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        # If it doesn't terminate gracefully, force kill
+                        logging.warning("Process didn't terminate gracefully, forcing kill")
+                        self.process.kill()
             except Exception as e:
                 logging.error(f"Error cleaning up server process: {str(e)}")
             self.process = None
