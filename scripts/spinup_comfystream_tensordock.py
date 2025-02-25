@@ -25,10 +25,10 @@ TENSORDOCK_ENDPOINTS = {
 # Requirements for host nodes.
 DEFAULT_MAX_PRICE = 0.5  # USD per hour
 MIN_REQUIREMENTS = {
-    "minvCPUs": 4,
+    "minvCPUs": 8,
     "minRAM": 16,  # GB
     "minStorage": 80,  # GB
-    "minVRAM": 16,  # GB
+    "minVRAM": 20,  # GB
     "minGPUCount": 1,
     "requiresRTX": True,
     "requiresGTX": False,
