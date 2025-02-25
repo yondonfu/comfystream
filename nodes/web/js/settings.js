@@ -10,32 +10,77 @@ const DEFAULT_SETTINGS = {
 
 class ComfyStreamSettings {
     constructor() {
-        console.log("[ComfyStream Settings] Creating settings instance");
-        this.settings = this.loadSettings();
-        console.log("[ComfyStream Settings] Settings loaded:", this.settings);
+        this.settings = DEFAULT_SETTINGS;
+        this.loadSettings();
     }
 
-    loadSettings() {
+    async loadSettings() {
         try {
-            console.log("[ComfyStream Settings] Loading settings from localStorage");
-            const savedSettings = localStorage.getItem('comfystream_settings');
-            if (savedSettings) {
-                console.log("[ComfyStream Settings] Found saved settings");
-                return { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) };
+            const response = await fetch('/comfystream/settings');
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
             }
+            
+            this.settings = await response.json();
+            return this.settings;
         } catch (error) {
-            console.error("[ComfyStream Settings] Error loading settings:", error);
+            console.error("[ComfyStream Settings] Error loading settings from server:", error);
+            
+            // Try to load from localStorage as fallback
+            try {
+                const savedSettings = localStorage.getItem('comfystream_settings');
+                if (savedSettings) {
+                    this.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) };
+                    
+                    // Try to save these to the server
+                    this.saveSettings().catch(e => {
+                        console.error("[ComfyStream Settings] Failed to save localStorage settings to server:", e);
+                    });
+                }
+            } catch (localError) {
+                console.error("[ComfyStream Settings] Error loading settings from localStorage:", localError);
+            }
+            
+            return this.settings;
         }
-        console.log("[ComfyStream Settings] Using default settings");
-        return { ...DEFAULT_SETTINGS };
     }
 
-    saveSettings() {
+    async saveSettings() {
         try {
-            console.log("[ComfyStream Settings] Saving settings to localStorage");
-            localStorage.setItem('comfystream_settings', JSON.stringify(this.settings));
+            const response = await fetch('/comfystream/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(this.settings)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            // Save to localStorage as fallback
+            try {
+                localStorage.setItem('comfystream_settings', JSON.stringify(this.settings));
+            } catch (localError) {
+                console.error("[ComfyStream Settings] Error saving to localStorage:", localError);
+            }
+            
+            return true;
         } catch (error) {
-            console.error("[ComfyStream Settings] Error saving settings:", error);
+            console.error("[ComfyStream Settings] Error saving settings to server:", error);
+            
+            // Try to save to localStorage as fallback
+            try {
+                localStorage.setItem('comfystream_settings', JSON.stringify(this.settings));
+            } catch (localError) {
+                console.error("[ComfyStream Settings] Error saving to localStorage:", localError);
+            }
+            
+            return false;
         }
     }
 
@@ -43,57 +88,137 @@ class ComfyStreamSettings {
         return this.settings;
     }
 
-    updateSettings(newSettings) {
-        console.log("[ComfyStream Settings] Updating settings:", newSettings);
+    async updateSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings };
-        this.saveSettings();
+        await this.saveSettings();
         return this.settings;
     }
 
-    addConfiguration(name, host, port) {
-        console.log("[ComfyStream Settings] Adding configuration:", name, host, port);
-        const config = { name, host, port };
-        this.settings.configurations.push(config);
-        this.saveSettings();
-        return config;
-    }
-
-    removeConfiguration(index) {
-        console.log("[ComfyStream Settings] Removing configuration at index:", index);
-        if (index >= 0 && index < this.settings.configurations.length) {
-            this.settings.configurations.splice(index, 1);
+    async addConfiguration(name, host, port) {
+        try {
+            const response = await fetch('/comfystream/settings/configuration', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'add',
+                    name,
+                    host,
+                    port
+                })
+            });
             
-            // Update selectedConfigIndex if needed
-            if (this.settings.selectedConfigIndex === index) {
-                // The selected config was deleted
-                this.settings.selectedConfigIndex = -1;
-            } else if (this.settings.selectedConfigIndex > index) {
-                // The selected config is after the deleted one, adjust index
-                this.settings.selectedConfigIndex--;
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
             }
             
-            this.saveSettings();
-            return true;
+            const result = await response.json();
+            if (result.success) {
+                this.settings = result.settings;
+                return { name, host, port };
+            } else {
+                throw new Error("Failed to add configuration");
+            }
+        } catch (error) {
+            console.error("[ComfyStream Settings] Error adding configuration:", error);
+            
+            // Fallback to local operation
+            const config = { name, host, port };
+            this.settings.configurations.push(config);
+            await this.saveSettings();
+            return config;
         }
-        return false;
     }
 
-    selectConfiguration(index) {
-        console.log("[ComfyStream Settings] Selecting configuration at index:", index);
-        if (index >= -1 && index < this.settings.configurations.length) {
-            this.settings.selectedConfigIndex = index;
+    async removeConfiguration(index) {
+        try {
+            const response = await fetch('/comfystream/settings/configuration', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'remove',
+                    index
+                })
+            });
             
-            // If a valid configuration is selected, update host and port
-            if (index >= 0) {
-                const config = this.settings.configurations[index];
-                this.settings.host = config.host;
-                this.settings.port = config.port;
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
             }
             
-            this.saveSettings();
-            return true;
+            const result = await response.json();
+            if (result.success) {
+                this.settings = result.settings;
+                return true;
+            } else {
+                throw new Error("Failed to remove configuration");
+            }
+        } catch (error) {
+            console.error("[ComfyStream Settings] Error removing configuration:", error);
+            
+            // Fallback to local operation
+            if (index >= 0 && index < this.settings.configurations.length) {
+                this.settings.configurations.splice(index, 1);
+                
+                // Update selectedConfigIndex if needed
+                if (this.settings.selectedConfigIndex === index) {
+                    this.settings.selectedConfigIndex = -1;
+                } else if (this.settings.selectedConfigIndex > index) {
+                    this.settings.selectedConfigIndex--;
+                }
+                
+                await this.saveSettings();
+                return true;
+            }
+            return false;
         }
-        return false;
+    }
+
+    async selectConfiguration(index) {
+        try {
+            const response = await fetch('/comfystream/settings/configuration', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'select',
+                    index
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            if (result.success) {
+                this.settings = result.settings;
+                return true;
+            } else {
+                throw new Error("Failed to select configuration");
+            }
+        } catch (error) {
+            console.error("[ComfyStream Settings] Error selecting configuration:", error);
+            
+            // Fallback to local operation
+            if (index >= -1 && index < this.settings.configurations.length) {
+                this.settings.selectedConfigIndex = index;
+                
+                // If a valid configuration is selected, update host and port
+                if (index >= 0) {
+                    const config = this.settings.configurations[index];
+                    this.settings.host = config.host;
+                    this.settings.port = config.port;
+                }
+                
+                await this.saveSettings();
+                return true;
+            }
+            return false;
+        }
     }
 
     getCurrentHostPort() {
@@ -113,12 +238,12 @@ class ComfyStreamSettings {
 }
 
 // Create settings instance
-console.log("[ComfyStream Settings] Creating settings manager instance");
 const settingsManager = new ComfyStreamSettings();
 
 // Show settings modal
-function showSettingsModal() {
-    console.log("[ComfyStream Settings] showSettingsModal called");
+async function showSettingsModal() {
+    // Ensure settings are loaded from server before showing modal
+    await settingsManager.loadSettings();
     
     // Check if modal already exists and remove it
     const existingModal = document.getElementById("comfystream-settings-modal");
@@ -325,7 +450,7 @@ function showSettingsModal() {
     saveButton.style.border = "1px solid var(--border-color, #444)";
     saveButton.style.borderRadius = "4px";
     saveButton.style.cursor = "pointer";
-    saveButton.onclick = () => {
+    saveButton.onclick = async () => {
         const host = hostInput.value;
         const port = parseInt(portInput.value);
         
@@ -338,17 +463,16 @@ function showSettingsModal() {
         });
         
         if (matchingConfigIndex >= 0) {
-            settingsManager.selectConfiguration(matchingConfigIndex);
+            await settingsManager.selectConfiguration(matchingConfigIndex);
         } else {
             // No matching configuration, just update the settings
-            settingsManager.updateSettings({ 
+            await settingsManager.updateSettings({ 
                 host, 
                 port,
                 selectedConfigIndex: -1 // Reset selected config since we're using custom values
             });
         }
         
-        console.log("[ComfyStream Settings] Settings saved");
         modal.remove();
     };
     
@@ -372,8 +496,7 @@ function showSettingsModal() {
     document.body.appendChild(modal);
     
     // Update configurations list
-    function updateConfigsList() {
-        console.log("[ComfyStream Settings] Updating configurations list");
+    async function updateConfigsList() {
         configsList.innerHTML = "";
         
         if (settingsManager.settings.configurations.length === 0) {
@@ -459,12 +582,11 @@ function showSettingsModal() {
         // Add event listeners
         document.querySelectorAll(".comfystream-config-select").forEach(button => {
             if (!button.disabled) {
-                button.addEventListener("click", (e) => {
+                button.addEventListener("click", async (e) => {
                     const index = parseInt(e.target.dataset.index);
-                    console.log("[ComfyStream Settings] Selecting config at index:", index);
                     
                     // Select the configuration and update UI
-                    settingsManager.selectConfiguration(index);
+                    await settingsManager.selectConfiguration(index);
                     
                     // Update the current config display
                     const selectedName = settingsManager.getSelectedConfigName();
@@ -477,7 +599,7 @@ function showSettingsModal() {
                     portInput.value = config.port;
                     
                     // Refresh the list to update highlighting
-                    updateConfigsList();
+                    await updateConfigsList();
                 });
             }
         });
@@ -485,7 +607,6 @@ function showSettingsModal() {
         document.querySelectorAll(".comfystream-config-load").forEach(button => {
             button.addEventListener("click", (e) => {
                 const index = parseInt(e.target.dataset.index);
-                console.log("[ComfyStream Settings] Loading config at index:", index);
                 const config = settingsManager.settings.configurations[index];
                 hostInput.value = config.host;
                 portInput.value = config.port;
@@ -493,42 +614,40 @@ function showSettingsModal() {
         });
         
         document.querySelectorAll(".comfystream-config-delete").forEach(button => {
-            button.addEventListener("click", (e) => {
+            button.addEventListener("click", async (e) => {
                 const index = parseInt(e.target.dataset.index);
-                console.log("[ComfyStream Settings] Deleting config at index:", index);
-                settingsManager.removeConfiguration(index);
+                await settingsManager.removeConfiguration(index);
                 
                 // Update the current config display if needed
                 const selectedName = settingsManager.getSelectedConfigName();
                 currentConfigName.textContent = selectedName || "Custom (unsaved)";
                 currentConfigName.style.fontStyle = selectedName ? "normal" : "italic";
                 
-                updateConfigsList();
+                await updateConfigsList();
             });
         });
     }
     
     // Add event listener for the add config button
-    addConfigButton.addEventListener("click", () => {
-        console.log("[ComfyStream Settings] Add config button clicked");
+    addConfigButton.addEventListener("click", async () => {
         const name = configNameInput.value.trim();
         const host = hostInput.value;
         const port = parseInt(portInput.value);
         
         if (name) {
             // Add the configuration
-            settingsManager.addConfiguration(name, host, port);
+            await settingsManager.addConfiguration(name, host, port);
             
             // Select the newly added configuration
             const newIndex = settingsManager.settings.configurations.length - 1;
-            settingsManager.selectConfiguration(newIndex);
+            await settingsManager.selectConfiguration(newIndex);
             
             // Update the current config display
             currentConfigName.textContent = name;
             currentConfigName.style.fontStyle = "normal";
             
             // Update the list
-            updateConfigsList();
+            await updateConfigsList();
             configNameInput.value = "";
         } else {
             console.warn("[ComfyStream Settings] Cannot add config without a name");
@@ -574,16 +693,13 @@ function showSettingsModal() {
     });
     
     // Initial update of configurations list
-    updateConfigsList();
+    await updateConfigsList();
     
     // Focus the host input
     hostInput.focus();
-    
-    console.log("[ComfyStream Settings] Dialog setup complete");
 }
 
 // Export for use in other modules
-console.log("[ComfyStream Settings] Exporting settings to window object");
 window.comfyStreamSettings = {
     settingsManager,
     showSettingsModal

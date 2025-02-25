@@ -7,6 +7,7 @@ import pathlib
 import logging
 import aiohttp
 from ..server_manager import LocalComfyStreamServer
+from .. import settings_storage
 
 routes = None
 server_manager = None
@@ -155,6 +156,78 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
             })
         except Exception as e:
             logging.error(f"Error launching ComfyStream UI: {str(e)}")
+            return web.json_response({"error": str(e)}, status=500)
+
+    @routes.get('/comfystream/settings')
+    async def get_settings(request):
+        """Get ComfyStream settings"""
+        try:
+            settings = settings_storage.load_settings()
+            return web.json_response(settings)
+        except Exception as e:
+            logging.error(f"Error getting settings: {str(e)}")
+            return web.json_response({"error": str(e)}, status=500)
+    
+    @routes.post('/comfystream/settings')
+    async def update_settings(request):
+        """Update ComfyStream settings"""
+        try:
+            data = await request.json()
+            success = settings_storage.update_settings(data)
+            return web.json_response({
+                "success": success,
+                "settings": settings_storage.load_settings()
+            })
+        except Exception as e:
+            logging.error(f"Error updating settings: {str(e)}")
+            return web.json_response({"error": str(e)}, status=500)
+    
+    @routes.post('/comfystream/settings/configuration')
+    async def manage_configuration(request):
+        """Add, remove, or select a configuration"""
+        try:
+            data = await request.json()
+            action = data.get("action")
+            
+            if action == "add":
+                name = data.get("name")
+                host = data.get("host")
+                port = data.get("port")
+                if not name or not host or not port:
+                    return web.json_response({"error": "Missing required parameters"}, status=400)
+                
+                success = settings_storage.add_configuration(name, host, port)
+                return web.json_response({
+                    "success": success,
+                    "settings": settings_storage.load_settings()
+                })
+            
+            elif action == "remove":
+                index = data.get("index")
+                if index is None:
+                    return web.json_response({"error": "Missing index parameter"}, status=400)
+                
+                success = settings_storage.remove_configuration(index)
+                return web.json_response({
+                    "success": success,
+                    "settings": settings_storage.load_settings()
+                })
+            
+            elif action == "select":
+                index = data.get("index")
+                if index is None:
+                    return web.json_response({"error": "Missing index parameter"}, status=400)
+                
+                success = settings_storage.select_configuration(index)
+                return web.json_response({
+                    "success": success,
+                    "settings": settings_storage.load_settings()
+                })
+            
+            else:
+                return web.json_response({"error": "Invalid action"}, status=400)
+        except Exception as e:
+            logging.error(f"Error managing configuration: {str(e)}")
             return web.json_response({"error": str(e)}, status=500)
 
 class ComfyStreamLauncher:

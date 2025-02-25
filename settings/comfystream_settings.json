@@ -1,0 +1,12 @@
+{
+  "host": "localhost",
+  "port": 8889,
+  "configurations": [
+    {
+      "name": "local",
+      "host": "localhost",
+      "port": 8889
+    }
+  ],
+  "selectedConfigIndex": 0
+}
