@@ -12,6 +12,13 @@ if torch.cuda.is_available():
     torch.cuda.init()
 
 
+import torch
+
+# Initialize CUDA before any other imports to prevent core dump.
+if torch.cuda.is_available():
+    torch.cuda.init()
+
+
 from twilio.rest import Client
 from aiohttp import web
 from aiortc import (
