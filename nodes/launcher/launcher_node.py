@@ -16,10 +16,25 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     routes = PromptServer.instance.routes
     
     # Get the path to the static build directory
-    STATIC_DIR = pathlib.Path(__file__).parent.parent.parent / "nodes" / "web" / "static"
+    STATIC_DIR = pathlib.Path(__file__).parent.parent.parent / "nodes" / "web" / "static"    
     
-    # Add static route for Next.js build files
-    routes.static('/extensions/comfystream_inside/static', str(STATIC_DIR))
+    # Dynamically determine the extension name from the directory structure
+    try:
+        # Get the parent directory of the current file (launcher_node.py)
+        # Then navigate up to get the extension root directory
+        EXTENSION_ROOT = pathlib.Path(__file__).parent.parent.parent
+        # Get the extension name (the directory name)
+        EXTENSION_NAME = EXTENSION_ROOT.name
+        logging.info(f"Detected extension name: {EXTENSION_NAME}")
+    except Exception as e:
+        logging.warning(f"Failed to get extension name dynamically: {e}")
+        # Fallback to the hardcoded name
+        EXTENSION_NAME = "ComfyStream"
+    
+    # Add static route for Next.js build files using the dynamic extension name
+    STATIC_ROUTE = f"/extensions/{EXTENSION_NAME}/static"
+    logging.info(f"Setting up static route: {STATIC_ROUTE} -> {STATIC_DIR}")
+    routes.static(STATIC_ROUTE, str(STATIC_DIR))
     
     # Create server manager instance
     server_manager = LocalComfyStreamServer()
@@ -36,7 +51,7 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     f"{target_url}/offer",
-                    json={"prompt": data.get("prompt"), "offer": data.get("offer")},
+                    json={"prompts": data.get("prompts"), "offer": data.get("offer")},
                     headers={"Content-Type": "application/json"}
                 ) as response:
                     if not response.ok:
@@ -77,8 +92,8 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     async def launch_comfystream(request):
         """Open the ComfyStream UI in a new browser tab"""
         try:
-            # Open browser to the static UI
-            webbrowser.open("http://localhost:8188/extensions/comfystream_inside/static/index.html")
+            # Open browser to the static UI using the dynamic extension name
+            webbrowser.open(f"http://localhost:8188{STATIC_ROUTE}/index.html")
             return web.json_response({"success": True})
         except Exception as e:
             logging.error(f"Error launching ComfyStream UI: {str(e)}")

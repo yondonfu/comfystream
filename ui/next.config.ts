@@ -52,3 +52,5 @@ Build Commands:
 - Development: npm run dev (uses ./.next directory)
 - Production: npm run build (uses ../nodes/web/static directory)
 */
+
+//./node_modules/.bin/next build
