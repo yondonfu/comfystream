@@ -34,7 +34,7 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     # Add static route for Next.js build files using the dynamic extension name
     STATIC_ROUTE = f"/extensions/{EXTENSION_NAME}/static"
     logging.info(f"Setting up static route: {STATIC_ROUTE} -> {STATIC_DIR}")
-    routes.static(STATIC_ROUTE, str(STATIC_DIR))
+    routes.static(STATIC_ROUTE, str(STATIC_DIR), append_version=False, follow_symlinks=True)
     
     # Create server manager instance
     server_manager = LocalComfyStreamServer()
