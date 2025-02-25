@@ -36,11 +36,12 @@ class ComfyStreamServerBase(ABC):
         logging.info(f"Initializing {self.__class__.__name__}")
     
     @abstractmethod
-    async def start(self, port=None) -> bool:
+    async def start(self, port=None, host=None) -> bool:
         """Start the ComfyStream server
         
         Args:
             port: Optional port to use. If None, implementation should choose a port.
+            host: Optional host to use. If None, implementation should use the default host.
             
         Returns:
             bool: True if server started successfully, False otherwise
@@ -74,16 +75,22 @@ class ComfyStreamServerBase(ABC):
         """
         pass
     
-    async def restart(self) -> bool:
+    async def restart(self, port=None, host=None) -> bool:
         """Restart the ComfyStream server
         
+        Args:
+            port: Optional port to use. If None, use the current port.
+            host: Optional host to use. If None, use the current host.
+            
         Returns:
             bool: True if server restarted successfully, False otherwise
         """
         logging.info("Restarting ComfyStream server...")
-        current_port = self.port
+        # Use provided values or current values
+        port_to_use = port if port is not None else self.port
+        host_to_use = host if host is not None else self.host
         await self.stop()
-        return await self.start(current_port)
+        return await self.start(port=port_to_use, host=host_to_use)
 
 class LocalComfyStreamServer(ComfyStreamServerBase):
     """Local ComfyStream server implementation"""
@@ -123,7 +130,7 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
         except urllib.error.URLError:
             return False
 
-    async def start(self, port=None):
+    async def start(self, port=None, host=None):
         """Start the ComfyStream server"""
         if self.is_running:
             logging.info("Server is already running")
@@ -131,6 +138,8 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
 
         try:
             self.port = port or self.find_available_port()
+            if host is not None:
+                self.host = host
             
             # Get the path to the ComfyStream server directory and script
             server_dir = Path(__file__).parent.parent / "server"

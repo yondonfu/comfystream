@@ -2,16 +2,36 @@
 const app = window.comfyAPI?.app?.app;
 console.log("[ComfyStream] Initializing with app:", app);
 
+// Load settings.js
+(function loadSettings() {
+    console.log("[ComfyStream] Attempting to load settings.js");
+    const script = document.createElement('script');
+    script.src = './settings.js';  // Simple relative path
+    script.onload = () => {
+        console.log("[ComfyStream] Settings loaded successfully");
+        console.log("[ComfyStream] Settings object:", window.comfyStreamSettings);
+    };
+    script.onerror = (e) => console.error("[ComfyStream] Error loading settings:", e);
+    document.head.appendChild(script);
+})();
+
 async function controlServer(action) {
     console.log("[ComfyStream] Controlling server with action:", action);
     try {
+        // Get settings from the settings manager if available
+        const settings = window.comfyStreamSettings?.settingsManager?.getCurrentHostPort();
+        console.log("[ComfyStream] Using settings:", settings);
+        
         const response = await fetch('/comfystream/control', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ action })
+            body: JSON.stringify({ 
+                action,
+                settings
+            })
         });
         
         if (!response.ok) {
@@ -38,13 +58,17 @@ async function controlServer(action) {
 async function openUI() {
     console.log("[ComfyStream] Attempting to open UI");
     try {
+        // Get settings from the settings manager if available
+        const settings = window.comfyStreamSettings?.settingsManager?.getCurrentHostPort();
+        console.log("[ComfyStream] Using settings for UI:", settings);
+        
         const response = await fetch('/launch_comfystream', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({ settings })
         });
         
         if (!response.ok) {
@@ -67,6 +91,27 @@ async function openUI() {
         console.error('[ComfyStream] Error launching ComfyStream:', error);
         app.ui.dialog.show('Error', error.message || 'Failed to launch ComfyStream');
         throw error;
+    }
+}
+
+// Function to open settings modal
+function openSettings() {
+    console.log("[ComfyStream] Opening settings modal");
+    console.log("[ComfyStream] Settings object available:", !!window.comfyStreamSettings);
+    
+    if (window.comfyStreamSettings?.showSettingsModal) {
+        console.log("[ComfyStream] Calling showSettingsModal function");
+        try {
+            window.comfyStreamSettings.showSettingsModal();
+            console.log("[ComfyStream] Modal should be displayed now");
+        } catch (error) {
+            console.error("[ComfyStream] Error showing settings modal:", error);
+            app.ui.dialog.show('Error', `Failed to show settings: ${error.message}`);
+        }
+    } else {
+        console.error("[ComfyStream] Settings module not loaded or showSettingsModal not available");
+        console.log("[ComfyStream] Available properties:", Object.keys(window.comfyStreamSettings || {}));
+        app.ui.dialog.show('Error', 'Settings module not loaded properly');
     }
 }
 
@@ -105,6 +150,12 @@ const extension = {
             function: async () => {
                 await controlServer('restart');
             }
+        },
+        {
+            id: "ComfyStream.Settings",
+            icon: "pi pi-cog",
+            label: "Server Settings",
+            function: openSettings
         }
     ],
 
@@ -117,7 +168,9 @@ const extension = {
                 null, // Separator
                 "ComfyStream.StartServer",
                 "ComfyStream.StopServer", 
-                "ComfyStream.RestartServer"
+                "ComfyStream.RestartServer",
+                null, // Separator
+                "ComfyStream.Settings"
             ]
         }
     ],
@@ -139,6 +192,8 @@ const extension = {
             comfyStreamMenu.addItem("Start Server", () => controlServer('start'), { icon: "pi pi-play" });
             comfyStreamMenu.addItem("Stop Server", () => controlServer('stop'), { icon: "pi pi-stop" });
             comfyStreamMenu.addItem("Restart Server", () => controlServer('restart'), { icon: "pi pi-refresh" });
+            comfyStreamMenu.addSeparator();
+            comfyStreamMenu.addItem("Server Settings", openSettings, { icon: "pi pi-cog" });
         } else {
             // New menu system is handled automatically by the menuCommands registration
             console.log("[ComfyStream] Using new menu system");

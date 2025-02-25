@@ -70,9 +70,16 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
         try:
             data = await request.json()
             action = data.get("action")
+            settings = data.get("settings", {})
+            
+            # Extract host and port from settings if provided
+            host = settings.get("host") if settings else None
+            port = settings.get("port") if settings else None
+            
+            logging.info(f"Control server request: action={action}, host={host}, port={port}")
             
             if action == "start":
-                success = await server_manager.start()
+                success = await server_manager.start(port=port, host=host)
                 return web.json_response({
                     "success": success,
                     "status": server_manager.get_status()
@@ -90,11 +97,11 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
                     server_manager.cleanup()
                     return web.json_response({
                         "success": True,
-                        "status": {"running": False, "port": None, "pid": None, "type": "local"},
+                        "status": {"running": False, "port": None, "host": None, "pid": None, "type": "local"},
                         "message": "Forced server shutdown due to error"
                     })
             elif action == "restart":
-                success = await server_manager.restart()
+                success = await server_manager.restart(port=port, host=host)
                 return web.json_response({
                     "success": success,
                     "status": server_manager.get_status()
@@ -109,7 +116,7 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
                     server_manager.cleanup()
                     return web.json_response({
                         "success": True,
-                        "status": {"running": False, "port": None, "pid": None, "type": "local"},
+                        "status": {"running": False, "port": None, "host": None, "pid": None, "type": "local"},
                         "message": "Forced server shutdown due to error"
                     })
                 except Exception as cleanup_error:
@@ -121,9 +128,31 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     async def launch_comfystream(request):
         """Open the ComfyStream UI in a new browser tab"""
         try:
+            data = await request.json()
+            settings = data.get("settings", {})
+            
+            # Get the current server status
+            status = server_manager.get_status()
+            
+            # Determine the URL based on server status
+            if status["running"]:
+                # If server is running, use its host and port
+                host = status["host"]
+                port = status["port"]
+            else:
+                # Otherwise use the settings
+                host = settings.get("host", "localhost")
+                port = settings.get("port", 8889)
+            
+            # Format the URL properly (use localhost instead of 0.0.0.0 for browser)
+            browser_host = "localhost" if host == "0.0.0.0" else host
+            
             # Open browser to the static UI using the dynamic extension name
-            webbrowser.open(f"http://localhost:8188{STATIC_ROUTE}/index.html")
-            return web.json_response({"success": True})
+            webbrowser.open(f"http://{browser_host}:8188{STATIC_ROUTE}/index.html")
+            return web.json_response({
+                "success": True,
+                "url": f"http://{browser_host}:8188{STATIC_ROUTE}/index.html"
+            })
         except Exception as e:
             logging.error(f"Error launching ComfyStream UI: {str(e)}")
             return web.json_response({"error": str(e)}, status=500)
