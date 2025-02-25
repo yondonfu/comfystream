@@ -39,7 +39,7 @@ VM_SPECS = {
     "vcpus": MIN_REQUIREMENTS["minvCPUs"],
     "ram": MIN_REQUIREMENTS["minRAM"],
     "storage": MIN_REQUIREMENTS["minStorage"],
-    "internal_ports": str(set([22, 3000, 8889])),
+    "internal_ports": [22, 3000, 8889],
     "operating_system": "Ubuntu 22.04 LTS",
 }
 CLOUD_INIT_PATH = os.path.join(
@@ -80,6 +80,18 @@ logger.addHandler(handler)
 
 
 geolocator = Nominatim(user_agent="tensordock_locator", timeout=5)
+
+
+def format_ports_as_set(ports: list) -> str:
+    """Format a list of ports as a string that looks like a set.
+
+    Args:
+        ports: List of ports.
+
+    Returns:
+        A string that looks like a set.
+    """
+    return "{" + ", ".join(map(str, ports)) + "}"
 
 
 def load_cloud_init(cloud_init_path: str) -> str:
@@ -479,13 +491,14 @@ class TensorDockController:
             dictionary.
         """
         vm_specs = {
+            **VM_SPECS,
             "api_key": self.api_key,
             "api_token": self.api_token,
             "name": name,
             "hostnode": hostnode_id,
             "gpu_model": gpu_model,
-            "external_ports": str(external_ports),
-            **VM_SPECS,
+            "internal_ports": format_ports_as_set(VM_SPECS["internal_ports"]),
+            "external_ports": format_ports_as_set(external_ports),
         }
         if public_ssh_key:
             vm_specs["public_ssh_key"] = public_ssh_key
@@ -573,12 +586,11 @@ class TensorDockController:
                     f"GPU '{gpu}'."
                 )
                 available_ports = node["networking"]["ports"][:3]
-                formatted_ports = str(set(available_ports))
                 node_info = self.deploy_vm(
                     name=vm_name,
                     hostnode_id=node["id"],
                     gpu_model=gpu,
-                    external_ports=formatted_ports,
+                    external_ports=available_ports,
                     password=password,
                     public_ssh_key=public_ssh_key,
                 )
