@@ -25,31 +25,50 @@ app.registerExtension({
                 this.iframe.style.border = "none";
                 this.iframe.style.borderRadius = "8px";
                 
-                // Set iframe source using the extension_info API
-                fetch('/comfystream/extension_info')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.iframe.src = data.ui_url;
-                        } else {
-                            console.error("[ComfyStream] Error getting extension info:", data.error);
+                // Function to load or refresh the iframe
+                this.loadIframe = () => {
+                    fetch('/comfystream/extension_info')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                this.iframe.src = data.ui_url;
+                            } else {
+                                console.error("[ComfyStream] Error getting extension info:", data.error);
+                                // Fallback to hardcoded path
+                                const extensionName = "ComfyStream";
+                                this.iframe.src = `/extensions/${extensionName}/static/index.html`;
+                            }
+                        })
+                        .catch(error => {
+                            console.error("[ComfyStream] Error fetching extension info:", error);
                             // Fallback to hardcoded path
-                            const extensionName = "ComfyStream";
+                            const extensionName = "comfystream_inside";
                             this.iframe.src = `/extensions/${extensionName}/static/index.html`;
-                        }
-                    })
-                    .catch(error => {
-                        console.error("[ComfyStream] Error fetching extension info:", error);
-                        // Fallback to hardcoded path
-                        const extensionName = "comfystream_inside";
-                        this.iframe.src = `/extensions/${extensionName}/static/index.html`;
-                    });
+                        });
+                };
+                
+                // Initial load of the iframe
+                this.loadIframe();
                 
                 // Add the iframe as a DOM widget
                 this.iframeWidget = this.addDOMWidget("iframe", "UI", this.iframe, {
                     serialize: false,
                     width: this.size[0],
                     height: this.size[1] - 40
+                });
+                
+                // Add a button to refresh the iframe
+                this.addWidget("button", "Refresh UI", null, () => {
+                    console.log("[ComfyStream] Refreshing UI...");
+                    if (this.iframe) {
+                        // If iframe already has a src, we can just reload it
+                        if (this.iframe.src) {
+                            this.iframe.src = this.iframe.src;
+                        } else {
+                            // Otherwise load it using our function
+                            this.loadIframe();
+                        }
+                    }
                 });
                 
                 // Add a button to launch the UI in a new tab
