@@ -27,7 +27,6 @@ RUN git clone https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
 # Copy only files needed for setup
 COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
 COPY ./configs /workspace/comfystream/configs
-COPY ./nodes/ /workspace/ComfyUI/custom_nodes/
 
 # Install base dependencies
 RUN conda run -n comfystream --no-capture-output pip install aiortc aiohttp requests tqdm pyyaml --root-user-action=ignore
@@ -45,7 +44,8 @@ RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip in
 # Install ComfyStream requirements
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install -r requirements.txt --root-user-action=ignore
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install . --root-user-action=ignore
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python install.py --workspace /workspace/ComfyUI
+RUN ln -s /workspace/comfystream /workspace/ComfyUI/custom_nodes/comfystream
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI/custom_nodes/comfystream python install.py --workspace /workspace/ComfyUI
 RUN conda run -n comfystream --no-capture-output pip install --upgrade tensorrt-cu12-bindings tensorrt-cu12-libs --root-user-action=ignore
 RUN conda run -n comfystream --no-capture-output pip install mediapipe==0.10.8 --root-user-action=ignore
 
