@@ -17,3 +17,5 @@ launch.json
 .env.development
 .env.test
 .env.production
+
+nodes/web/static/*
