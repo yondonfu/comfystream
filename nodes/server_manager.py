@@ -208,6 +208,7 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
         status = {
             "running": self.is_running,
             "port": self.port,
+            "host": self.host,
             "pid": self.process.pid if self.process else None,
             "type": "local"
         }

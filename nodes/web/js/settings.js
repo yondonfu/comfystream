@@ -237,7 +237,7 @@ class ComfyStreamSettings {
     }
 }
 
-// Create settings instance
+// Create a single instance of the settings manager
 const settingsManager = new ComfyStreamSettings();
 
 // Show settings modal
@@ -700,6 +700,9 @@ async function showSettingsModal() {
 }
 
 // Export for use in other modules
+export { settingsManager, showSettingsModal };
+
+// Also keep the global for backward compatibility
 window.comfyStreamSettings = {
     settingsManager,
     showSettingsModal

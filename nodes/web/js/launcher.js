@@ -1,21 +1,116 @@
 // Wait for ComfyUI to be ready
+import { startStatusPolling, updateStatusIndicator, pollServerStatus } from './status-indicator.js';
+import { settingsManager, showSettingsModal } from './settings.js';
+
 const app = window.comfyAPI?.app?.app;
 
-// Load settings.js
-(function loadSettings() {
-    const script = document.createElement('script');
-    script.src = './settings.js';  // Simple relative path
-    script.onload = () => {
-        // Settings loaded successfully
-    };
-    script.onerror = (e) => console.error("[ComfyStream] Error loading settings:", e);
-    document.head.appendChild(script);
-})();
+// Store our indicator reference
+let statusIndicator = null;
+
+// Initialize the status indicator as soon as possible
+function initializeStatusIndicator() {
+    if (!statusIndicator) {
+        // Create the indicator with CSS variables for styling
+        statusIndicator = startStatusPolling({
+            size: '10px',  // Slightly smaller to fit in menu
+            showLabel: false,  // No label needed since it's next to menu text
+            runningLabel: '',
+            stoppedLabel: '',
+            startingLabel: '',
+            stoppingLabel: '',
+            minimalLabel: true
+        });
+        
+        // Add a CSS class for styling
+        statusIndicator.classList.add('comfystream-status-indicator');
+        
+        // Try to find the ComfyStream menu item label
+        const findAndInjectIndicator = () => {
+            // Don't use :contains() as it's not standard CSS - use the general approach instead
+            const menuItems = document.querySelectorAll('.p-menubar-item-label');
+            for (const item of menuItems) {
+                if (item.textContent.includes('ComfyStream')) {
+                    // Insert the indicator after the menu label
+                    item.parentNode.insertBefore(statusIndicator, item.nextSibling);
+                    return true;
+                }
+            }
+            
+            return false;
+        };
+        
+        // Try to inject immediately
+        const injected = findAndInjectIndicator();
+        
+        // If not successful, set up a mutation observer to watch for menu changes
+        if (!injected) {
+            const observer = new MutationObserver((mutations) => {
+                if (findAndInjectIndicator()) {
+                    observer.disconnect();
+                }
+            });
+            
+            observer.observe(document.body, { 
+                childList: true, 
+                subtree: true 
+            });
+            
+            // Also try again when the menu extension is registered
+            document.addEventListener('comfy-extension-registered', (event) => {
+                if (event.detail?.name === "ComfyStream.Menu") {
+                    setTimeout(findAndInjectIndicator, 100);
+                }
+            });
+        }
+        
+        // Force an immediate status check
+        pollServerStatus(true);
+        
+        // Create and inject CSS for positioning
+        const style = document.createElement('style');
+        style.textContent = `
+            .comfystream-status-indicator {
+                display: inline-block;
+                margin-left: 2px;
+                vertical-align: middle;
+                position: relative;
+                top: -1px;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+// Try to initialize immediately if app is available
+if (app) {
+    initializeStatusIndicator();
+} else {
+    // If app isn't ready yet, wait for DOMContentLoaded
+    window.addEventListener('DOMContentLoaded', () => {
+        initializeStatusIndicator();
+    });
+}
+
+// Also initialize when the extension is registered
+document.addEventListener('comfy-extension-registered', (event) => {
+    if (event.detail?.name === "ComfyStream.Menu") {
+        initializeStatusIndicator();
+    }
+});
 
 async function controlServer(action) {
     try {
-        // Get settings from the settings manager if available
-        const settings = window.comfyStreamSettings?.settingsManager?.getCurrentHostPort();
+        // Get settings from the settings manager
+        const settings = settingsManager.getCurrentHostPort();
+        
+        // Set transitional state based on action
+        if (action === 'start') {
+            updateStatusIndicator({ starting: true, running: false, stopping: false });
+        } else if (action === 'stop') {
+            updateStatusIndicator({ stopping: true, running: true, starting: false });
+        } else if (action === 'restart') {
+            updateStatusIndicator({ stopping: true, running: true, starting: false });
+        }
         
         const response = await fetch('/comfystream/control', {
             method: 'POST',
@@ -30,6 +125,13 @@ async function controlServer(action) {
         });
         
         if (!response.ok) {
+            // Reset transitional states on error
+            if (action === 'start') {
+                updateStatusIndicator({ starting: false });
+            } else if (action === 'stop' || action === 'restart') {
+                updateStatusIndicator({ stopping: false });
+            }
+            
             const errorText = await response.text();
             console.error("[ComfyStream] Server returned error response:", response.status, errorText);
             try {
@@ -41,8 +143,24 @@ async function controlServer(action) {
         }
 
         const data = await response.json();
+        
+        // Update status indicator after control action
+        if (data.status) {
+            // Clear transitional states
+            data.status.starting = false;
+            data.status.stopping = false;
+            updateStatusIndicator(data.status);
+        }
+        
         return data;
     } catch (error) {
+        // Reset any transitional states on error
+        if (action === 'start') {
+            updateStatusIndicator({ starting: false });
+        } else if (action === 'stop' || action === 'restart') {
+            updateStatusIndicator({ stopping: false });
+        }
+        
         console.error('[ComfyStream] Error controlling server:', error);
         app.ui.dialog.show('Error', error.message || 'Failed to control ComfyStream server');
         throw error;
@@ -51,8 +169,8 @@ async function controlServer(action) {
 
 async function openUI() {
     try {
-        // Get settings from the settings manager if available
-        const settings = window.comfyStreamSettings?.settingsManager?.getCurrentHostPort();
+        // Get settings from the settings manager
+        const settings = settingsManager.getCurrentHostPort();
         
         const response = await fetch('/launch_comfystream', {
             method: 'POST',
@@ -87,16 +205,11 @@ async function openUI() {
 
 // Function to open settings modal
 async function openSettings() {
-    if (window.comfyStreamSettings?.showSettingsModal) {
-        try {
-            await window.comfyStreamSettings.showSettingsModal();
-        } catch (error) {
-            console.error("[ComfyStream] Error showing settings modal:", error);
-            app.ui.dialog.show('Error', `Failed to show settings: ${error.message}`);
-        }
-    } else {
-        console.error("[ComfyStream] Settings module not loaded or showSettingsModal not available");
-        app.ui.dialog.show('Error', 'Settings module not loaded properly');
+    try {
+        await showSettingsModal();
+    } catch (error) {
+        console.error("[ComfyStream] Error showing settings modal:", error);
+        app.ui.dialog.show('Error', `Failed to show settings: ${error.message}`);
     }
 }
 
@@ -178,6 +291,9 @@ const extension = {
             comfyStreamMenu.addItem("Server Settings", openSettings, { icon: "pi pi-cog" });
         }
         // New menu system is handled automatically by the menuCommands registration
+        
+        // Make sure the status indicator is initialized
+        initializeStatusIndicator();
     }
 };
 

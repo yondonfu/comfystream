@@ -77,9 +77,13 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
             host = settings.get("host") if settings else None
             port = settings.get("port") if settings else None
             
-            logging.info(f"Control server request: action={action}, host={host}, port={port}")
-            
-            if action == "start":
+            if action == "status":
+                # Simply return the current server status
+                return web.json_response({
+                    "success": True,
+                    "status": server_manager.get_status()
+                })
+            elif action == "start":
                 success = await server_manager.start(port=port, host=host)
                 return web.json_response({
                     "success": success,
