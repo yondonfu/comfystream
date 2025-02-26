@@ -32,6 +32,10 @@ def ensure_init_files(workspace: str):
 
 def install_custom_node_req(workspace: str):
     custom_nodes_path = os.path.join(workspace, "custom_nodes")
+    if not os.path.exists(custom_nodes_path):
+        logger.info("No custom nodes found.")
+        return
+    
     for folder in os.listdir(custom_nodes_path):
         folder_path = os.path.join(custom_nodes_path, folder)
         req_file = os.path.join(folder_path, "requirements.txt")
@@ -44,7 +48,7 @@ def install_custom_node_req(workspace: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Install custom node requirements")
     parser.add_argument(
-        "--workspace", default=None, required=True, help="Set Comfy workspace"
+        "--workspace", default=os.getcwd(), required=False, help="Set Comfy workspace"
     )
     args = parser.parse_args()
 
