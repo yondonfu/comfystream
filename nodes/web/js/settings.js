@@ -251,44 +251,277 @@ async function showSettingsModal() {
         existingModal.remove();
     }
     
+    // Add CSS styles for the modal
+    const styleId = "comfystream-settings-styles";
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement("style");
+        style.id = styleId;
+        style.textContent = `
+            #comfystream-settings-modal {
+                position: fixed;
+                z-index: 10000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                backdrop-filter: blur(2px);
+                animation: cs-fade-in 0.2s ease-out;
+            }
+            
+            @keyframes cs-fade-in {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes cs-slide-in {
+                from { transform: translateY(-20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            
+            .cs-modal-content {
+                background-color: var(--comfy-menu-bg, #202020);
+                color: var(--comfy-text, #ffffff);
+                border-radius: 8px;
+                padding: 20px;
+                box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+                min-width: 450px;
+                max-width: 80%;
+                max-height: 80%;
+                overflow: auto;
+                position: relative;
+                animation: cs-slide-in 0.2s ease-out;
+                border: 1px solid var(--border-color, #444);
+            }
+            
+            .cs-close-button {
+                position: absolute;
+                right: 10px;
+                top: 10px;
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                color: var(--comfy-text, #ffffff);
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: background-color 0.2s;
+            }
+            
+            .cs-close-button:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+            
+            .cs-title {
+                margin-top: 0;
+                margin-bottom: 20px;
+                border-bottom: 1px solid var(--border-color, #444);
+                padding-bottom: 10px;
+                font-size: 18px;
+                font-weight: 500;
+            }
+            
+            .cs-current-config {
+                margin-bottom: 15px;
+                padding: 10px;
+                background-color: rgba(0, 0, 0, 0.2);
+                border-radius: 6px;
+                border: 1px solid var(--border-color, #444);
+                display: flex;
+                align-items: center;
+            }
+            
+            .cs-current-config-label {
+                font-weight: bold;
+                margin-right: 5px;
+            }
+            
+            .cs-input-group {
+                margin-bottom: 15px;
+                display: flex;
+                align-items: center;
+            }
+            
+            .cs-label {
+                width: 80px;
+                font-weight: 500;
+            }
+            
+            .cs-input {
+                flex: 1;
+                padding: 8px 10px;
+                background-color: var(--comfy-input-bg, #111);
+                color: var(--comfy-text, #fff);
+                border: 1px solid var(--border-color, #444);
+                border-radius: 4px;
+                transition: border-color 0.2s, box-shadow 0.2s;
+            }
+            
+            .cs-input:focus {
+                outline: none;
+                border-color: var(--comfy-primary-color, #4b5563);
+                box-shadow: 0 0 0 2px rgba(75, 85, 99, 0.3);
+            }
+            
+            .cs-section {
+                margin-top: 20px;
+            }
+            
+            .cs-section-title {
+                margin-bottom: 10px;
+                font-size: 16px;
+                font-weight: 500;
+            }
+            
+            .cs-configs-list {
+                max-height: 200px;
+                overflow-y: auto;
+                border: 1px solid var(--border-color, #444);
+                border-radius: 6px;
+                padding: 5px;
+                margin-bottom: 10px;
+                background-color: rgba(0, 0, 0, 0.1);
+            }
+            
+            .cs-config-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px;
+                border-bottom: 1px solid var(--border-color, #444);
+                transition: background-color 0.2s;
+            }
+            
+            .cs-config-item:last-child {
+                border-bottom: none;
+            }
+            
+            .cs-config-item:hover {
+                background-color: rgba(255, 255, 255, 0.05);
+            }
+            
+            .cs-config-item.selected {
+                background-color: rgba(65, 105, 225, 0.2);
+                border-radius: 4px;
+            }
+            
+            .cs-config-info {
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 250px;
+            }
+            
+            .cs-buttons-group {
+                display: flex;
+                gap: 5px;
+            }
+            
+            .cs-button {
+                padding: 6px 12px;
+                background-color: var(--comfy-menu-bg, #202020);
+                color: var(--comfy-text, #fff);
+                border: 1px solid var(--border-color, #444);
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.2s, border-color 0.2s;
+                font-size: 13px;
+            }
+            
+            .cs-button:hover:not(:disabled) {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-color: var(--comfy-primary-color, #4b5563);
+            }
+            
+            .cs-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            
+            .cs-button.primary {
+                background-color: var(--comfy-primary-color, #4b5563);
+                border-color: var(--comfy-primary-color, #4b5563);
+            }
+            
+            .cs-button.primary:hover {
+                background-color: var(--comfy-primary-color-hover, #374151);
+            }
+            
+            .cs-button.selected {
+                background-color: rgba(65, 105, 225, 0.5);
+            }
+            
+            .cs-button.delete:hover {
+                background-color: rgba(220, 38, 38, 0.2);
+                border-color: rgba(220, 38, 38, 0.5);
+            }
+            
+            .cs-add-group {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .cs-footer {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 20px;
+                gap: 10px;
+            }
+            
+            /* Scrollbar styling */
+            .cs-configs-list::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            .cs-configs-list::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 4px;
+            }
+            
+            .cs-configs-list::-webkit-scrollbar-thumb {
+                background-color: rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+            }
+            
+            .cs-configs-list::-webkit-scrollbar-thumb:hover {
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+            
+            /* Error state */
+            .cs-input.error {
+                border-color: #dc2626;
+                animation: cs-shake 0.4s ease-in-out;
+            }
+            
+            @keyframes cs-shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
     // Create modal container
     const modal = document.createElement("div");
     modal.id = "comfystream-settings-modal";
-    modal.style.position = "fixed";
-    modal.style.zIndex = "10000";
-    modal.style.left = "0";
-    modal.style.top = "0";
-    modal.style.width = "100%";
-    modal.style.height = "100%";
-    modal.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-    modal.style.display = "flex";
-    modal.style.justifyContent = "center";
-    modal.style.alignItems = "center";
     
     // Create modal content
     const modalContent = document.createElement("div");
-    modalContent.style.backgroundColor = "var(--comfy-menu-bg, #202020)";
-    modalContent.style.color = "var(--comfy-text, #ffffff)";
-    modalContent.style.borderRadius = "8px";
-    modalContent.style.padding = "20px";
-    modalContent.style.boxShadow = "0 0 20px rgba(0, 0, 0, 0.5)";
-    modalContent.style.minWidth = "450px";
-    modalContent.style.maxWidth = "80%";
-    modalContent.style.maxHeight = "80%";
-    modalContent.style.overflow = "auto";
-    modalContent.style.position = "relative";
+    modalContent.className = "cs-modal-content";
     
     // Create close button
     const closeButton = document.createElement("button");
     closeButton.textContent = "×";
-    closeButton.style.position = "absolute";
-    closeButton.style.right = "10px";
-    closeButton.style.top = "10px";
-    closeButton.style.background = "none";
-    closeButton.style.border = "none";
-    closeButton.style.fontSize = "20px";
-    closeButton.style.cursor = "pointer";
-    closeButton.style.color = "var(--comfy-text, #ffffff)";
+    closeButton.className = "cs-close-button";
     closeButton.onclick = () => {
         modal.remove();
     };
@@ -296,25 +529,18 @@ async function showSettingsModal() {
     // Create title
     const title = document.createElement("h3");
     title.textContent = "ComfyStream Server Settings";
-    title.style.marginTop = "0";
-    title.style.marginBottom = "20px";
-    title.style.borderBottom = "1px solid var(--border-color, #444)";
-    title.style.paddingBottom = "10px";
+    title.className = "cs-title";
     
     // Create settings form
     const form = document.createElement("div");
     
     // Current configuration indicator
     const currentConfigDiv = document.createElement("div");
-    currentConfigDiv.style.marginBottom = "15px";
-    currentConfigDiv.style.padding = "8px";
-    currentConfigDiv.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
-    currentConfigDiv.style.borderRadius = "4px";
-    currentConfigDiv.style.border = "1px solid var(--border-color, #444)";
+    currentConfigDiv.className = "cs-current-config";
     
     const currentConfigLabel = document.createElement("span");
     currentConfigLabel.textContent = "Active Configuration: ";
-    currentConfigLabel.style.fontWeight = "bold";
+    currentConfigLabel.className = "cs-current-config-label";
     
     const currentConfigName = document.createElement("span");
     const selectedName = settingsManager.getSelectedConfigName();
@@ -326,37 +552,28 @@ async function showSettingsModal() {
     
     // Host setting
     const hostGroup = document.createElement("div");
-    hostGroup.style.marginBottom = "15px";
-    hostGroup.style.display = "flex";
-    hostGroup.style.alignItems = "center";
+    hostGroup.className = "cs-input-group";
     
     const hostLabel = document.createElement("label");
     hostLabel.textContent = "Host:";
-    hostLabel.style.width = "80px";
+    hostLabel.className = "cs-label";
     
     const hostInput = document.createElement("input");
     hostInput.id = "comfystream-host";
     hostInput.type = "text";
     hostInput.value = settingsManager.settings.host;
-    hostInput.style.flex = "1";
-    hostInput.style.padding = "5px";
-    hostInput.style.backgroundColor = "var(--comfy-input-bg, #111)";
-    hostInput.style.color = "var(--comfy-text, #fff)";
-    hostInput.style.border = "1px solid var(--border-color, #444)";
-    hostInput.style.borderRadius = "4px";
+    hostInput.className = "cs-input";
     
     hostGroup.appendChild(hostLabel);
     hostGroup.appendChild(hostInput);
     
     // Port setting
     const portGroup = document.createElement("div");
-    portGroup.style.marginBottom = "15px";
-    portGroup.style.display = "flex";
-    portGroup.style.alignItems = "center";
+    portGroup.className = "cs-input-group";
     
     const portLabel = document.createElement("label");
     portLabel.textContent = "Port:";
-    portLabel.style.width = "80px";
+    portLabel.className = "cs-label";
     
     const portInput = document.createElement("input");
     portInput.id = "comfystream-port";
@@ -364,57 +581,36 @@ async function showSettingsModal() {
     portInput.min = "1024";
     portInput.max = "65535";
     portInput.value = settingsManager.settings.port;
-    portInput.style.flex = "1";
-    portInput.style.padding = "5px";
-    portInput.style.backgroundColor = "var(--comfy-input-bg, #111)";
-    portInput.style.color = "var(--comfy-text, #fff)";
-    portInput.style.border = "1px solid var(--border-color, #444)";
-    portInput.style.borderRadius = "4px";
+    portInput.className = "cs-input";
     
     portGroup.appendChild(portLabel);
     portGroup.appendChild(portInput);
     
     // Configurations section
     const configsSection = document.createElement("div");
-    configsSection.style.marginTop = "20px";
+    configsSection.className = "cs-section";
     
     const configsTitle = document.createElement("h4");
     configsTitle.textContent = "Saved Configurations";
-    configsTitle.style.marginBottom = "10px";
+    configsTitle.className = "cs-section-title";
     
     const configsList = document.createElement("div");
     configsList.id = "comfystream-configs-list";
-    configsList.style.maxHeight = "200px";
-    configsList.style.overflowY = "auto";
-    configsList.style.border = "1px solid var(--border-color, #444)";
-    configsList.style.borderRadius = "4px";
-    configsList.style.padding = "5px";
-    configsList.style.marginBottom = "10px";
+    configsList.className = "cs-configs-list";
     
     const configsAddGroup = document.createElement("div");
-    configsAddGroup.style.display = "flex";
-    configsAddGroup.style.gap = "10px";
+    configsAddGroup.className = "cs-add-group";
     
     const configNameInput = document.createElement("input");
     configNameInput.id = "comfystream-config-name";
     configNameInput.type = "text";
     configNameInput.placeholder = "Configuration name";
-    configNameInput.style.flex = "1";
-    configNameInput.style.padding = "5px";
-    configNameInput.style.backgroundColor = "var(--comfy-input-bg, #111)";
-    configNameInput.style.color = "var(--comfy-text, #fff)";
-    configNameInput.style.border = "1px solid var(--border-color, #444)";
-    configNameInput.style.borderRadius = "4px";
+    configNameInput.className = "cs-input";
     
     const addConfigButton = document.createElement("button");
     addConfigButton.id = "comfystream-add-config";
     addConfigButton.textContent = "Save Current";
-    addConfigButton.style.padding = "5px 10px";
-    addConfigButton.style.backgroundColor = "var(--comfy-menu-bg, #202020)";
-    addConfigButton.style.color = "var(--comfy-text, #fff)";
-    addConfigButton.style.border = "1px solid var(--border-color, #444)";
-    addConfigButton.style.borderRadius = "4px";
-    addConfigButton.style.cursor = "pointer";
+    addConfigButton.className = "cs-button primary";
     
     configsAddGroup.appendChild(configNameInput);
     configsAddGroup.appendChild(addConfigButton);
@@ -425,31 +621,18 @@ async function showSettingsModal() {
     
     // Footer with buttons
     const footer = document.createElement("div");
-    footer.style.display = "flex";
-    footer.style.justifyContent = "flex-end";
-    footer.style.marginTop = "20px";
-    footer.style.gap = "10px";
+    footer.className = "cs-footer";
     
     const cancelButton = document.createElement("button");
     cancelButton.textContent = "Cancel";
-    cancelButton.style.padding = "8px 16px";
-    cancelButton.style.backgroundColor = "var(--comfy-menu-bg, #202020)";
-    cancelButton.style.color = "var(--comfy-text, #fff)";
-    cancelButton.style.border = "1px solid var(--border-color, #444)";
-    cancelButton.style.borderRadius = "4px";
-    cancelButton.style.cursor = "pointer";
+    cancelButton.className = "cs-button";
     cancelButton.onclick = () => {
         modal.remove();
     };
     
     const saveButton = document.createElement("button");
     saveButton.textContent = "Save";
-    saveButton.style.padding = "8px 16px";
-    saveButton.style.backgroundColor = "var(--comfy-menu-bg, #202020)";
-    saveButton.style.color = "var(--comfy-text, #fff)";
-    saveButton.style.border = "1px solid var(--border-color, #444)";
-    saveButton.style.borderRadius = "4px";
-    saveButton.style.cursor = "pointer";
+    saveButton.className = "cs-button primary";
     saveButton.onclick = async () => {
         const host = hostInput.value;
         const port = parseInt(portInput.value);
@@ -505,69 +688,37 @@ async function showSettingsModal() {
             emptyMessage.style.padding = "10px";
             emptyMessage.style.color = "var(--comfy-text-muted, #aaa)";
             emptyMessage.style.fontStyle = "italic";
+            emptyMessage.style.textAlign = "center";
             configsList.appendChild(emptyMessage);
             return;
         }
         
         settingsManager.settings.configurations.forEach((config, index) => {
             const configItem = document.createElement("div");
-            configItem.style.display = "flex";
-            configItem.style.justifyContent = "space-between";
-            configItem.style.alignItems = "center";
-            configItem.style.padding = "8px 5px";
-            configItem.style.borderBottom = index < settingsManager.settings.configurations.length - 1 ? 
-                "1px solid var(--border-color, #444)" : "none";
-                
-            // Highlight the selected configuration
-            if (index === settingsManager.settings.selectedConfigIndex) {
-                configItem.style.backgroundColor = "rgba(65, 105, 225, 0.2)";
-                configItem.style.borderRadius = "4px";
-            }
+            configItem.className = `cs-config-item ${index === settingsManager.settings.selectedConfigIndex ? 'selected' : ''}`;
             
             const configInfo = document.createElement("span");
+            configInfo.className = "cs-config-info";
             configInfo.textContent = `${config.name} (${config.host}:${config.port})`;
             
             const buttonsGroup = document.createElement("div");
-            buttonsGroup.style.display = "flex";
-            buttonsGroup.style.gap = "5px";
+            buttonsGroup.className = "cs-buttons-group";
             
             const selectButton = document.createElement("button");
             selectButton.textContent = index === settingsManager.settings.selectedConfigIndex ? "Selected" : "Select";
-            selectButton.className = "comfystream-config-select";
+            selectButton.className = `cs-button comfystream-config-select ${index === settingsManager.settings.selectedConfigIndex ? 'selected' : ''}`;
             selectButton.dataset.index = index;
-            selectButton.style.padding = "3px 8px";
-            selectButton.style.backgroundColor = index === settingsManager.settings.selectedConfigIndex ? 
-                "rgba(65, 105, 225, 0.5)" : "var(--comfy-menu-bg, #202020)";
-            selectButton.style.color = "var(--comfy-text, #fff)";
-            selectButton.style.border = "1px solid var(--border-color, #444)";
-            selectButton.style.borderRadius = "4px";
-            selectButton.style.cursor = "pointer";
-            selectButton.style.fontSize = "12px";
             selectButton.disabled = index === settingsManager.settings.selectedConfigIndex;
             
             const loadButton = document.createElement("button");
             loadButton.textContent = "Load";
-            loadButton.className = "comfystream-config-load";
+            loadButton.className = "cs-button comfystream-config-load";
             loadButton.dataset.index = index;
-            loadButton.style.padding = "3px 8px";
-            loadButton.style.backgroundColor = "var(--comfy-menu-bg, #202020)";
-            loadButton.style.color = "var(--comfy-text, #fff)";
-            loadButton.style.border = "1px solid var(--border-color, #444)";
-            loadButton.style.borderRadius = "4px";
-            loadButton.style.cursor = "pointer";
-            loadButton.style.fontSize = "12px";
             
             const deleteButton = document.createElement("button");
             deleteButton.textContent = "Delete";
-            deleteButton.className = "comfystream-config-delete";
+            deleteButton.className = "cs-button delete comfystream-config-delete";
             deleteButton.dataset.index = index;
-            deleteButton.style.padding = "3px 8px";
-            deleteButton.style.backgroundColor = "var(--comfy-menu-bg, #202020)";
-            deleteButton.style.color = "var(--comfy-text, #fff)";
-            deleteButton.style.border = "1px solid var(--border-color, #444)";
-            deleteButton.style.borderRadius = "4px";
-            deleteButton.style.cursor = "pointer";
-            deleteButton.style.fontSize = "12px";
             
             buttonsGroup.appendChild(selectButton);
             buttonsGroup.appendChild(loadButton);
@@ -652,9 +803,9 @@ async function showSettingsModal() {
         } else {
             console.warn("[ComfyStream Settings] Cannot add config without a name");
             // Show a brief error message
-            configNameInput.style.borderColor = "red";
+            configNameInput.classList.add("error");
             setTimeout(() => {
-                configNameInput.style.borderColor = "var(--border-color, #444)";
+                configNameInput.classList.remove("error");
             }, 2000);
         }
     });

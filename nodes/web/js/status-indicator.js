@@ -134,10 +134,10 @@ class ComfyStreamStatusIndicator extends HTMLElement {
           --indicator-color-starting: #FFA500;
           --indicator-color-stopping: #FFC107;
           --indicator-border-color: #666;
-          --indicator-shadow-color-running: rgba(76, 175, 80, 0.6);
-          --indicator-shadow-color-stopped: rgba(244, 67, 54, 0.6);
-          --indicator-shadow-color-starting: rgba(255, 165, 0, 0.6);
-          --indicator-shadow-color-stopping: rgba(255, 193, 7, 0.6);
+          --indicator-shadow-color-running: rgba(76, 175, 80, 0.9);
+          --indicator-shadow-color-stopped: rgba(244, 67, 54, 0.9);
+          --indicator-shadow-color-starting: rgba(255, 165, 0, 0.9);
+          --indicator-shadow-color-stopping: rgba(255, 193, 7, 0.9);
         }
         
         .container {
@@ -155,7 +155,7 @@ class ComfyStreamStatusIndicator extends HTMLElement {
           border-radius: 50%;
           background-color: ${indicatorColor};
           border: 1px solid var(--indicator-border-color);
-          box-shadow: 0 0 5px ${indicatorShadowColor};
+          box-shadow: 0 0 3px ${indicatorShadowColor};
           transition: all 0.3s ease;
           flex-shrink: 0;
         }
