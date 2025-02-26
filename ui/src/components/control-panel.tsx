@@ -119,10 +119,10 @@ export const ControlPanel = ({
 }: ControlPanelProps) => {
   const { controlChannel } = usePeerContext();
   const { currentPrompts, setCurrentPrompts } = usePrompt();
-  const [availableNodes, setAvailableNodes] = useState<
-    Record<string, NodeInfo>
-  >({});
+  const [availableNodes, setAvailableNodes] = useState<Record<string, NodeInfo>[]>([{}]);
+  const [promptIdxToUpdate, setPromptIdxToUpdate] = useState<number>(0);
 
+  
   // Add ref to track last sent value and timeout
   const lastSentValueRef = React.useRef<{
     nodeId: string;
@@ -163,11 +163,8 @@ export const ControlPanel = ({
   }, [controlChannel]);
 
   const handleValueChange = (newValue: string) => {
-    const currentInput =
-      panelState.nodeId && panelState.fieldName
-        ? availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]
-        : null;
-
+    const currentInput = panelState.nodeId && panelState.fieldName ? availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName] : null;
+    
     if (currentInput) {
       // Validate against min/max if they exist for number types
       if (currentInput.type === "number") {
@@ -186,10 +183,7 @@ export const ControlPanel = ({
 
   // Modify the effect that sends updates with debouncing
   useEffect(() => {
-    const currentInput =
-      panelState.nodeId && panelState.fieldName
-        ? availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]
-        : null;
+    const currentInput = panelState.nodeId && panelState.fieldName ? availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName] : null;
     if (!currentInput || !currentPrompts) return;
 
     let isValidValue = true;
@@ -245,49 +239,42 @@ export const ControlPanel = ({
       }
 
       // Set a new timeout for the update
-      updateTimeoutRef.current = setTimeout(
-        () => {
+      updateTimeoutRef.current = setTimeout(() => {
           // Create updated prompt while maintaining current structure
-          const currentPrompt = currentPrompts[0];
-          const updatedPrompt = JSON.parse(JSON.stringify(currentPrompt)); // Deep clone
-          if (
-            updatedPrompt[panelState.nodeId] &&
-            updatedPrompt[panelState.nodeId].inputs
-          ) {
-            updatedPrompt[panelState.nodeId].inputs[panelState.fieldName] =
-              processedValue;
-
-            // Update last sent value
-            lastSentValueRef.current = {
-              nodeId: panelState.nodeId,
-              fieldName: panelState.fieldName,
-              value: processedValue,
-            };
-
-            // Send the full prompt update
-            const message = JSON.stringify({
-              type: "update_prompts",
-              prompts: [updatedPrompt],
-            });
-            controlChannel.send(message);
-
-            // Only update current prompt after sending
-            setCurrentPrompts([updatedPrompt]);
+          let hasUpdated = false;
+          const updatedPrompts = currentPrompts.map((prompt: any, idx: number) => {
+          if (idx !== promptIdxToUpdate) {
+            return prompt;
           }
-        },
-        currentInput.type.toLowerCase() === "number" ? 100 : 300,
-      ); // Shorter delay for numbers, longer for text
+            const updatedPrompt = JSON.parse(JSON.stringify(prompt)); // Deep clone
+            if (updatedPrompt[panelState.nodeId]?.inputs) {
+            updatedPrompt[panelState.nodeId].inputs[panelState.fieldName] = processedValue;
+            hasUpdated = true;
+          }
+          return updatedPrompt;
+        });
+
+        if (hasUpdated) {
+          // Update last sent value
+          lastSentValueRef.current = {
+            nodeId: panelState.nodeId,
+            fieldName: panelState.fieldName,
+            value: processedValue
+          };
+
+          // Send the full prompts update
+          const message = JSON.stringify({
+            type: "update_prompts",
+            prompts: updatedPrompts
+          });
+          controlChannel.send(message);
+
+          // Only update prompts after sending
+          setCurrentPrompts(updatedPrompts);
+        }
+      }, currentInput.type.toLowerCase() === 'number' ? 100 : 300); // Shorter delay for numbers, longer for text
     }
-  }, [
-    panelState.value,
-    panelState.nodeId,
-    panelState.fieldName,
-    panelState.isAutoUpdateEnabled,
-    controlChannel,
-    availableNodes,
-    currentPrompts,
-    setCurrentPrompts,
-  ]);
+  }, [panelState.value, panelState.nodeId, panelState.fieldName, panelState.isAutoUpdateEnabled, controlChannel, currentPrompts, setCurrentPrompts, availableNodes, promptIdxToUpdate]);
 
   const toggleAutoUpdate = () => {
     onStateChange({ isAutoUpdateEnabled: !panelState.isAutoUpdateEnabled });
@@ -307,8 +294,8 @@ export const ControlPanel = ({
   // Update the field selection handler
   const handleFieldSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedField = e.target.value;
-
-    const input = availableNodes[panelState.nodeId]?.inputs[selectedField];
+    
+    const input = availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[selectedField];
     if (input) {
       const initialValue = getInitialValue(input);
       onStateChange({
@@ -322,6 +309,13 @@ export const ControlPanel = ({
 
   return (
     <div className="flex flex-col gap-3 p-3">
+      <select value={promptIdxToUpdate} onChange={(e) => setPromptIdxToUpdate(parseInt(e.target.value))} className="p-2 border rounded">
+        {currentPrompts && currentPrompts.map((_: any, idx: number) => (
+          <option key={idx} value={idx}>
+            Prompt {idx}
+          </option>
+        ))}
+      </select>
       <select
         value={panelState.nodeId}
         onChange={(e) => {
@@ -334,7 +328,7 @@ export const ControlPanel = ({
         className="p-2 border rounded"
       >
         <option value="">Select Node</option>
-        {Object.entries(availableNodes).map(([id, info]) => (
+        {Object.entries(availableNodes[promptIdxToUpdate]).map(([id, info]) => (
           <option key={id} value={id}>
             {id} ({info.class_type})
           </option>
@@ -348,19 +342,11 @@ export const ControlPanel = ({
         className="p-2 border rounded"
       >
         <option value="">Select Field</option>
-        {panelState.nodeId &&
-          availableNodes[panelState.nodeId]?.inputs &&
-          Object.entries(availableNodes[panelState.nodeId].inputs)
-            .filter(([, info]) => {
-              const type =
-                typeof info.type === "string"
-                  ? info.type.toLowerCase()
-                  : String(info.type).toLowerCase();
-              return (
-                ["boolean", "number", "float", "int", "string"].includes(
-                  type,
-                ) || info.widget === "combo"
-              );
+        {panelState.nodeId && availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs && 
+          Object.entries(availableNodes[promptIdxToUpdate][panelState.nodeId].inputs)
+            .filter(([_, info]) => {
+              const type = typeof info.type === 'string' ? info.type.toLowerCase() : String(info.type).toLowerCase();
+              return ['boolean', 'number', 'float', 'int', 'string'].includes(type) || info.widget === 'combo';
             })
             .map(([field, info]) => (
               <option key={field} value={field}>
@@ -371,30 +357,22 @@ export const ControlPanel = ({
       </select>
 
       <div className="flex items-center gap-2">
-        {panelState.nodeId &&
-          panelState.fieldName &&
-          availableNodes[panelState.nodeId]?.inputs[panelState.fieldName] && (
-            <InputControl
-              input={
-                availableNodes[panelState.nodeId].inputs[panelState.fieldName]
-              }
-              value={panelState.value}
-              onChange={handleValueChange}
-            />
-          )}
-
-        {panelState.nodeId &&
-          panelState.fieldName &&
-          availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]
-            ?.type === "number" && (
-            <span className="text-sm text-gray-600">
-              {availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]
-                ?.min !== undefined &&
-                availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]
-                  ?.max !== undefined &&
-                `(${availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]?.min} - ${availableNodes[panelState.nodeId]?.inputs[panelState.fieldName]?.max})`}
-            </span>
-          )}
+        {panelState.nodeId && panelState.fieldName && availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName] && (
+          <InputControl
+            input={availableNodes[promptIdxToUpdate][panelState.nodeId].inputs[panelState.fieldName]}
+            value={panelState.value}
+            onChange={handleValueChange}
+          />
+        )}
+        
+        {panelState.nodeId && panelState.fieldName && availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName]?.type === 'number' && (
+          <span className="text-sm text-gray-600">
+            {availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName]?.min !== undefined && 
+             availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName]?.max !== undefined && 
+              `(${availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName]?.min} - ${availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName]?.max})`
+            }
+          </span>
+        )}
       </div>
 
       <button
@@ -402,10 +380,10 @@ export const ControlPanel = ({
         disabled={!controlChannel}
         className={`p-2 rounded ${
           !controlChannel
-            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-            : panelState.isAutoUpdateEnabled
-              ? "bg-green-500 text-white"
-              : "bg-red-500 text-white"
+            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+            : panelState.isAutoUpdateEnabled 
+              ? 'bg-green-500 text-white'
+              : 'bg-red-500 text-white'
         }`}
       >
         Auto-Update{" "}
