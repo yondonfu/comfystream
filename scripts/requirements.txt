@@ -1,5 +1,7 @@
-# TensorDock Spinup requirements.
+# TensorDock Spinup requirements
+requests
 geopy
 colorama
 qrcode
 qrcode_terminal
+click
