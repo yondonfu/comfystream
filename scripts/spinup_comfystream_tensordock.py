@@ -32,7 +32,7 @@ DEFAULT_MAX_PRICE = 0.5  # USD per hour
 MIN_REQUIREMENTS = {
     "minvCPUs": 8,
     "minRAM": 16,  # GB
-    "minStorage": 80,  # GB
+    "minStorage": 100,  # GB
     "minVRAM": 20,  # GB
     "minGPUCount": 1,
     "requiresRTX": True,
@@ -259,14 +259,12 @@ def get_current_location() -> Tuple:
 
 
 def geocode_location(
-    city: str, country: str, region: str, retries: int = 3, backoff_factor: float = 1
-):
+    location_str: str, retries: int = 3, backoff_factor: float = 1
+) -> Tuple[Optional[float], Optional[float]]:
     """Geocode a location using Nominatim with retries and caching.
 
     Args:
-        city: City name.
-        country: Country name.
-        region: Region name.
+        location_str: Location string to geocode (e.g. 'City, Country, Region)').
         retries: Number of retries for geocoding.
         backoff_factor: Backoff factor for retries.
 
@@ -275,7 +273,7 @@ def geocode_location(
     """
     for attempt in range(retries):
         try:
-            location = geolocator.geocode(f"{city}, {region}, {country}")
+            location = geolocator.geocode(location_str)
             if location:
                 return location.latitude, location.longitude
         except GeocoderTimedOut:
@@ -290,29 +288,35 @@ def geocode_location(
     return None, None
 
 
-def sort_nodes_by_distance(host_nodes: Dict) -> Dict:
+def sort_nodes_by_distance(
+    host_nodes: Dict, location: Optional[Tuple[float, float]]
+) -> List:
     """Sort host nodes by distance from the current location.
 
     Args:
         host_nodes: Dictionary of host nodes.
+        location: Location to sort the nodes relative to (latitude, longitude).
 
     Returns:
         List of host nodes sorted by distance.
     """
-    current_location = get_current_location()
-    if not current_location:
-        logger.error("Could not determine current location.")
-        return []
+    if not location:
+        location = get_current_location()
+        if not location:
+            logger.error("Could not determine current location.")
+            return []
 
     nodes_with_distance = []
     for node_id, node in host_nodes.items():
-        node_location = geocode_location(
-            node["location"]["city"],
-            node["location"]["country"],
-            node["location"]["region"],
-        )
+        location_parts = [
+            node["location"].get("city"),
+            node["location"].get("region"),
+            node["location"].get("country"),
+        ]
+        location_str = ", ".join(filter(None, location_parts))
+        node_location = geocode_location(location_str=location_str)
         if node_location:
-            distance = geodesic(current_location, node_location).kilometers
+            distance = geodesic(location, node_location).kilometers
             node["id"] = node_id
             nodes_with_distance.append((distance, node))
 
@@ -594,7 +598,13 @@ class TensorDockController:
         return False
 
     def deploy_comfystream_vm(
-        self, host_nodes, vm_name, password, public_ssh_key, expose_comfyui
+        self,
+        host_nodes: Dict,
+        vm_name: str,
+        password: str,
+        public_ssh_key: str,
+        expose_comfyui: bool,
+        location: Tuple[int, int] = None,
     ):
         """Deploys Comfystream on a VM, selecting the closest available host node.
 
@@ -605,12 +615,16 @@ class TensorDockController:
             password: Password for the VM (if provided).
             public_ssh_key: Public SSH key for the VM (if provided).
             expose_comfyui: Whether to expose ComfyUI publicly.
+            location: Location to search for host nodes close to (latitude, longitude).
+                If not provided, the current location is used.
 
         Returns:
             dict: Information about the deployed node, or None if deployment failed.
         """
         logger.info("Sorting nodes by distance from current location...")
-        sorted_host_nodes = sort_nodes_by_distance(host_nodes)
+        sorted_host_nodes = sort_nodes_by_distance(
+            host_nodes=host_nodes, location=location
+        )
         if not sorted_host_nodes:
             logger.error("Something went wrong while sorting host nodes by distance.")
             return None
@@ -739,6 +753,14 @@ class TensorDockController:
     is_flag=True,
     help="Generate QR codes for easy access.",
 )
+@click.option(
+    "--location",
+    default=None,
+    help=(
+        "Where to search for host nodes (e.g. City, Country, Region). If not provided, "
+        "the current location is used."
+    ),
+)
 def main(
     api_key,
     api_token,
@@ -749,6 +771,7 @@ def main(
     public_ssh_key,
     expose_comfyui,
     qr_codes,
+    location,
 ):
     """Main function that collects command line arguments and deploys or deletes a VM
     with Comfystream on TensorDock close to the user's location.
@@ -763,11 +786,15 @@ def main(
         public_ssh_key: The public SSH key for the VM.
         expose_comfyui: Whether to expose ComfyUI publicly.
         qr_codes: Whether to generate QR codes for easy access.
+        location: The location to search for host nodes (e.g. City, Country, Region).
     """
     api_key = api_key or click.prompt("TensorDock API Key", hide_input=True)
     api_token = api_token or click.prompt("TensorDock API Token", hide_input=True)
 
     controller = TensorDockController(api_key, api_token)
+
+    if location:
+        location = geocode_location(location_str=location)
 
     if delete:
         logger.info(f"Deleting VM '{delete}'...")
@@ -809,6 +836,7 @@ def main(
         password=password,
         public_ssh_key=public_ssh_key,
         expose_comfyui=expose_comfyui,
+        location=location,
     )
     if not node_info:
         logger.error("Failed to deploy Comfystream VM.")
