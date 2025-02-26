@@ -18,7 +18,8 @@ Homepage = "https://github.com/yondonfu/comfystream"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = {find = {where = ["src"]}}
+packages = {find = {where = ["src", "nodes"]}}
+
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
