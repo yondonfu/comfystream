@@ -1,4 +1,4 @@
-"""ComfyStream launcher node implementation"""
+"""ComfyStream API implementation"""
 import os
 import webbrowser
 from server import PromptServer
@@ -21,7 +21,7 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     
     # Dynamically determine the extension name from the directory structure
     try:
-        # Get the parent directory of the current file (launcher_node.py)
+        # Get the parent directory of the current file
         # Then navigate up to get the extension root directory
         EXTENSION_ROOT = pathlib.Path(__file__).parent.parent.parent
         # Get the extension name (the directory name)
@@ -39,6 +39,20 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     
     # Create server manager instance
     server_manager = LocalComfyStreamServer()
+    
+    @routes.get('/comfystream/extension_info')
+    async def get_extension_info(request):
+        """Return extension information including name and paths"""
+        try:
+            return web.json_response({
+                "success": True,
+                "extension_name": EXTENSION_NAME,
+                "static_route": STATIC_ROUTE,
+                "ui_url": f"{STATIC_ROUTE}/index.html"
+            })
+        except Exception as e:
+            logging.error(f"Error getting extension info: {str(e)}")
+            return web.json_response({"success": False, "error": str(e)}, status=500)
     
     @routes.post('/api/offer')
     async def proxy_offer(request):
