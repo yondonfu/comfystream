@@ -275,7 +275,16 @@ const extension = {
 
     // Setup function to handle menu registration based on settings
     setup() {
-        const useNewMenu = app.ui.settings.store.get("Comfy.UseNewMenu");
+        let useNewMenu = "Enabled"; // Default to new menu system
+        
+        // Safely check if the settings store exists
+        try {
+            if (app.ui.settings && app.ui.settings.store && typeof app.ui.settings.store.get === 'function') {
+                useNewMenu = app.ui.settings.store.get("Comfy.UseNewMenu") || "Enabled";
+            }
+        } catch (e) {
+            console.log("[ComfyStream] Could not access settings store, defaulting to new menu system");
+        }
 
         if (useNewMenu === "Disabled") {
             // Old menu system
