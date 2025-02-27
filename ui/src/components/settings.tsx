@@ -36,12 +36,13 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Select } from "./ui/select";
+import {Prompt} from "@/types";
 import { toast } from "sonner";
 
 export interface StreamConfig {
   streamUrl: string;
   frameRate: number;
-  prompts?: any;
+  prompts?: Prompt[] | null;
   selectedVideoDeviceId: string;
   selectedAudioDeviceId: string;
 }
@@ -120,10 +121,10 @@ interface ConfigFormProps {
 }
 
 interface PromptContextType {
-  originalPrompts: any;
-  currentPrompts: any;
-  setOriginalPrompts: (prompts: any) => void;
-  setCurrentPrompts: (prompts: any) => void;
+  originalPrompts: Prompt[] | null;
+  currentPrompts: Prompt[]| null;
+  setOriginalPrompts: (prompts: Prompt[]) => void;
+  setCurrentPrompts: (prompts: Prompt[]) => void;
 }
 
 export const PromptContext = createContext<PromptContextType>({
@@ -136,7 +137,7 @@ export const PromptContext = createContext<PromptContextType>({
 export const usePrompt = () => useContext(PromptContext);
 
 function ConfigForm({ config, onSubmit }: ConfigFormProps) {
-  const [prompts, setPrompts] = useState<any[]>([]);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const { setOriginalPrompts } = usePrompt();
   const [videoDevices, setVideoDevices] = useState<AVDevice[]>([]);
   const [audioDevices, setAudioDevices] = useState<AVDevice[]>([]);
@@ -177,7 +178,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
         description: "Please make sure your camera is connected and enabled.",
       });
     }
-  }, []);
+  }, [selectedVideoDevice]);
 
   const getAudioDevices = useCallback(async () => {
     try {
@@ -204,7 +205,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
         description: "Please make sure your microphone is connected and enabled.",
       });
     }
-  }, []);
+  }, [selectedAudioDevice]);
 
   // Handle device change events.
   useEffect(() => {

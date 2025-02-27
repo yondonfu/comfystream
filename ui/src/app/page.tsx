@@ -3,10 +3,11 @@
 import { Room } from "@/components/room";
 import { PromptContext } from "@/components/settings";
 import { useState, useEffect } from "react";
+import { Prompt } from "@/types";
 
 export default function Page() {
-  const [originalPrompts, setOriginalPrompts] = useState<any>(null);
-  const [currentPrompts, setCurrentPrompts] = useState<any>(null);
+  const [originalPrompts, setOriginalPrompts] = useState<Prompt[] | null>(null);
+  const [currentPrompts, setCurrentPrompts] = useState<Prompt[] | null>(null);
 
   // Update currentPrompt whenever originalPrompt changes
   useEffect(() => {
