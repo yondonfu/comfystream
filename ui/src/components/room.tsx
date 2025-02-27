@@ -121,12 +121,7 @@ function Stage({ connected, onStreamReady }: StageProps) {
   if (!connected || !remoteStream) {
     return (
       <>
-        <video
-          className="w-full h-full object-cover"
-          autoPlay
-          loop
-          playsInline
-        >
+        <video className="w-full h-full object-cover" autoPlay loop playsInline>
           <source src="/loading.mp4" type="video/mp4" />
         </video>
       </>

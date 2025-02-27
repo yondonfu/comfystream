@@ -134,7 +134,12 @@ interface WebcamProps {
   selectedAudioDeviceId: string;
 }
 
-export function Webcam({ onStreamReady, deviceId, frameRate, selectedAudioDeviceId }: WebcamProps) {
+export function Webcam({
+  onStreamReady,
+  deviceId,
+  frameRate,
+  selectedAudioDeviceId,
+}: WebcamProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
 
   const replaceStream = useCallback((newStream: MediaStream | null) => {
@@ -157,22 +162,28 @@ export function Webcam({ onStreamReady, deviceId, frameRate, selectedAudioDevice
 
     try {
       const constraints: MediaStreamConstraints = {
-        video: deviceId === "none" ? false : {
-          deviceId: { exact: deviceId },
-          width: { ideal: 512 },
-          height: { ideal: 512 },
-          aspectRatio: { ideal: 1 },
-          frameRate: { ideal: frameRate, max: frameRate },
-        },
-        audio: selectedAudioDeviceId === "none" ? false : {
-          deviceId: { exact: selectedAudioDeviceId },
-          sampleRate: 48000,
-          channelCount: 2,
-          sampleSize: 16,
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
+        video:
+          deviceId === "none"
+            ? false
+            : {
+                deviceId: { exact: deviceId },
+                width: { ideal: 512 },
+                height: { ideal: 512 },
+                aspectRatio: { ideal: 1 },
+                frameRate: { ideal: frameRate, max: frameRate },
+              },
+        audio:
+          selectedAudioDeviceId === "none"
+            ? false
+            : {
+                deviceId: { exact: selectedAudioDeviceId },
+                sampleRate: 48000,
+                channelCount: 2,
+                sampleSize: 16,
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false,
+              },
       };
 
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -198,7 +209,14 @@ export function Webcam({ onStreamReady, deviceId, frameRate, selectedAudioDevice
     return () => {
       replaceStream(null);
     };
-  }, [deviceId, frameRate, selectedAudioDeviceId, startWebcam, replaceStream, onStreamReady]);
+  }, [
+    deviceId,
+    frameRate,
+    selectedAudioDeviceId,
+    startWebcam,
+    replaceStream,
+    onStreamReady,
+  ]);
 
   const hasVideo = stream && stream.getVideoTracks().length > 0;
   const hasAudio = stream && stream.getAudioTracks().length > 0;
@@ -222,7 +240,7 @@ export function Webcam({ onStreamReady, deviceId, frameRate, selectedAudioDevice
       <StreamCanvas
         stream={stream}
         frameRate={frameRate}
-        onStreamReady={()=>{}} // Already handled in parent component.
+        onStreamReady={() => {}} // Already handled in parent component.
       />
     </div>
   );
