@@ -1,6 +1,5 @@
 import os
 import pathlib
-from .src.comfystream import tensor_cache as tensor_cache
 
 def ensure_init_files():
     """Create __init__.py files in comfy/ and comfy_extras/ directories if they don't exist"""
