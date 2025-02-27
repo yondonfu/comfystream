@@ -48,7 +48,7 @@ VM_SPECS = {
     "operating_system": "Ubuntu 22.04 LTS",
 }
 CLOUD_INIT_PATH = os.path.join(
-    os.path.dirname(__file__), "config", "cloud_init_comfystream.yaml"
+    os.path.dirname(__file__), "config", "cloud_init_comfystream_template.yaml"
 )
 
 
@@ -130,8 +130,14 @@ def is_strong_password(password: str, min_length: int = 32) -> bool:
     )
 
 
-def get_cloud_init_script() -> Tuple[str, Dict[str, str]]:
+def get_cloud_init_script(
+    docker_image: str = "livepeer/comfystream:latest",
+) -> Tuple[str, Dict[str, str]]:
     """Generate the cloud-init script using the template and replace placeholders.
+
+    Args:
+        docker_image: The Docker image to use for the Comfystream deployment (e.g.
+            'repository/image:tag').
 
     Returns:
         Tuple containing the cloud-init script as a string and a dictionary of
@@ -149,8 +155,10 @@ def get_cloud_init_script() -> Tuple[str, Dict[str, str]]:
     cloud_init_content = cloud_init_content.replace(
         "<PASSWORD_PLACEHOLDER>", encoded_password
     )
+    cloud_init_content = cloud_init_content.replace("<DOCKER_IMAGE>", docker_image)
     replacements = {
         "password": password,
+        "docker_image": docker_image,
     }
 
     return cloud_init_content, replacements
@@ -605,6 +613,7 @@ class TensorDockController:
         public_ssh_key: str,
         expose_comfyui: bool,
         location: Tuple[int, int] = None,
+        docker_image: str = "livepeer/comfystream:latest",
     ):
         """Deploys Comfystream on a VM, selecting the closest available host node.
 
@@ -617,6 +626,8 @@ class TensorDockController:
             expose_comfyui: Whether to expose ComfyUI publicly.
             location: Location to search for host nodes close to (latitude, longitude).
                 If not provided, the current location is used.
+            docker_image: Docker image to use for the Comfystream deployment (e.g.
+            'repository/image:tag').
 
         Returns:
             dict: Information about the deployed node, or None if deployment failed.
@@ -630,7 +641,9 @@ class TensorDockController:
             return None
 
         # Retrieve cloud init and port count based on ComfyUI exposure.
-        cloud_init_script, placeholders = get_cloud_init_script()
+        cloud_init_script, placeholders = get_cloud_init_script(
+            docker_image=docker_image
+        )
         ports_count = 4 if expose_comfyui else 3
         if expose_comfyui:
             logger.warning(
@@ -761,6 +774,14 @@ class TensorDockController:
         "the current location is used."
     ),
 )
+@click.option(
+    "--docker-image",
+    default="livepeer/comfystream:latest",
+    help=(
+        "Docker image to use for the Comfystream deployment (e.g. "
+        "'repository/image:tag')."
+    ),
+)
 def main(
     api_key,
     api_token,
@@ -772,6 +793,7 @@ def main(
     expose_comfyui,
     qr_codes,
     location,
+    docker_image,
 ):
     """Main function that collects command line arguments and deploys or deletes a VM
     with Comfystream on TensorDock close to the user's location.
@@ -837,6 +859,7 @@ def main(
         public_ssh_key=public_ssh_key,
         expose_comfyui=expose_comfyui,
         location=location,
+        docker_image=docker_image,
     )
     if not node_info:
         logger.error("Failed to deploy Comfystream VM.")

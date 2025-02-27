@@ -15,6 +15,6 @@ runcmd:
     EOF
   - sudo systemctl restart caddy
   # Install, configure, and start Comfystream and ComfyUI
-  - docker pull livepeer/comfystream:latest
+  - docker pull <DOCKER_IMAGE>
   - mkdir -p ~/models/ComfyUI--models ~/models/ComfyUI--output
-  - docker run --restart unless-stopped --stop-timeout 300 --gpus all --name comfystream -v ${HOME}/models/ComfyUI--models:/workspace/ComfyUI/models -v ${HOME}/models/ComfyUI--output:/workspace/ComfyUI/output -p 3000:3000 -p 8188:8188 -p 8889:8889 livepeer/comfystream:latest --download-models --build-engines --server
+  - docker run --restart unless-stopped --stop-timeout 300 --gpus all --name comfystream -v ${HOME}/models/ComfyUI--models:/workspace/ComfyUI/models -v ${HOME}/models/ComfyUI--output:/workspace/ComfyUI/output -p 3000:3000 -p 8188:8188 -p 8889:8889 <DOCKER_IMAGE> --download-models --build-engines --server
