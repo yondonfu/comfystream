@@ -3,6 +3,7 @@ import subprocess
 import argparse
 import logging
 import pathlib
+import sys
 import tarfile
 import tempfile
 import urllib.request
@@ -71,21 +72,6 @@ def download_and_extract_ui_files(version: str):
             logger.error(f"Error downloading or extracting files: {e}")
             raise
 
-def install_custom_node_req(workspace: str):
-    custom_nodes_path = os.path.join(workspace, "custom_nodes")
-    if not os.path.exists(custom_nodes_path):
-        logger.info("No custom nodes found.")
-        return
-    
-    for folder in os.listdir(custom_nodes_path):
-        folder_path = os.path.join(custom_nodes_path, folder)
-        req_file = os.path.join(folder_path, "requirements.txt")
-
-        if os.path.isdir(folder_path) and os.path.isfile(req_file):
-            logger.info(f"Installing requirements for {folder}...")
-            subprocess.run(["pip", "install", "-r", req_file], check=True)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Install custom node requirements")
     parser.add_argument(
@@ -123,6 +109,5 @@ if __name__ == "__main__":
         logger.info("Ensuring __init__.py files exist in ComfyUI directories...")
         ensure_init_files(workspace)
         logger.info("Installing custom node requirements...")
-        install_custom_node_req(workspace)
-    
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "."])
     logger.info("Installation completed successfully.")
