@@ -32,7 +32,7 @@ COPY . /workspace/comfystream
 
 # Copy ComfyStream files into ComfyUI
 COPY ./nodes/ /workspace/ComfyUI/custom_nodes/
-COPY ./workflows/ui* /workspace/ComfyUI/user/default/workflows/examples
+COPY ./workflows* /workspace/ComfyUI/user/default/workflows
 
 # WORKDIR /workspace/comfystream
 
