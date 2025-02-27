@@ -53,15 +53,23 @@ def download_and_extract_ui_files(version: str):
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
     base_url = urllib.parse.urljoin("https://github.com/yondonfu/comfystream/releases/download/", f"v{version}/static.tar.gz")
     
-    # Download tar.gz file
-    with tempfile.NamedTemporaryFile() as tmp_file:
-        logger.info(f"Downloading {base_url}")
-        urllib.request.urlretrieve(base_url, tmp_file.name)
+    # Create a temporary directory instead of a temporary file
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Define the path for the downloaded file
+        download_path = os.path.join(temp_dir, "static.tar.gz")
         
-        # Extract contents
-        logger.info(f"Extracting files to {output_dir}")
-        with tarfile.open(tmp_file.name, 'r:gz') as tar:
-            tar.extractall(path=output_dir)
+        # Download tar.gz file
+        logger.info(f"Downloading {base_url}")
+        try:
+            urllib.request.urlretrieve(base_url, download_path)
+            
+            # Extract contents
+            logger.info(f"Extracting files to {output_dir}")
+            with tarfile.open(download_path, 'r:gz') as tar:
+                tar.extractall(path=output_dir)
+        except Exception as e:
+            logger.error(f"Error downloading or extracting files: {e}")
+            raise
 
 def install_custom_node_req(workspace: str):
     custom_nodes_path = os.path.join(workspace, "custom_nodes")
