@@ -4,8 +4,10 @@ import React, { useState, useEffect } from "react";
 import { usePeerContext } from "@/context/peer-context";
 import { usePrompt } from "./settings";
 
+type InputValue = string | number | boolean;
+
 interface InputInfo {
-  value: any;
+  value: InputValue;
   type: string;
   min?: number;
   max?: number;
@@ -116,7 +118,7 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
   const lastSentValueRef = React.useRef<{
     nodeId: string;
     fieldName: string;
-    value: any;
+    value: InputValue;
   } | null>(null);
   const updateTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -174,7 +176,7 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
     if (!currentInput || !currentPrompts) return;
 
     let isValidValue = true;
-    let processedValue: any = panelState.value;
+    let processedValue: InputValue = panelState.value;
 
     // Validate and process value based on type
     switch (currentInput.type.toLowerCase()) {
@@ -305,7 +307,7 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
         <option value="">Select Field</option>
         {panelState.nodeId && availableNodes[panelState.nodeId]?.inputs && 
           Object.entries(availableNodes[panelState.nodeId].inputs)
-            .filter(([_, info]) => {
+            .filter(([, info]) => {
               const type = typeof info.type === 'string' ? info.type.toLowerCase() : String(info.type).toLowerCase();
               return ['boolean', 'number', 'float', 'int', 'string'].includes(type) || info.widget === 'combo';
             })

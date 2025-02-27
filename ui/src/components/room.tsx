@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ControlPanelsContainer } from "@/components/control-panels-container";
+
 interface MediaStreamPlayerProps {
   stream: MediaStream;
 }
@@ -20,7 +21,6 @@ interface MediaStreamPlayerProps {
 function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [needsPlayButton, setNeedsPlayButton] = useState(false);
-  const hasVideo = stream.getVideoTracks().length > 0;
 
   useEffect(() => {
     if (!videoRef.current || !stream) return;
@@ -172,7 +172,7 @@ export const Room = () => {
     streamUrl: "",
     frameRate: 0,
     selectedVideoDeviceId: "",
-    selectedAudioDeviceId: "", // New property for audio device
+    selectedAudioDeviceId: "",
     prompts: null,
   });
 
@@ -215,9 +215,6 @@ export const Room = () => {
     setIsConnected(false);
   }, []);
 
-  // Check if we have video tracks in the local stream
-  const hasLocalVideo = localStream && localStream.getVideoTracks().length > 0;
-
   return (
     <main className="fixed inset-0 overflow-hidden overscroll-none">
       <meta
@@ -227,7 +224,7 @@ export const Room = () => {
       <div className="fixed inset-0 z-[-1] bg-cover bg-[black]">
         <PeerConnector
           url={config.streamUrl}
-          prompts={config.prompts}
+          prompts={config.prompts ?? null}
           connect={connect}
           onConnected={handleConnected}
           onDisconnected={handleDisconnected}
