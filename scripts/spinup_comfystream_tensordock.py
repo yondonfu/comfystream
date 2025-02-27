@@ -155,7 +155,7 @@ def get_cloud_init_script(
     cloud_init_content = cloud_init_content.replace(
         "<PASSWORD_PLACEHOLDER>", encoded_password
     )
-    cloud_init_content = cloud_init_content.replace("<DOCKER_IMAGE>", docker_image)
+    cloud_init_content = cloud_init_content.replace("<DOCKER_IMAGE_PLACEHOLDER>", docker_image)
     replacements = {
         "password": password,
         "docker_image": docker_image,
