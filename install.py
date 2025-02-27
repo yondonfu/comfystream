@@ -85,13 +85,27 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     
-    workspace = args.workspace if args.workspace else os.getcwd()
-    if not args.workspace:
-        if os.path.exists(os.path.join(workspace, "comfy")):
-            logger.info(f"No workspace specified, using current directory: {workspace}")
-        else:
-            logger.warning("No 'comfy' folder found in current directory. Please specify a valid workspace path to fully install")
-            workspace = None
+    workspace = args.workspace
+    if workspace is None:
+        # Look up to 3 directories up for ComfyUI
+        current = os.getcwd()
+        for _ in range(4):  # Check current dir + 3 levels up
+            if os.path.exists(os.path.join(current, "comfy")):
+                workspace = current
+                logger.info(f"Found ComfyUI workspace at: {workspace}")
+                break
+            elif os.path.exists(os.path.join(current, "ComfyUI/comfy")):
+                workspace = os.path.join(current, "ComfyUI")
+                logger.info(f"Found ComfyUI workspace at: {workspace}")
+                break
+            elif os.path.exists(os.path.join(current, "comfyui/comfy")):
+                workspace = os.path.join(current, "comfyui")
+                logger.info(f"Found ComfyUI workspace at: {workspace}")
+                break
+            current = os.path.dirname(current)
+
+    if workspace is None:
+        logger.warning("No ComfyUI workspace found. Please specify a valid workspace path to fully install")
 
     logger.info("Downloading and extracting UI files...")
     version = get_project_version(os.getcwd())
