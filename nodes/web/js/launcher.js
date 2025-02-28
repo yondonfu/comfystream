@@ -169,21 +169,17 @@ async function controlServer(action) {
 
 async function openUI() {
     try {
-        // Get settings from the settings manager
-        const settings = settingsManager.getCurrentHostPort();
-        
-        const response = await fetch('/launch_comfystream', {
-            method: 'POST',
+        // Get extension info which contains the correct UI URL
+        const response = await fetch('/comfystream/extension_info', {
+            method: 'GET',
             headers: { 
-                'Content-Type': 'application/json',
                 'Accept': 'application/json'
-            },
-            body: JSON.stringify({ settings })
+            }
         });
         
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("[ComfyStream] UI launch returned error response:", response.status, errorText);
+            console.error("[ComfyStream] UI info returned error response:", response.status, errorText);
             try {
                 const errorData = JSON.parse(errorText);
                 throw new Error(errorData.error || `Server error: ${response.status}`);
@@ -195,8 +191,14 @@ async function openUI() {
         const data = await response.json();
         data.url = "./extensions/comfystream/static/index.html"
         if (!data.success) {
-            throw new Error(data.error || 'Unknown error launching ComfyStream');
+            throw new Error(data.error || 'Unknown error getting ComfyStream UI info');
         }
+        
+        // Use the current origin with the static route
+        const uiUrl = `${window.location.origin}${data.static_route}/index.html`;
+        
+        // Open the URL in a new tab
+        window.open(uiUrl, '_blank');
     } catch (error) {
         console.error('[ComfyStream] Error launching ComfyStream:', error);
         app.ui.dialog.show('Error', error.message || 'Failed to launch ComfyStream');
