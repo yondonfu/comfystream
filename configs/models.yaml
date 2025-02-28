@@ -57,3 +57,9 @@ models:
     url: "https://civitai.com/api/download/models/276570?type=Model&format=SafeTensor"
     path: "loras/SD1.5/ral-chrome-sd15.safetensors"
     type: "lora"
+
+  outfitToOutfit_v20:
+    name: "outfitToOutfit_v20"
+    url: "https://huggingface.co/EmmaJohnson311/outfitToOutfit/resolve/main/outfitToOutfit_v20_sd15.safetensors"
+    path: "controlnet/outfitToOutfit_v20.safetensors"
+    type: "controlnet"

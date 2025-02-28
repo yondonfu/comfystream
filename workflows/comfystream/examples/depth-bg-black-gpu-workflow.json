@@ -17,7 +17,7 @@
         0
       ],
       "backgrounds": [
-        "20",
+        "21",
         0
       ],
       "foreground_masks": [
@@ -70,7 +70,7 @@
   },
   "15": {
     "inputs": {
-      "engine": "depth_anything_v2_vitb-fp16.engine",
+      "engine": "depth_anything_vitl14-fp16.engine",
       "images": [
         "1",
         0
@@ -81,19 +81,17 @@
       "title": "Depth Anything Tensorrt"
     }
   },
-  "20": {
+  "21": {
     "inputs": {
-      "kernel_size": 61,
-      "sigma": 7,
-      "mode": "cuda",
+      "color": "black",
       "images": [
         "1",
         0
       ]
     },
-    "class_type": "GaussianBlur",
+    "class_type": "BackgroundColor",
     "_meta": {
-      "title": "GaussianBlur"
+      "title": "BackgroundColor"
     }
   }
 }

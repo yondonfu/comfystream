@@ -1,7 +1,7 @@
 {
   "3": {
     "inputs": {
-      "unet_name": "ComfyUI_STAT_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+      "unet_name": "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
       "model_type": "SD15"
     },
     "class_type": "TensorRTLoader",
@@ -50,7 +50,7 @@
   },
   "8": {
     "inputs": {
-      "control_net_name": "1.5/control_v11f1p_sd15_depth_fp16.safetensors"
+      "control_net_name": "control_v11f1p_sd15_depth_fp16.safetensors"
     },
     "class_type": "ControlNetLoader",
     "_meta": {
@@ -353,7 +353,7 @@
   },
   "46": {
     "inputs": {
-      "lora_name": "SD1.5/ral-polygon-sd15 (1).safetensors",
+      "lora_name": "SD1.5/ral-polygon-sd15.safetensors",
       "strength_model": 1.1,
       "strength_clip": 1
     },
@@ -374,7 +374,7 @@
   },
   "48": {
     "inputs": {
-      "engine": "depth_anything_v2_vitb-fp16.engine",
+      "engine": "depth_anything_vitl14-fp16.engine",
       "images": [
         "47",
         0

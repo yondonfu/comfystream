@@ -1,7 +1,7 @@
 {
   "2": {
     "inputs": {
-      "engine": "depth_anything_v2_vitl_fp16.engine",
+      "engine": "depth_anything_vitl14-fp16.engine",
       "images": [
         "26",
         0
@@ -14,7 +14,7 @@
   },
   "3": {
     "inputs": {
-      "unet_name": "ComfyUI_STAT_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+      "unet_name": "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
       "model_type": "SD15"
     },
     "class_type": "TensorRTLoader",
@@ -50,7 +50,7 @@
   },
   "7": {
     "inputs": {
-      "seed": 664544921666216,
+      "seed": 59962529669489,
       "steps": 2,
       "cfg": 1,
       "sampler_name": "lcm",
@@ -80,7 +80,7 @@
   },
   "8": {
     "inputs": {
-      "control_net_name": "1.5/control_v11f1p_sd15_depth_fp16.safetensors"
+      "control_net_name": "control_v11f1p_sd15_depth_fp16.safetensors"
     },
     "class_type": "ControlNetLoader",
     "_meta": {
@@ -209,7 +209,7 @@
   },
   "19": {
     "inputs": {
-      "strength": 0.4,
+      "strength": 0.9,
       "start_percent": 0,
       "end_percent": 1,
       "positive": [
@@ -225,7 +225,7 @@
         0
       ],
       "image": [
-        "26",
+        "22",
         0
       ]
     },
@@ -236,7 +236,7 @@
   },
   "20": {
     "inputs": {
-      "control_net_name": "outfitToOutfit_v20.safetensors"
+      "control_net_name": "control_v2p_sd15_mediapipe_face.safetensors"
     },
     "class_type": "ControlNetLoader",
     "_meta": {
@@ -262,7 +262,11 @@
     "inputs": {
       "max_faces": 1,
       "min_confidence": 0.5,
-      "resolution": 512
+      "resolution": 512,
+      "image": [
+        "26",
+        0
+      ]
     },
     "class_type": "MediaPipe-FaceMeshPreprocessor",
     "_meta": {

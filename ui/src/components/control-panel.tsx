@@ -4,8 +4,10 @@ import React, { useState, useEffect } from "react";
 import { usePeerContext } from "@/context/peer-context";
 import { usePrompt } from "./settings";
 
+type InputValue = string | number | boolean;
+
 interface InputInfo {
-  value: any;
+  value: InputValue;
   type: string;
   min?: number;
   max?: number;
@@ -118,7 +120,7 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
   const lastSentValueRef = React.useRef<{
     nodeId: string;
     fieldName: string;
-    value: any;
+    value: InputValue;
   } | null>(null);
   const updateTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -176,7 +178,7 @@ export const ControlPanel = ({ panelState, onStateChange }: ControlPanelProps) =
     if (!currentInput || !currentPrompts) return;
 
     let isValidValue = true;
-    let processedValue: any = panelState.value;
+    let processedValue: InputValue = panelState.value;
 
     // Validate and process value based on type
     switch (currentInput.type.toLowerCase()) {

@@ -14,7 +14,6 @@ import {
 function StreamCanvas({
   stream,
   frameRate,
-  onStreamReady,
 }: {
   stream: MediaStream | null;
   frameRate: number;
@@ -208,7 +207,7 @@ export function Webcam({ onStreamReady, deviceId, frameRate, selectedAudioDevice
       <StreamCanvas
         stream={stream}
         frameRate={frameRate}
-        onStreamReady={() => {}} // We handle stream ready in the parent component
+        onStreamReady={()=>{}} // Already handled in parent component.
       />
     </div>
   );
