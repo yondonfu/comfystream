@@ -3,13 +3,14 @@
 from .tensor_utils import *
 from .video_stream_utils import *
 from .api import *
+from .web import *
 
 # Collect all NODE_CLASS_MAPPINGS and NODE_DISPLAY_NAME_MAPPINGS from submodules
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 # Import and update mappings from submodules
-for module in [tensor_utils, video_stream_utils, api]:
+for module in [tensor_utils, video_stream_utils, api, web]:
     if hasattr(module, 'NODE_CLASS_MAPPINGS'):
         NODE_CLASS_MAPPINGS.update(module.NODE_CLASS_MAPPINGS)
     if hasattr(module, 'NODE_DISPLAY_NAME_MAPPINGS'):
