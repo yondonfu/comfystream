@@ -1,6 +1,7 @@
 /**
  * @file Contains a StreamSettings component for configuring stream settings.
  */
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,7 +53,7 @@ interface AVDevice {
   label: string;
 }
 
-export const DEFAULT_CONFIG: StreamConfig = {
+const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
     process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8889",
   frameRate: 30,
@@ -72,8 +73,14 @@ export function StreamSettings({
   onSave,
 }: StreamSettingsProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const searchParams = useSearchParams();
 
-  const [config, setConfig] = useState<StreamConfig>(DEFAULT_CONFIG);
+  const initialConfig: StreamConfig = {
+    ...DEFAULT_CONFIG,
+    streamUrl: searchParams.get("streamUrl") || DEFAULT_CONFIG.streamUrl,
+    frameRate: parseInt(searchParams.get("frameRate") || `${DEFAULT_CONFIG.frameRate}`, 10),
+  }
+  const [config, setConfig] = useState<StreamConfig>(initialConfig);
 
   const handleSubmit = (config: StreamConfig) => {
     setConfig(config);
