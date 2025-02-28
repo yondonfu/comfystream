@@ -34,9 +34,11 @@ RUN conda run -n comfystream --no-capture-output pip install aiortc aiohttp requ
 # Run setup_nodes (cached unless setup_nodes.py or nodes/ changes)
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
 
-# Copy comfystream and example workflows to ComfyUI 
+# Copy ComfyStream files into ComfyUI
 COPY . /workspace/comfystream
-COPY ./workflows* /workspace/ComfyUI/user/default/workflows
+
+# Copy comfystream and example workflows to ComfyUI
+COPY ./workflows/comfyui/* /workspace/ComfyUI/user/default/workflows
 
 # Install ComfyUI requirements
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip install -r requirements.txt --root-user-action=ignore
