@@ -3,10 +3,11 @@ write_files:
   - path: /etc/caddy/comfystream.caddy
     content: |
       :8189 {
-          reverse_proxy http://127.0.0.1:8188
-          basic_auth {
-              comfyadmin <PASSWORD_PLACEHOLDER>
-          }
+        reverse_proxy http://127.0.0.1:8188
+        tls /etc/caddy/certificates/selfsigned.crt /etc/caddy/certificates/selfsigned.key
+        basic_auth {
+          comfyadmin <PASSWORD_PLACEHOLDER>
+        }
       }
 
 runcmd:
@@ -14,8 +15,14 @@ runcmd:
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/testing/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-testing-archive-keyring.gpg
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/testing/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-testing.list
   - sudo apt update
-  - sudo apt install -y caddy
-  - echo 'import /etc/caddy/comfystream.caddy' | sudo tee -a /etc/caddy/Caddyfile
+  - sudo apt install -y caddy openssl
+  - sudo mkdir -p /etc/caddy/certificates
+  - |
+    sudo openssl req -x509 -newkey rsa:4096 -keyout /etc/caddy/certificates/selfsigned.key \
+    -out /etc/caddy/certificates/selfsigned.crt -days 365 -nodes \
+    -subj "/C=US/ST=State/L=City/O=Company/OU=Org/CN=localhost"
+  - sudo chown -R caddy:caddy /etc/caddy/certificates
+  - echo 'import /etc/caddy/comfystream.caddy' | sudo tee -a /etc/caddy/Caddyfile > /dev/null
   - sudo systemctl restart caddy
   # Install, configure, and start Comfystream and ComfyUI
   - docker pull <DOCKER_IMAGE_PLACEHOLDER>
