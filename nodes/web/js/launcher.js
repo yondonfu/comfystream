@@ -189,7 +189,6 @@ async function openUI() {
         }
 
         const data = await response.json();
-        data.url = "./extensions/comfystream/static/index.html"
         if (!data.success) {
             throw new Error(data.error || 'Unknown error getting ComfyStream UI info');
         }
