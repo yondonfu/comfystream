@@ -83,9 +83,11 @@ pip install git+https://github.com/yondonfu/comfystream.git
 
 ### Custom Nodes
 
-comfystream uses a few custom nodes to support running workflows.
+comfystream uses a few auxiliary custom nodes to support running workflows. 
 
-Copy the custom nodes into the `custom_nodes` folder of your ComfyUI workspace:
+**Note:** If you are using comfystream as a custom node in ComfyUI, you can skip the following steps.
+
+If you are using comfystream as a standalone application, copy the auxiliary custom nodes into the `custom_nodes` folder of your ComfyUI workspace:
 
 ```bash
 cp -r nodes/* custom_nodes/
@@ -177,6 +179,7 @@ Install dependencies
 ```bash
 cd ui
 npm install --legacy-peer-deps
+npm install --save-dev cross-env
 ```
 
 Run local dev server:

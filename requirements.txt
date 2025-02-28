@@ -1,3 +1,6 @@
+asyncio
+comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@ce3583ad42c024b8f060d0002cbe20c265da6dc8
 aiortc
 aiohttp
+toml
 twilio

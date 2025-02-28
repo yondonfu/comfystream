@@ -63,3 +63,9 @@ models:
     url: "https://huggingface.co/EmmaJohnson311/outfitToOutfit/resolve/main/outfitToOutfit_v20_sd15.safetensors"
     path: "controlnet/outfitToOutfit_v20.safetensors"
     type: "controlnet"
+
+  cliptext:
+    name: "ClipTextModel"
+    url: "https://huggingface.co/Lykon/dreamshaper-8/resolve/main/text_encoder/model.fp16.safetensors"
+    path: "text_encoders/CLIPText/model.fp16.safetensors"
+    type: "text_encoder"
