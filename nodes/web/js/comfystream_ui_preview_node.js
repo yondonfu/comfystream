@@ -12,6 +12,9 @@ app.registerExtension({
             // Set default size for the node type
             nodeType.size = [700, 800];
             
+            // Make node resizable
+            nodeType.resizable = true;
+            
             // Save the original onNodeCreated method
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             
@@ -21,10 +24,11 @@ app.registerExtension({
                 this.title = "ComfyStream UI";
                 this.color = "#4B9CD3"; // Blue color for the node
                 
-                // Set size - make it larger to accommodate the iframe
-                this.size = nodeType.size.slice();
+                // Set initial size
+                this.size = [700, 800];
                 
                 // Make the node resizable
+                this.resizable = true;
                 this.flags.resizable = true;
                 
                 // Call the original onNodeCreated method if it exists
@@ -107,25 +111,23 @@ app.registerExtension({
                     });
                 });
                 
-                // Force update the iframe size after a short delay to ensure proper rendering
-                setTimeout(() => {
-                    this.updateIframeSize();
-                }, 100);
+                // Update iframe size
+                this.updateIframeSize();
                 
                 return result;
             };
             
-            // Save the original onResize method
-            const onResize = nodeType.prototype.onResize;
-            
-            // Override the onResize method
+            // Override the resize method to allow both expanding and shrinking
             nodeType.prototype.onResize = function(size) {
-                // Call the original onResize method if it exists
-                if (onResize) {
-                    onResize.call(this, size);
-                }
+                // Update the size
+                this.size[0] = size[0];
+                this.size[1] = size[1];
                 
+                // Update the iframe size
                 this.updateIframeSize();
+                
+                // Force canvas update
+                this.setDirtyCanvas(true, true);
             };
             
             // Add a helper method to update iframe size
@@ -149,33 +151,6 @@ app.registerExtension({
             nodeType.prototype.onExecute = function() {
                 // Trigger the output
                 this.triggerSlot(0);
-            };
-            
-            // Override the default size method
-            nodeType.prototype.getSize = function() {
-                return [this.size[0], this.size[1]];
-            };
-            
-            // Override the computeSize method to maintain our size
-            nodeType.prototype.computeSize = function() {
-                return [this.size[0], this.size[1]];
-            };
-            
-            // Override the onAdded method to ensure size is set when added to graph
-            const onAdded = nodeType.prototype.onAdded;
-            nodeType.prototype.onAdded = function() {
-                if (onAdded) {
-                    onAdded.call(this);
-                }
-                
-                // Ensure size is set correctly when added to graph
-                this.size = nodeType.size.slice();
-                
-                // Force a size update
-                setTimeout(() => {
-                    this.updateIframeSize();
-                    this.setDirtyCanvas(true, true);
-                }, 100);
             };
         }
     }
