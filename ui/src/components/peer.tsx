@@ -14,10 +14,10 @@ export interface PeerProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const PeerConnector = (props: PeerProps) => {
   const peer = usePeer(props);
-  
+
   console.log("[PeerConnector] Peer context value:", {
     hasControlChannel: !!peer?.controlChannel,
-    controlChannelState: peer?.controlChannel?.readyState
+    controlChannelState: peer?.controlChannel?.readyState,
   });
 
   return (

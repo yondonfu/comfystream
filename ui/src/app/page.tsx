@@ -17,12 +17,14 @@ export default function Page() {
   }, [originalPrompts]);
 
   return (
-    <PromptContext.Provider value={{ 
-      originalPrompts, 
-      currentPrompts,
-      setOriginalPrompts, 
-      setCurrentPrompts 
-    }}>
+    <PromptContext.Provider
+      value={{
+        originalPrompts,
+        currentPrompts,
+        setOriginalPrompts,
+        setCurrentPrompts,
+      }}
+    >
       <div className="flex flex-col">
         <div className="w-full">
           <Room />

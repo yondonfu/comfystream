@@ -14,7 +14,7 @@ export function usePeer(props: PeerProps): Peer {
     useState<RTCPeerConnection | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [controlChannel, setControlChannel] = useState<RTCDataChannel | null>(
-    null
+    null,
   );
 
   const connectionStateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -23,7 +23,7 @@ export function usePeer(props: PeerProps): Peer {
     async (
       url: string,
       offer: RTCSessionDescriptionInit | RTCSessionDescription,
-      retry: number = 0
+      retry: number = 0,
     ): Promise<OfferResponse> => {
       try {
         const response = await fetch("/api/offer", {
@@ -45,14 +45,14 @@ export function usePeer(props: PeerProps): Peer {
       } catch (error) {
         if (retry < MAX_OFFER_RETRIES) {
           await new Promise((resolve) =>
-            setTimeout(resolve, OFFER_RETRY_INTERVAL)
+            setTimeout(resolve, OFFER_RETRY_INTERVAL),
           );
           return sendOffer(url, offer, retry + 1);
         }
         throw error;
       }
     },
-    [prompts]
+    [prompts],
   );
 
   const handleConnectionStateChange = useCallback(
@@ -68,7 +68,7 @@ export function usePeer(props: PeerProps): Peer {
           break;
       }
     },
-    [onConnected, onDisconnected]
+    [onConnected, onDisconnected],
   );
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export function usePeer(props: PeerProps): Peer {
       channel.onopen = () => {
         console.log(
           "[usePeer] Control channel opened, readyState:",
-          channel.readyState
+          channel.readyState,
         );
         setControlChannel(channel);
       };
