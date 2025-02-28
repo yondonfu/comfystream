@@ -73,15 +73,22 @@ app.registerExtension({
                 
                 // Add a button to launch the UI in a new tab
                 this.addWidget("button", "Open in New Tab", null, () => {
-                    // Use the same endpoint as the launcher node
-                    fetch('/launch_comfystream', {
-                        method: 'POST',
+                    // Get extension info which contains the correct UI URL
+                    fetch('/comfystream/extension_info', {
+                        method: 'GET',
                         headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({})
+                            'Accept': 'application/json'
+                        }
                     })
                     .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Use the current origin with the static route
+                            const uiUrl = `${window.location.origin}${data.static_route}/index.html`;
+                            // Open the URL in a new tab
+                            window.open(uiUrl, '_blank');
+                        }
+                    })
                     .catch(error => {
                         console.error("[ComfyStream] Error launching UI:", error);
                     });
