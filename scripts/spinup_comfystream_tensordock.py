@@ -2,7 +2,6 @@
 to the user's location.
 """
 
-import base64
 import logging
 import os
 import secrets
@@ -12,12 +11,16 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+import bcrypt
 import click
 import requests
 from colorama import Fore, Style, init
 from geopy.distance import geodesic
 from geopy.exc import GeocoderTimedOut
 from geopy.geocoders import Nominatim
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 TENSORDOCK_ENDPOINTS = {
     "auth_test": "https://marketplace.tensordock.com/api/v0/auth/test",
@@ -30,7 +33,7 @@ TENSORDOCK_ENDPOINTS = {
 # Requirements for host nodes.
 DEFAULT_MAX_PRICE = 0.5  # USD per hour
 MIN_REQUIREMENTS = {
-    "minvCPUs": 8,
+    "minvCPUs": 4,
     "minRAM": 16,  # GB
     "minStorage": 100,  # GB
     "minVRAM": 20,  # GB
@@ -50,6 +53,8 @@ VM_SPECS = {
 CLOUD_INIT_PATH = os.path.join(
     os.path.dirname(__file__), "config", "cloud_init_comfystream_template.yaml"
 )
+PASSWORD_PLACEHOLDER = "<PASSWORD_PLACEHOLDER>"
+DOCKER_IMAGE_PLACEHOLDER = "<DOCKER_IMAGE_PLACEHOLDER>"
 
 
 class ColorFormatter(logging.Formatter):
@@ -96,9 +101,71 @@ logger.addHandler(handler)
 
 
 geolocator = Nominatim(user_agent="tensordock_locator", timeout=5)
+console = Console()
 
 
-def generate_strong_password(length: int = 65) -> str:
+def display_credentials(username: str, password: str):
+    """Display the ComfyUI credentials in a styled panel.
+
+    Args:
+        username: The username for the ComfyUI account.
+        password: The password for the ComfyUI account.
+    """
+    username_text = Text(f"Username: {username}", style="cyan")
+    password_text = Text(f"Password: {password}", style="cyan")
+
+    content = Text.assemble(username_text, "\n", password_text)
+    console.print(
+        Panel(
+            content,
+            title="[yellow]ComfyUI Credentials[/yellow]",
+            border_style="yellow",
+            expand=False,
+        )
+    )
+
+
+def display_login_info(
+    comfystream_ui_url: str,
+    comfystream_server_url: str,
+    ssh_command: str,
+    comfyui_url: str = None,
+):
+    """Display all access URLs and commands in a styled panel.
+
+    Args:
+        comfystream_ui_url: URL to the Comfystream UI.
+        comfystream_server_url: URL to the Comfystream Server.
+        ssh_command: SSH command to access the VM.
+        comfyui_url: URL to ComfyUI if exposed, will be omitted if not provided.
+    """
+    server_text = Text("Comfystream Server: ", style="green")
+    server_text.append(comfystream_server_url, style="white")
+    ui_text = Text("Comfystream UI: ", style="green")
+    ui_text.append(comfystream_ui_url, style="white")
+    ssh_text = Text("SSH Command: ", style="green")
+    ssh_text.append(ssh_command, style="white")
+    if comfyui_url:
+        comfyui_text = Text("ComfyUI: ", style="yellow")
+        comfyui_text.append(f"{comfyui_url} (credentials required)", style="white")
+    else:
+        comfyui_text = Text("ComfyUI: ", style="green")
+        comfyui_text.append("Not publicly exposed. Use SSH for access.", style="white")
+
+    content = Text.assemble(
+        server_text, "\n", ui_text, "\n", comfyui_text, "\n", ssh_text
+    )
+    console.print(
+        Panel(
+            content,
+            title="[blue]Access Information[/blue]",
+            border_style="blue",
+            expand=False,
+        )
+    )
+
+
+def generate_strong_password(length: int = 60) -> str:
     """Generate a strong password with a mix of letters, digits, and special characters.
 
     Args:
@@ -130,38 +197,50 @@ def is_strong_password(password: str, min_length: int = 32) -> bool:
     )
 
 
+def hash_password(password: str) -> str:
+    """Create hash a password using bcrypt.
+
+    Args:
+        password: The password to hash.
+
+    Returns:
+        The hashed password.
+    """
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(10)).decode().strip()
+
+
 def get_cloud_init_script(
-    docker_image: str = "livepeer/comfystream:latest",
-) -> Tuple[str, Dict[str, str]]:
+    comfyui_password: str, docker_image: str = "livepeer/comfystream:latest"
+) -> str:
     """Generate the cloud-init script using the template and replace placeholders.
 
     Args:
+        comfyui_password: The password used to protect the ComfUI interface.
         docker_image: The Docker image to use for the Comfystream deployment (e.g.
             'repository/image:tag').
 
     Returns:
-        Tuple containing the cloud-init script as a string and a dictionary of
-        replacements.
+        The cloud-init script as a string.
     """
     try:
-        with open(CLOUD_INIT_PATH, "r") as file:
+        with open(CLOUD_INIT_PATH, "r", encoding="utf-8") as file:
             cloud_init_content = file.read()
     except FileNotFoundError:
         raise FileNotFoundError(f"Cloud-init template not found: {CLOUD_INIT_PATH}")
+    cloud_init_content = cloud_init_content.replace("\r\n", "\n").replace(
+        "\r", "\n"
+    )  # Normalize line endings
 
     # Replace placeholders in the cloud-init script.
-    password = generate_strong_password()
-    encoded_password = base64.b64encode(password.encode()).decode()
-    cloud_init_content = cloud_init_content.replace(
-        "<PASSWORD_PLACEHOLDER>", encoded_password
-    )
-    cloud_init_content = cloud_init_content.replace("<DOCKER_IMAGE_PLACEHOLDER>", docker_image)
+    encoded_password = hash_password(comfyui_password)
     replacements = {
-        "password": password,
-        "docker_image": docker_image,
+        PASSWORD_PLACEHOLDER: encoded_password,
+        DOCKER_IMAGE_PLACEHOLDER: docker_image,
     }
+    for placeholder, value in replacements.items():
+        cloud_init_content = cloud_init_content.replace(placeholder, value)
 
-    return cloud_init_content, replacements
+    return cloud_init_content
 
 
 def format_ports_as_set(ports: List) -> str:
@@ -372,7 +451,7 @@ def get_vm_access_info(
     comfystream_server_url = f"http://{node_info['ip']}:{available_ports[2]}"
     ssh_command = f"ssh -p {available_ports[0]} user@{node_info['ip']}"
     comfyui_url = (
-        f"http://{node_info['ip']}:{available_ports[3]}"
+        f"https://{node_info['ip']}:{available_ports[3]}"
         if len(available_ports) > 3
         else None
     )
@@ -640,25 +719,24 @@ class TensorDockController:
             logger.error("Something went wrong while sorting host nodes by distance.")
             return None
 
-        # Retrieve cloud init and port count based on ComfyUI exposure.
-        cloud_init_script, placeholders = get_cloud_init_script(
-            docker_image=docker_image
-        )
-        ports_count = 4 if expose_comfyui else 3
+        # Create ComfyUI password for if it is exposed.
+        comfyui_password = generate_strong_password()
         if expose_comfyui:
             logger.warning(
-                f"ComfyUI is publicly exposed on port {VM_SPECS['internal_ports'][3]} "
-                "with these credentials:"
+                f"ComfyUI will be exposed publicly at port {VM_SPECS['internal_ports'][3]}."
             )
-            logger.warning(f"{Fore.GREEN}ComfyUI account:{Style.RESET_ALL} comfyadmin")
-            logger.warning(
-                f"{Fore.GREEN}ComfyUI password:{Style.RESET_ALL} "
-                f"{placeholders['password']}"
-            )
+        else:
+            logger.info(f"ComfyUI is not exposed publicly. Use SSH for access.")
+        display_credentials("comfyadmin", comfyui_password)
 
         # Loop through sorted host nodes and try to deploy on the closest one.
         logger.info(
             f"Attempting VM deployment on {len(sorted_host_nodes)} closest node..."
+        )
+        ports_count = 4 if expose_comfyui else 3
+        cloud_init_script = get_cloud_init_script(
+            comfyui_password=comfyui_password,
+            docker_image=docker_image,
         )
         for node_idx, node in enumerate(sorted_host_nodes):
             compatible_gpus = [
@@ -852,6 +930,7 @@ def main(
     logger.info(f"Found {len(filtered_nodes)} suitable host nodes.")
 
     logger.info(f"Attempting Comfystream deployment on the close host nodes...")
+    start_time = time.time()
     node_info = controller.deploy_comfystream_vm(
         host_nodes=filtered_nodes,
         vm_name=vm_name,
@@ -876,23 +955,15 @@ def main(
     comfystream_ui_url, comfystream_server_url, ssh_command, comfyui_url = (
         get_vm_access_info(node_info, list(node_info["port_forwards"].keys()))
     )
-    logger.info(
-        f"{Fore.GREEN}Comfystream Server:{Style.RESET_ALL} {comfystream_server_url}"
+    display_login_info(
+        comfystream_ui_url, comfystream_server_url, ssh_command, comfyui_url
     )
-    logger.info(f"{Fore.GREEN}Comfystream UI:{Style.RESET_ALL} {comfystream_ui_url}")
-    if comfyui_url:
-        logger.info(
-            f"{Fore.YELLOW}ComfyUI:{Style.RESET_ALL} {comfyui_url} (credentials "
-            "required)"
-        )
-    else:
-        logger.info(
-            f"{Fore.GREEN}ComfyUI:{Style.RESET_ALL} is not publicly exposed. Use SSH "
-            "for access."
-        )
-    logger.info(f"{Fore.GREEN}SSH into the VM:{Style.RESET_ALL} {ssh_command}")
 
     result = wait_for_comfystream(comfystream_server_url)
+
+    logger.info(
+        f"Comfystream deployment completed in {time.time() - start_time:.2f} seconds."
+    )
 
     if result and qr_codes:
         logger.info("Generating QR codes for easy access:")
