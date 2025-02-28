@@ -30,7 +30,7 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     except Exception as e:
         logging.warning(f"Failed to get extension name dynamically: {e}")
         # Fallback to the hardcoded name
-        EXTENSION_NAME = "ComfyStream"
+        EXTENSION_NAME = "comfystream"
     
     # Add static route for Next.js build files using the dynamic extension name
     STATIC_ROUTE = f"/extensions/{EXTENSION_NAME}/static"
