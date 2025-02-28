@@ -12,6 +12,7 @@ from pathlib import Path
 import time
 import asyncio
 from abc import ABC, abstractmethod
+import threading
 
 # Configure logging to output to console
 logging.basicConfig(
@@ -130,6 +131,11 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
         except urllib.error.URLError:
             return False
 
+    def log_subprocess_output(self, pipe, level):
+        """Log the output from the subprocess to the logger."""
+        for line in iter(pipe.readline, b''):
+            logging.log(level, line.decode().strip())
+
     async def start(self, port=None, host=None):
         """Start the ComfyStream server"""
         if self.is_running:
@@ -158,14 +164,18 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
             
             logging.info(f"Starting server with command: {' '.join(cmd)}")
             
-            # Start process with output going to stdout/stderr
+            # Start process with output going to pipes
             self.process = subprocess.Popen(
                 cmd,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 cwd=str(comfyui_workspace),  # Run from ComfyUI root
                 env={**os.environ, 'PYTHONUNBUFFERED': '1'}
             )
+            
+            # Start threads to log stdout and stderr
+            threading.Thread(target=self.log_subprocess_output, args=(self.process.stdout, logging.INFO)).start()
+            threading.Thread(target=self.log_subprocess_output, args=(self.process.stderr, logging.ERROR)).start()
             
             # Wait for server to start responding
             logging.info("Waiting for server to start...")
@@ -237,4 +247,4 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
             except Exception as e:
                 logging.error(f"Error cleaning up server process: {str(e)}")
             self.process = None
-            self.is_running = False 
+            self.is_running = False
