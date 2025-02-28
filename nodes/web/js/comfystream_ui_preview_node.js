@@ -7,16 +7,28 @@ const app = window.comfyAPI?.app?.app;
 app.registerExtension({
     name: "ComfyStream.Node",
     
-    registerCustomNodes() {
-        // Define our custom node class
-        class ComfyStreamIframeNode extends LGraphNode {
-            constructor() {
-                super();
-                
-                // Set node properties
+    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        if (nodeData.name === "ComfyStreamUIPreview") {
+            // Set default size for the node type
+            nodeType.size = [700, 800];
+            
+            // Save the original onNodeCreated method
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            
+            // Override the onNodeCreated method
+            nodeType.prototype.onNodeCreated = function() {
+                // Set node properties before calling original method
                 this.title = "ComfyStream UI";
                 this.color = "#4B9CD3"; // Blue color for the node
-
+                
+                // Set size - make it larger to accommodate the iframe
+                this.size = nodeType.size.slice();
+                
+                // Make the node resizable
+                this.flags.resizable = true;
+                
+                // Call the original onNodeCreated method if it exists
+                const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                 
                 // Create iframe element
                 this.iframe = document.createElement("iframe");
@@ -95,38 +107,76 @@ app.registerExtension({
                     });
                 });
                 
-                // Set size - make it larger to accommodate the iframe
-                this.size = [700, 800];
+                // Force update the iframe size after a short delay to ensure proper rendering
+                setTimeout(() => {
+                    this.updateIframeSize();
+                }, 100);
                 
-                // Make the node resizable
-                this.flags.resizable = true;
+                return result;
+            };
+            
+            // Save the original onResize method
+            const onResize = nodeType.prototype.onResize;
+            
+            // Override the onResize method
+            nodeType.prototype.onResize = function(size) {
+                // Call the original onResize method if it exists
+                if (onResize) {
+                    onResize.call(this, size);
+                }
                 
-                // Handle resize to update iframe size
-                const onResize = this.onResize;
-                this.onResize = (size) => {
-                    if (onResize) {
-                        onResize.call(this, size);
+                this.updateIframeSize();
+            };
+            
+            // Add a helper method to update iframe size
+            nodeType.prototype.updateIframeSize = function() {
+                if (this.iframeWidget) {
+                    this.iframeWidget.width = this.size[0];
+                    this.iframeWidget.height = this.size[1] - 40;
+                    
+                    // Also update the iframe element directly
+                    if (this.iframe) {
+                        this.iframe.style.width = this.size[0] + "px";
+                        this.iframe.style.height = (this.size[1] - 40) + "px";
                     }
                     
-                    // Update iframe size when node is resized
-                    if (this.iframeWidget) {
-                        this.iframeWidget.width = size[0];
-                        this.iframeWidget.height = size[1] - 40;
-                    }
-                };
-            }
+                    // Force a canvas update
+                    this.setDirtyCanvas(true, true);
+                }
+            };
             
-            // Handle when node is executed
-            onExecute() {
+            // Override the onExecute method
+            nodeType.prototype.onExecute = function() {
                 // Trigger the output
                 this.triggerSlot(0);
-            }
+            };
+            
+            // Override the default size method
+            nodeType.prototype.getSize = function() {
+                return [this.size[0], this.size[1]];
+            };
+            
+            // Override the computeSize method to maintain our size
+            nodeType.prototype.computeSize = function() {
+                return [this.size[0], this.size[1]];
+            };
+            
+            // Override the onAdded method to ensure size is set when added to graph
+            const onAdded = nodeType.prototype.onAdded;
+            nodeType.prototype.onAdded = function() {
+                if (onAdded) {
+                    onAdded.call(this);
+                }
+                
+                // Ensure size is set correctly when added to graph
+                this.size = nodeType.size.slice();
+                
+                // Force a size update
+                setTimeout(() => {
+                    this.updateIframeSize();
+                    this.setDirtyCanvas(true, true);
+                }, 100);
+            };
         }
-        
-        // Register the node type
-        LiteGraph.registerNodeType("ComfyStreamUIPreview", ComfyStreamIframeNode);
-        
-        // Set the category
-        ComfyStreamIframeNode.category = "ComfyStream";
     }
 }); 
