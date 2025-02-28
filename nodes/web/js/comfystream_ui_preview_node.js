@@ -31,19 +31,20 @@ app.registerExtension({
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                this.iframe.src = data.ui_url;
+                                // Use the current origin with the static route from extension_info
+                                this.iframe.src = `${window.location.origin}${data.static_route}/index.html`;
                             } else {
                                 console.error("[ComfyStream] Error getting extension info:", data.error);
                                 // Fallback to hardcoded path
-                                const extensionName = "ComfyStream";
-                                this.iframe.src = `/extensions/${extensionName}/static/index.html`;
+                                const extensionName = "comfystream";
+                                this.iframe.src = `${window.location.origin}/extensions/${extensionName}/static/index.html`;
                             }
                         })
                         .catch(error => {
                             console.error("[ComfyStream] Error fetching extension info:", error);
                             // Fallback to hardcoded path
-                            const extensionName = "comfystream_inside";
-                            this.iframe.src = `/extensions/${extensionName}/static/index.html`;
+                            const extensionName = "comfystream";
+                            this.iframe.src = `${window.location.origin}/extensions/${extensionName}/static/index.html`;
                         });
                 };
                 
