@@ -143,39 +143,6 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
             
             return web.json_response({"error": str(e)}, status=500)
 
-    @routes.post('/launch_comfystream')
-    async def launch_comfystream(request):
-        """Open the ComfyStream UI in a new browser tab"""
-        try:
-            data = await request.json()
-            settings = data.get("settings", {})
-            
-            # Get the current server status
-            status = server_manager.get_status()
-            
-            # Determine the URL based on server status
-            if status["running"]:
-                # If server is running, use its host and port
-                host = status["host"]
-                port = status["port"]
-            else:
-                # Otherwise use the settings
-                host = settings.get("host", "localhost")
-                port = settings.get("port", 8889)
-            
-            # Format the URL properly (use localhost instead of 0.0.0.0 for browser)
-            browser_host = "localhost" if host == "0.0.0.0" else host
-            
-            # Open browser to the static UI using the dynamic extension name
-            webbrowser.open(f"http://{browser_host}:8188{STATIC_ROUTE}/index.html")
-            return web.json_response({
-                "success": True,
-                "url": f"http://{browser_host}:8188{STATIC_ROUTE}/index.html"
-            })
-        except Exception as e:
-            logging.error(f"Error launching ComfyStream UI: {str(e)}")
-            return web.json_response({"error": str(e)}, status=500)
-
     @routes.get('/comfystream/settings')
     async def get_settings(request):
         """Get ComfyStream settings"""
