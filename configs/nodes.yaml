@@ -2,8 +2,8 @@ nodes:
   # Core TensorRT nodes
   comfyui-tensorrt:
     name: "ComfyUI TensorRT"
-    url: "https://github.com/ryanontheinside/ComfyUI_TensorRT"
-    branch: "hs-fix"
+    url: "https://github.com/yondonfu/ComfyUI_TensorRT"
+    branch: "quantization_with_controlnet_fixes"
     type: "tensorrt"
 
   comfyui-depthanything-tensorrt:
