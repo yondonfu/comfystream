@@ -44,8 +44,5 @@ This directory contains various helper scripts designed to streamline working wi
 
    Replace `<VM_ID>` with the ID of the VM you want to delete. You can find the VM ID in the script logs or the [Tensordock dashboard](https://dashboard.tensordock.com/).
 
-> [!NOTE]  
-> By default, ComfyUI's HTTPS port is not publicly exposed for security. Use `--expose-comfyui` to enable access—credentials are logged, but this may still pose security risks.
-
-> [!IMPORTANT]  
-> Due to a known bug in TensorDock, the server may sometimes fail to detect the NVIDIA GPU until it is rebooted. If you experience GPU-related issues, try restarting the server first.
+> [!WARNING]
+> If you see `max retries exceeded with url` errors, the VM was likely created but is inaccessible. Check the [TensorDock dashboard](https://dashboard.tensordock.com/instances), delete the VM, wait 2-3 minutes, then run the script again.
