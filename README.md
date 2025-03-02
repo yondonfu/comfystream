@@ -10,6 +10,7 @@ This repo also includes a WebRTC server and UI that uses comfystream to support 
     - [Docker Image](#docker-image)
       - [RunPod](#runpod)
       - [Tensordock](#tensordock)
+      - [Other Cloud Providers](#other-cloud-providers)
   - [Download Models](#download-models)
   - [Install package](#install-package)
     - [Custom Nodes](#custom-nodes)
@@ -42,11 +43,15 @@ The RunPod template [livepeer-comfystream](https://runpod.io/console/deploy?temp
 
 #### Tensordock
 
-We also have a python script that can be used to spin up a ComfyStream instance on a [Tensordock server](https://tensordock.com/). Refer to [scripts/README.md](scripts/README.md) for instructions.
+We also have a python script that can be used to spin up a ComfyStream instance on a [Tensordock server](https://tensordock.com/). Refer to [scripts/README.md](./scripts/README.md#tensordock-auto-setup-fully-automated) for instructions.
+
+#### Other Cloud Providers
+
+We also provide an [Ansible playbook](https://docs.ansible.com/ansible/latest/installation_guide/index.html) for deploying ComfyStream on any cloud provider. Refer to [scripts/README.md](./scripts/README.md#cloud-agnostic-automated-setup-ansible-based-deployment) for instructions.
 
 ## Download Models
 
-Refer to [src/comfystream/scripts/README.md](src/comfystream/scripts/README.md) for instructions to download commonly used models.
+Refer to [scripts/README.md](src/comfystream/scripts/README.md) for instructions to download commonly used models.
 
 ## Install package
 
@@ -83,7 +88,7 @@ pip install git+https://github.com/yondonfu/comfystream.git
 
 ### Custom Nodes
 
-comfystream uses a few auxiliary custom nodes to support running workflows. 
+comfystream uses a few auxiliary custom nodes to support running workflows.
 
 **Note:** If you are using comfystream as a custom node in ComfyUI, you can skip the following steps.
 

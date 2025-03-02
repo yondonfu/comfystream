@@ -1,0 +1,118 @@
+---
+- name: Setup ComfyUI with Comfystream
+  hosts: all
+  become: yes
+  vars:
+    docker_image: "livepeer/comfystream:latest"
+    comfyui_username: "comfyadmin"
+    comfyui_password: "Ge}_^jn?*?5#/|FWx9I&K|S0$/)#au8"
+
+  tasks:
+    # Setup auth proxy for ComfyUI (requires port 8189 to be open)
+    - name: Install python3-passlib for ComfyUI password hashing
+      apt:
+        name: python3-passlib
+        state: present
+        update_cache: yes
+    - name: Generate bcrypt hash on remote server
+      shell: python3 -c "from passlib.hash import bcrypt; print(bcrypt.hash('{{ comfyui_password }}'))"
+      register: remote_hash_result
+      changed_when: false
+      no_log: true
+    - name: Set password hash from remote result
+      set_fact:
+        password_hash: "{{ remote_hash_result.stdout }}"
+    - name: Display access credentials
+      debug:
+        msg:
+          - "ComfyUI username: {{ comfyui_username }}"
+          - "ComfyUI password: {{ comfyui_password }}"
+    - name: Add Caddy GPG key
+      apt_key:
+        url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+        keyring: /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+        state: present
+    - name: Download Caddy repository definition
+      get_url:
+        url: https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt
+        dest: /etc/apt/sources.list.d/caddy-stable.list
+        mode: "0644"
+    - name: Install Caddy and OpenSSL
+      apt:
+        name:
+          - caddy
+          - openssl
+        update_cache: yes
+        state: present
+    - name: Create certificates directory
+      file:
+        path: /etc/caddy/certificates
+        state: directory
+        mode: "0750"
+        owner: caddy
+        group: caddy
+        recurse: yes
+    - name: Generate self-signed SSL certificate
+      shell: >
+        openssl req -x509 -newkey rsa:4096
+        -keyout /etc/caddy/certificates/selfsigned.key
+        -out /etc/caddy/certificates/selfsigned.crt
+        -days 365 -nodes
+        -subj "/C=US/ST=State/L=City/O=Company/OU=Org/CN=localhost"
+        -addext "subjectAltName=DNS:localhost,IP:{{ ansible_host }}"
+      args:
+        creates: /etc/caddy/certificates/selfsigned.crt
+      notify: restart caddy
+    - name: Create Caddy configuration for Comfystream
+      template:
+        src: ../templates/comfystream.caddy.j2
+        dest: /etc/caddy/comfystream.caddy
+        owner: caddy
+        group: caddy
+        mode: "0644"
+      notify: restart caddy
+    - name: Ensure Caddyfile includes Comfystream configuration
+      lineinfile:
+        path: /etc/caddy/Caddyfile
+        line: "import /etc/caddy/comfystream.caddy"
+        create: yes
+      notify: restart caddy
+
+    # # Install, configure, and start Comfystream and ComfyUI
+    - name: Create directories for ComfyUI models and output
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      with_items:
+        - "{{ ansible_env.HOME }}/models/ComfyUI--models"
+        - "{{ ansible_env.HOME }}/models/ComfyUI--output"
+    - name: Pull Docker image (may take a while)
+      docker_image:
+        name: "{{ docker_image }}"
+        source: pull
+    - name: Run Comfystream Docker container
+      docker_container:
+        name: comfystream
+        image: "{{ docker_image }}"
+        state: started
+        restart_policy: unless-stopped
+        stop_timeout: 300
+        gpus: all
+        volumes:
+          - "{{ ansible_env.HOME }}/models/ComfyUI--models:/workspace/ComfyUI/models"
+          - "{{ ansible_env.HOME }}/models/ComfyUI--output:/workspace/ComfyUI/output"
+        ports:
+          - "3000:3000"
+          - "8188:8188"
+          - "8889:8889"
+        command: "--download-models --build-engines --server"
+
+  handlers:
+    - name: restart caddy
+      systemd:
+        name: caddy
+        state: restarted
+    - name: update apt cache
+      apt:
+        update_cache: yes
