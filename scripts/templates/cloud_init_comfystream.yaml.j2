@@ -1,14 +1,8 @@
 write_files:
   # Add reverse proxy configuration for ComfyUI with basic authentication
   - path: /etc/caddy/comfystream.caddy
-    content: |
-      :8189 {
-        reverse_proxy http://127.0.0.1:8188
-        tls /etc/caddy/certificates/selfsigned.crt /etc/caddy/certificates/selfsigned.key
-        basic_auth {
-          comfyadmin <PASSWORD_PLACEHOLDER>
-        }
-      }
+    encoding: b64
+    content: {{ comfystream_caddy_placeholder }}
 
 runcmd:
   # Setup auth proxy for ComfyUI (requires port 8189 to be open)
@@ -24,7 +18,7 @@ runcmd:
   - sudo chown -R caddy:caddy /etc/caddy/certificates
   - grep -qxF 'import /etc/caddy/comfystream.caddy' /etc/caddy/Caddyfile || echo 'import /etc/caddy/comfystream.caddy' | sudo tee -a /etc/caddy/Caddyfile > /dev/null
   - sudo systemctl restart caddy
-  # Install, configure, and start Comfystream and ComfyUI
-  - docker pull <DOCKER_IMAGE_PLACEHOLDER>
+  # Install, configure, and start ComfyUI with Comfystream
+  - docker pull {{ docker_image_placeholder }}
   - mkdir -p ~/models/ComfyUI--models ~/models/ComfyUI--output
-  - docker run --restart unless-stopped --stop-timeout 300 --gpus all --name comfystream -v ${HOME}/models/ComfyUI--models:/workspace/ComfyUI/models -v ${HOME}/models/ComfyUI--output:/workspace/ComfyUI/output -p 3000:3000 -p 8188:8188 -p 8889:8889 <DOCKER_IMAGE_PLACEHOLDER> --download-models --build-engines --server
+  - docker run --restart unless-stopped --stop-timeout 300 --gpus all --name comfystream -v ${HOME}/models/ComfyUI--models:/workspace/ComfyUI/models -v ${HOME}/models/ComfyUI--output:/workspace/ComfyUI/output -p 3000:3000 -p 8188:8188 -p 8889:8889 {{ docker_image_placeholder }} --download-models --build-engines --server

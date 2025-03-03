@@ -88,7 +88,7 @@ pip install git+https://github.com/yondonfu/comfystream.git
 
 ### Custom Nodes
 
-comfystream uses a few auxiliary custom nodes to support running workflows.
+Comfystream uses a few auxiliary custom nodes to support running workflows.
 
 **Note:** If you are using comfystream as a custom node in ComfyUI, you can skip the following steps.
 

@@ -8,6 +8,23 @@
     comfyui_password: "Ge}_^jn?*?5#/|FWx9I&K|S0$/)#au8"
 
   tasks:
+    # Wait till VM is ready.
+    - name: Check if we can connect to the VM
+      wait_for_connection:
+        timeout: 300
+        delay: 5
+    - name: Wait for cloud-init to complete
+      command: cloud-init status --wait
+      register: cloud_init_result
+      until: cloud_init_result.rc == 0
+      retries: 30
+      delay: 10
+      changed_when: false
+    - name: Wait for apt to be available
+      shell: timeout 300 bash -c 'until apt-get update 2>/dev/null; do sleep 5; done'
+      register: apt_result
+      changed_when: apt_result.rc == 0
+      failed_when: apt_result.rc != 0
     # Setup auth proxy for ComfyUI (requires port 8189 to be open)
     - name: Install python3-passlib for ComfyUI password hashing
       apt:
@@ -51,7 +68,6 @@
         mode: "0750"
         owner: caddy
         group: caddy
-        recurse: yes
     - name: Generate self-signed SSL certificate
       shell: >
         openssl req -x509 -newkey rsa:4096
@@ -59,13 +75,22 @@
         -out /etc/caddy/certificates/selfsigned.crt
         -days 365 -nodes
         -subj "/C=US/ST=State/L=City/O=Company/OU=Org/CN=localhost"
-        -addext "subjectAltName=DNS:localhost,IP:{{ ansible_host }}"
       args:
         creates: /etc/caddy/certificates/selfsigned.crt
       notify: restart caddy
+    - name: Set proper ownership for SSL certificates
+      file:
+        path: "{{ item }}"
+        owner: caddy
+        group: caddy
+        mode: "0640"
+      with_items:
+        - /etc/caddy/certificates/selfsigned.key
+        - /etc/caddy/certificates/selfsigned.crt
+      notify: restart caddy
     - name: Create Caddy configuration for Comfystream
       template:
-        src: ../templates/comfystream.caddy.j2
+        src: ../../templates/comfystream.caddy.j2
         dest: /etc/caddy/comfystream.caddy
         owner: caddy
         group: caddy
@@ -77,8 +102,47 @@
         line: "import /etc/caddy/comfystream.caddy"
         create: yes
       notify: restart caddy
-
-    # # Install, configure, and start Comfystream and ComfyUI
+    # Install, configure, and start ComfyUI with Comfystream
+    - name: Add NVIDIA Container Toolkit repository key
+      apt_key:
+        url: https://nvidia.github.io/libnvidia-container/gpgkey
+        keyring: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+        state: present
+    - name: Add NVIDIA Container Toolkit repository
+      get_url:
+        url: https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
+        dest: /tmp/nvidia-container-toolkit.list
+        mode: '0644'
+    - name: Update repository file with signing key
+      replace:
+        path: /tmp/nvidia-container-toolkit.list
+        regexp: 'deb https://'
+        replace: 'deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://'
+    - name: Move repository file to apt sources
+      copy:
+        src: /tmp/nvidia-container-toolkit.list
+        dest: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+        remote_src: yes
+        mode: '0644'
+    - name: Install NVIDIA Container Toolkit
+      apt:
+        name: nvidia-container-toolkit
+        update_cache: yes
+        state: present
+    - name: Configure Docker to use NVIDIA runtime
+      command: nvidia-ctk runtime configure --runtime=docker
+      register: nvidia_ctk_result
+      changed_when: nvidia_ctk_result.rc == 0
+    - name: Restart Docker service
+      systemd:
+        name: docker
+        state: restarted
+    - name: Install community.docker collection
+      command: ansible-galaxy collection install community.docker
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
+      become: no
     - name: Create directories for ComfyUI models and output
       file:
         path: "{{ item }}"
@@ -88,17 +152,20 @@
         - "{{ ansible_env.HOME }}/models/ComfyUI--models"
         - "{{ ansible_env.HOME }}/models/ComfyUI--output"
     - name: Pull Docker image (may take a while)
-      docker_image:
+      community.docker.docker_image_pull:
         name: "{{ docker_image }}"
-        source: pull
     - name: Run Comfystream Docker container
-      docker_container:
+      community.docker.docker_container:
         name: comfystream
         image: "{{ docker_image }}"
         state: started
         restart_policy: unless-stopped
         stop_timeout: 300
-        gpus: all
+        device_requests:
+          - driver: nvidia
+            count: -1 # Use all GPUs
+            capabilities:
+              - [gpu]
         volumes:
           - "{{ ansible_env.HOME }}/models/ComfyUI--models:/workspace/ComfyUI/models"
           - "{{ ansible_env.HOME }}/models/ComfyUI--output:/workspace/ComfyUI/output"

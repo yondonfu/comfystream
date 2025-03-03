@@ -1,7 +1,0 @@
-:8189 {
-    reverse_proxy http://127.0.0.1:8188
-    tls /etc/caddy/certificates/selfsigned.crt /etc/caddy/certificates/selfsigned.key
-    basic_auth {
-        comfyadmin {{ password_hash }}
-    }
-}
