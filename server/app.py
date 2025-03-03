@@ -59,8 +59,8 @@ class VideoStreamTrack(MediaStreamTrack):
 
         self._lock = asyncio.Lock()
         self._fps_interval_frame_count = 0
-        self._last_fps_calculation_time = time.monotonic()
-        self._fps_loop_start_time = self._last_fps_calculation_time
+        self._last_fps_calculation_time = None
+        self._fps_loop_start_time = time.monotonic()
         self._fps = 0.0
         self._fps_measurements = deque(maxlen=60)
         self._running_event = asyncio.Event()
@@ -84,19 +84,22 @@ class VideoStreamTrack(MediaStreamTrack):
         await self._running_event.wait()
         self._fps_loop_start_time = time.monotonic()
         while self.readyState != "ended":
-            await asyncio.sleep(1)  # Calculate FPS every second.
             async with self._lock:
-                current_time_monotonic = time.monotonic()
-                time_diff = current_time_monotonic - self._last_fps_calculation_time
-                if time_diff > 0:
+                current_time = time.monotonic()
+                if self._last_fps_calculation_time is not None:
+                    time_diff = current_time - self._last_fps_calculation_time
                     self._fps = self._fps_interval_frame_count / time_diff
                     self._fps_measurements.append(
-                        self._fps
-                    )  # Store the FPS measurement
+                        {
+                            "timestamp": current_time - self._fps_loop_start_time,
+                            "fps": self._fps,
+                        }
+                    )  # Store the FPS measurement with timestamp
 
-                    # Reset start_time and frame_count for the next interval.
-                    self._last_fps_calculation_time = current_time_monotonic
-                    self._fps_interval_frame_count = 0
+                # Reset start_time and frame_count for the next interval.
+                self._last_fps_calculation_time = current_time
+                self._fps_interval_frame_count = 0
+            await asyncio.sleep(1)  # Calculate FPS every second.
 
     @property
     async def fps(self) -> float:
@@ -128,7 +131,9 @@ class VideoStreamTrack(MediaStreamTrack):
         async with self._lock:
             if not self._fps_measurements:
                 return 0.0
-            return sum(self._fps_measurements) / len(self._fps_measurements)
+            return sum(
+                measurement["fps"] for measurement in self._fps_measurements
+            ) / len(self._fps_measurements)
 
     @property
     async def last_fps_calculation_time(self) -> float:
@@ -405,7 +410,9 @@ if __name__ == "__main__":
     # Add routes for getting stream statistics.
     stream_stats = StreamStats(app)
     app.router.add_get("/streams/stats", stream_stats.collect_all_stream_metrics)
-    app.router.add_get("/stream/{stream_id}/stats", stream_stats.collect_stream_metrics_by_id)
+    app.router.add_get(
+        "/stream/{stream_id}/stats", stream_stats.collect_stream_metrics_by_id
+    )
 
     # Add hosted platform route prefix.
     # NOTE: This ensures that the local and hosted experiences have consistent routes.
