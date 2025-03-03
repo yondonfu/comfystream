@@ -22,17 +22,19 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
 
       - name: Log in to the Container registry
         uses: docker/login-action@v2
@@ -43,7 +45,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: |
             ghcr.io/${{ github.repository }}
@@ -62,16 +64,10 @@ jobs:
       - name: Build and push livepeer docker image
         uses: docker/build-push-action@v6
         with:
-          build-args: |
-            VERSION=${{ (github.ref_type == 'tag' && github.ref_name) || (github.event.pull_request.head.sha || github.sha) }}
-            GITHUB_SHA=${{ (github.event.pull_request.head.sha || github.sha) }}
           context: .
-          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           file: docker/Dockerfile
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           annotations: ${{ steps.meta.outputs.annotations }}
 
       - name: Notify new build upload
