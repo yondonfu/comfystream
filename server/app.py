@@ -345,7 +345,7 @@ async def on_startup(app: web.Application):
         patch_loop_datagram(app["media_ports"])
 
     app["pipeline"] = Pipeline(
-        cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True
+        cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True, preview_method='none'
     )
     app["pcs"] = set()
     app["video_tracks"] = {}
