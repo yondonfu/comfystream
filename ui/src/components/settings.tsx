@@ -45,6 +45,10 @@ export interface StreamConfig {
   prompts?: Prompt[] | null;
   selectedVideoDeviceId: string;
   selectedAudioDeviceId: string;
+  resolution: {
+    width: number;
+    height: number;
+  };
 }
 
 interface AVDevice {
@@ -58,6 +62,10 @@ export const DEFAULT_CONFIG: StreamConfig = {
   frameRate: 30,
   selectedVideoDeviceId: "none",
   selectedAudioDeviceId: "none",
+  resolution: {
+    width: 512,
+    height: 512
+  },
 };
 
 interface StreamSettingsProps {
@@ -113,6 +121,10 @@ export function StreamSettings({
 const formSchema = z.object({
   streamUrl: z.string().url(),
   frameRate: z.coerce.number(),
+  resolution: z.object({
+    width: z.coerce.number().min(512).max(1024),
+    height: z.coerce.number().min(512).max(1024)
+  })
 });
 
 interface ConfigFormProps {
@@ -241,6 +253,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       prompts: prompts,
       selectedVideoDeviceId: selectedVideoDevice || "none",
       selectedAudioDeviceId: selectedAudioDevice || "none",
+      resolution: values.resolution || DEFAULT_CONFIG.resolution,
     });
   };
 
@@ -321,6 +334,36 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="resolution.width"
+            render={({ field }) => (
+              <FormItem className="mt-4">
+                <FormLabel>Width</FormLabel>
+                <FormControl>
+                  <Input placeholder="Width" {...field} type="number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="resolution.height"
+            render={({ field }) => (
+              <FormItem className="mt-4">
+                <FormLabel>Height</FormLabel>
+                <FormControl>
+                  <Input placeholder="Height" {...field} type="number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="mt-4 mb-4">
           <Label>Camera</Label>

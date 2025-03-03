@@ -7,20 +7,64 @@ import {
 } from "@/components/ui/tooltip";
 
 /**
- * Internal component that renders and captures camera feed at exactly 512x512.
+ * Internal component that renders and captures camera feed with configurable resolution.
  * Handles both display and stream capture in a single canvas element,
  * ensuring consistent dimensions while maintaining aspect ratio.
  */
 function StreamCanvas({
   stream,
   frameRate,
+  resolution,
+  onStreamReady,
 }: {
   stream: MediaStream | null;
   frameRate: number;
+  resolution: { width: number; height: number };
   onStreamReady: (stream: MediaStream) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { width, height } = resolution;
+  const canvasStreamRef = useRef<MediaStream | null>(null);
+
+  // Update canvas dimensions when resolution changes
+  useEffect(() => {
+    if (canvasRef.current) {
+      canvasRef.current.width = width;
+      canvasRef.current.height = height;
+    }
+  }, [width, height]);
+
+  // Create a stream from the canvas with the exact resolution
+  useEffect(() => {
+    if (!canvasRef.current || !stream) return;
+
+    // Stop previous canvas stream if it exists
+    if (canvasStreamRef.current) {
+      canvasStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+
+    // Create a new stream from the canvas
+    const canvas = canvasRef.current;
+    const canvasStream = canvas.captureStream(frameRate);
+    canvasStreamRef.current = canvasStream;
+
+    // Add audio tracks from the original stream if they exist
+    if (stream.getAudioTracks().length > 0) {
+      stream.getAudioTracks().forEach(track => {
+        canvasStream.addTrack(track);
+      });
+    }
+
+    // Notify parent component about the new stream
+    onStreamReady(canvasStream);
+
+    return () => {
+      if (canvasStreamRef.current) {
+        canvasStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream, frameRate, width, height, onStreamReady]);
 
   // Only set up canvas animation if we have video
   useEffect(() => {
@@ -44,14 +88,21 @@ function StreamCanvas({
         return;
       }
 
-      const scale = Math.max(512 / video.videoWidth, 512 / video.videoHeight);
+      // Calculate scale to fit video in canvas while maintaining aspect ratio
+      const scaleWidth = width / video.videoWidth;
+      const scaleHeight = height / video.videoHeight;
+      const scale = Math.max(scaleWidth, scaleHeight);
+      
       const scaledWidth = video.videoWidth * scale;
       const scaledHeight = video.videoHeight * scale;
-      const offsetX = (512 - scaledWidth) / 2;
-      const offsetY = (512 - scaledHeight) / 2;
+      const offsetX = (width - scaledWidth) / 2;
+      const offsetY = (height - scaledHeight) / 2;
 
+      // Clear the canvas and draw black background
       ctx.fillStyle = "black";
-      ctx.fillRect(0, 0, 512, 512);
+      ctx.fillRect(0, 0, width, height);
+      
+      // Draw the video frame centered and scaled to fit
       ctx.drawImage(video, offsetX, offsetY, scaledWidth, scaledHeight);
       
       requestAnimationFrame(drawFrame);
@@ -61,7 +112,7 @@ function StreamCanvas({
     return () => {
       isActive = false;
     };
-  }, [stream]);
+  }, [stream, width, height]);
 
   // Only set up video element if we have video
   useEffect(() => {
@@ -97,7 +148,7 @@ function StreamCanvas({
 
   return (
     <>
-      <div className="relative">
+      <div className="relative w-full h-full" style={{ aspectRatio: `${width}/${height}` }}>
         {/* Hidden video element that will be used as the source for the canvas */}
         <video 
           ref={videoRef}
@@ -108,8 +159,8 @@ function StreamCanvas({
         />
         <canvas
           ref={canvasRef}
-          width={512}
-          height={512}
+          width={width}
+          height={height}
           className="w-full h-full"
         />
         <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
@@ -132,6 +183,7 @@ interface WebcamProps {
   deviceId: string;
   frameRate: number;
   selectedAudioDeviceId: string;
+  resolution: { width: number; height: number };
 }
 
 export function Webcam({
@@ -139,8 +191,10 @@ export function Webcam({
   deviceId,
   frameRate,
   selectedAudioDeviceId,
+  resolution = { width: 512, height: 512 },
 }: WebcamProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [canvasStream, setCanvasStream] = useState<MediaStream | null>(null);
 
   const replaceStream = useCallback((newStream: MediaStream | null) => {
     setStream((oldStream) => {
@@ -150,7 +204,37 @@ export function Webcam({
       }
       return newStream;
     });
+
+    // Also clean up canvas stream if we're replacing the stream
+    setCanvasStream((oldCanvasStream: MediaStream | null): MediaStream | null => {
+      if (oldCanvasStream) {
+        oldCanvasStream.getTracks().forEach((track) => {
+          // Only stop video tracks, as audio tracks are shared with the main stream
+          if (track.kind === 'video') {
+            track.stop();
+          }
+        });
+      }
+      return null;
+    });
   }, []);
+
+  const handleCanvasStreamReady = useCallback((stream: MediaStream) => {
+    // Clean up any existing canvas stream before setting the new one
+    setCanvasStream((oldStream) => {
+      if (oldStream) {
+        oldStream.getTracks().forEach((track) => {
+          if (track.kind === 'video') {
+            track.stop();
+          }
+        });
+      }
+      return stream;
+    });
+    
+    // Pass the canvas stream to the parent component
+    onStreamReady(stream);
+  }, [onStreamReady]);
 
   const startWebcam = useCallback(async () => {
     if (deviceId === "none" && selectedAudioDeviceId === "none") {
@@ -161,15 +245,15 @@ export function Webcam({
     }
 
     try {
+      // First try to get the exact resolution
       const constraints: MediaStreamConstraints = {
         video:
           deviceId === "none"
             ? false
             : {
                 deviceId: { exact: deviceId },
-                width: { ideal: 512 },
-                height: { ideal: 512 },
-                aspectRatio: { ideal: 1 },
+                width: { exact: resolution.width },
+                height: { exact: resolution.height },
                 frameRate: { ideal: frameRate, max: frameRate },
               },
         audio:
@@ -186,13 +270,44 @@ export function Webcam({
               },
       };
 
-      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
-      return newStream;
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (exactError) {
+        console.log("Could not get exact resolution, falling back to ideal constraints", exactError);
+        
+        // Fall back to ideal constraints if exact fails
+        const idealConstraints: MediaStreamConstraints = {
+          video:
+            deviceId === "none"
+              ? false
+              : {
+                  deviceId: { exact: deviceId },
+                  width: { ideal: resolution.width },
+                  height: { ideal: resolution.height },
+                  aspectRatio: { ideal: resolution.width / resolution.height },
+                  frameRate: { ideal: frameRate, max: frameRate },
+                },
+          audio:
+            selectedAudioDeviceId === "none"
+              ? false
+              : {
+                  deviceId: { exact: selectedAudioDeviceId },
+                  sampleRate: 48000,
+                  channelCount: 2,
+                  sampleSize: 16,
+                  echoCancellation: false,
+                  noiseSuppression: false,
+                  autoGainControl: false,
+                },
+        };
+        
+        return await navigator.mediaDevices.getUserMedia(idealConstraints);
+      }
     } catch (error) {
       console.error("Error accessing media devices.", error);
       return null;
     }
-  }, [deviceId, frameRate, selectedAudioDeviceId]);
+  }, [deviceId, frameRate, selectedAudioDeviceId, resolution]);
 
   useEffect(() => {
     if (deviceId === "none" && selectedAudioDeviceId === "none") return;
@@ -202,7 +317,7 @@ export function Webcam({
       if (newStream) {
         replaceStream(newStream);
         setStream(newStream);
-        onStreamReady(newStream);
+        // onStreamReady will be called by handleCanvasStreamReady when the canvas stream is ready
       }
     });
 
@@ -213,9 +328,9 @@ export function Webcam({
     deviceId,
     frameRate,
     selectedAudioDeviceId,
+    resolution,
     startWebcam,
     replaceStream,
-    onStreamReady,
   ]);
 
   const hasVideo = stream && stream.getVideoTracks().length > 0;
@@ -236,11 +351,12 @@ export function Webcam({
   }
 
   return (
-    <div>
+    <div className="w-full h-full" style={{ aspectRatio: `${resolution.width}/${resolution.height}` }}>
       <StreamCanvas
         stream={stream}
         frameRate={frameRate}
-        onStreamReady={() => {}} // Already handled in parent component.
+        resolution={resolution}
+        onStreamReady={handleCanvasStreamReady}
       />
     </div>
   );

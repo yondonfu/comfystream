@@ -186,6 +186,19 @@ async def offer(request):
                             "success": True
                         }
                         channel.send(json.dumps(response))
+                    elif params.get("type") == "update_resolution":
+                        if "width" not in params or "height" not in params:
+                            logger.warning("[Control] Missing width or height in update_resolution message")
+                            return
+                        # Update pipeline resolution for future frames
+                        pipeline.width = params["width"]
+                        pipeline.height = params["height"]
+                        logger.info(f"[Control] Updated resolution to {params['width']}x{params['height']}")
+                        response = {
+                            "type": "resolution_updated",
+                            "success": True
+                        }
+                        channel.send(json.dumps(response))
                     else:
                         logger.warning("[Server] Invalid message format - missing required fields")
                 except json.JSONDecodeError:
@@ -258,7 +271,11 @@ async def on_startup(app: web.Application):
         patch_loop_datagram(app["media_ports"])
 
     app["pipeline"] = Pipeline(
-        cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True
+        width=512,
+        height=512,
+        cwd=app["workspace"], 
+        disable_cuda_malloc=True, 
+        gpu_only=True
     )
     app["pcs"] = set()
 
