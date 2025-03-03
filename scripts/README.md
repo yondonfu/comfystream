@@ -19,7 +19,7 @@ This repository includes an [Ansible playbook](https://docs.ansible.com/ansible/
    - **Storage**: 100GB
 
    > [!TIP]
-   > You can use the `spinup_comfystream_tensordock.py --bare-vm` script to create a compatible VM on TensorDock.
+   > You can use the `spinup_comfystream_tensordock.py --bare-vm` script to create a [compatible VM on TensorDock](https://marketplace.tensordock.com/deploy?gpu=geforcertx4090-pcie-24gb&gpuCount=1&ramAmount=16&vcpuCount=4&storage=100&os=Ubuntu-22.04-LTS).
 
 2. **Open Required Ports**:  
    Ensure the following ports are open **inbound and outbound** on the VM's firewall/security group:
