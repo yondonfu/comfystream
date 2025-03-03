@@ -82,7 +82,6 @@
         msg:
           - "ComfyUI username: {{ comfyui_username }}"
           - "ComfyUI password: {{ comfyui_password }}"
-      no_log: true
     - name: Add Caddy GPG key
       apt_key:
         url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
@@ -189,10 +188,26 @@
       loop:
         - "{{ ansible_env.HOME }}/models/ComfyUI--models"
         - "{{ ansible_env.HOME }}/models/ComfyUI--output"
+    - name: Check if Docker Hub credentials are provided
+      set_fact:
+        docker_login_required: "{{ docker_hub_username | default('') | length > 0 and docker_hub_password | default('') | length > 0 }}"
+    - name: Log in to Docker Hub (if credentials exist)
+      community.docker.docker_login:
+        username: "{{ docker_hub_username }}"
+        password: "{{ docker_hub_password }}"
+      become: yes
+      when: docker_login_required
+      register: docker_login_result
+      ignore_errors: yes
     - name: Pull Docker image for ComfyStream (may take a while)
       community.docker.docker_image:
         name: "{{ docker_image }}"
         source: pull
+    - name: Log out from Docker Hub after pulling image
+      community.docker.docker_login:
+        state: absent
+      become: yes
+      when: docker_login_required and docker_login_result is succeeded
     - name: Run Comfystream Docker container
       community.docker.docker_container:
         name: comfystream
@@ -202,7 +217,7 @@
         stop_timeout: 300
         device_requests:
           - driver: nvidia
-            count: -1  # Use all GPUs
+            count: -1 # Use all GPUs
             capabilities:
               - [gpu]
         volumes:

@@ -42,6 +42,13 @@ This repository includes an [Ansible playbook](https://docs.ansible.com/ansible/
 6. **Access the Server**:  
    After successful execution, the access URLs for **ComfyStream** will be displayed.
 
+> [!IMPORTANT]
+> If you encounter a `toomanyrequests` error while pulling the Docker image, either wait a few minutes or provide your Docker credentials when running the playbook:  
+> 
+> ```bash
+> ansible-playbook -i ansible/inventory.yaml ansible/plays/setup_comfystream.yaml -e "docker_hub_username=your_dockerhub_username docker_hub_password=your_dockerhub_pat"
+> ```
+
 > [!TIP]
 > The [ComfyStream Docker image](https://hub.docker.com/r/livepeer/comfystream/tags) is **~20GB**. To check download progress, SSH into the VM and run:
 >
