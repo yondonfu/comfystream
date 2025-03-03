@@ -4,6 +4,7 @@ import os
 import json
 import logging
 from collections import deque
+import sys
 
 import torch
 
@@ -410,4 +411,8 @@ if __name__ == "__main__":
     # NOTE: This ensures that the local and hosted experiences have consistent routes.
     add_prefix_to_app_routes(app, "/live")
 
-    web.run_app(app, host=args.host, port=int(args.port))
+    def force_print(*args, **kwargs):
+        print(*args, **kwargs, flush=True)
+        sys.stdout.flush()
+
+    web.run_app(app, host=args.host, port=int(args.port), print=force_print)

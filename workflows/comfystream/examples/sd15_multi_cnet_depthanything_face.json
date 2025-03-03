@@ -1,0 +1,295 @@
+{
+  "2": {
+    "inputs": {
+      "engine": "depth_anything_vitl14-fp16.engine",
+      "images": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "DepthAnythingTensorrt",
+    "_meta": {
+      "title": "Depth Anything Tensorrt"
+    }
+  },
+  "3": {
+    "inputs": {
+      "unet_name": "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+      "model_type": "SD15"
+    },
+    "class_type": "TensorRTLoader",
+    "_meta": {
+      "title": "TensorRT Loader"
+    }
+  },
+  "5": {
+    "inputs": {
+      "text": "beautiful pencil sketch, masterpiece ",
+      "clip": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "seed": 59962529669489,
+      "steps": 2,
+      "cfg": 1,
+      "sampler_name": "lcm",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": [
+        "3",
+        0
+      ],
+      "positive": [
+        "19",
+        0
+      ],
+      "negative": [
+        "19",
+        1
+      ],
+      "latent_image": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "8": {
+    "inputs": {
+      "control_net_name": "control_v11f1p_sd15_depth_fp16.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "9": {
+    "inputs": {
+      "strength": 0.9,
+      "start_percent": 0,
+      "end_percent": 1,
+      "positive": [
+        "5",
+        0
+      ],
+      "negative": [
+        "6",
+        0
+      ],
+      "control_net": [
+        "10",
+        0
+      ],
+      "image": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "10": {
+    "inputs": {
+      "backend": "inductor",
+      "fullgraph": false,
+      "mode": "reduce-overhead",
+      "controlnet": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "TorchCompileLoadControlNet",
+    "_meta": {
+      "title": "TorchCompileLoadControlNet"
+    }
+  },
+  "11": {
+    "inputs": {
+      "vae_name": "taesd"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "13": {
+    "inputs": {
+      "backend": "inductor",
+      "fullgraph": true,
+      "mode": "reduce-overhead",
+      "compile_encoder": true,
+      "compile_decoder": true,
+      "vae": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "TorchCompileLoadVAE",
+    "_meta": {
+      "title": "TorchCompileLoadVAE"
+    }
+  },
+  "14": {
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "15": {
+    "inputs": {
+      "images": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "16": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "18": {
+    "inputs": {
+      "stop_at_clip_layer": -2,
+      "clip": [
+        "27",
+        1
+      ]
+    },
+    "class_type": "CLIPSetLastLayer",
+    "_meta": {
+      "title": "CLIP Set Last Layer"
+    }
+  },
+  "19": {
+    "inputs": {
+      "strength": 0.9,
+      "start_percent": 0,
+      "end_percent": 1,
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "9",
+        1
+      ],
+      "control_net": [
+        "21",
+        0
+      ],
+      "image": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "20": {
+    "inputs": {
+      "control_net_name": "control_v2p_sd15_mediapipe_face.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "21": {
+    "inputs": {
+      "backend": "inductor",
+      "fullgraph": false,
+      "mode": "reduce-overhead",
+      "controlnet": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "TorchCompileLoadControlNet",
+    "_meta": {
+      "title": "TorchCompileLoadControlNet"
+    }
+  },
+  "22": {
+    "inputs": {
+      "max_faces": 1,
+      "min_confidence": 0.5,
+      "resolution": 512,
+      "image": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "MediaPipe-FaceMeshPreprocessor",
+    "_meta": {
+      "title": "MediaPipe Face Mesh"
+    }
+  },
+  "26": {
+    "inputs": {
+      "image": "pasted/image (2).png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "27": {
+    "inputs": {
+      "ckpt_name": "dreamshaper_8.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  }
+}

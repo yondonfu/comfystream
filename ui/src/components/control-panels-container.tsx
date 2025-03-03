@@ -3,11 +3,7 @@
 import React, { useState } from "react";
 import { ControlPanel } from "./control-panel";
 import { Button } from "./ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from "./ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "./ui/drawer";
 import { Settings } from "lucide-react";
 import { Plus } from "lucide-react"; // Import Plus icon for minimal add button
 
@@ -15,51 +11,59 @@ export const ControlPanelsContainer = () => {
   const [panels, setPanels] = useState<number[]>([0]); // Start with one panel
   const [nextPanelId, setNextPanelId] = useState(1);
   const [isOpen, setIsOpen] = useState(false);
-  const [panelStates, setPanelStates] = useState<Record<number, {
-    nodeId: string;
-    fieldName: string;
-    value: string;
-    isAutoUpdateEnabled: boolean;
-  }>>({
+  const [panelStates, setPanelStates] = useState<
+    Record<
+      number,
+      {
+        nodeId: string;
+        fieldName: string;
+        value: string;
+        isAutoUpdateEnabled: boolean;
+      }
+    >
+  >({
     0: {
       nodeId: "",
       fieldName: "",
       value: "0",
-      isAutoUpdateEnabled: false
-    }
+      isAutoUpdateEnabled: false,
+    },
   });
 
   const addPanel = () => {
     const newId = nextPanelId;
     setPanels([...panels, newId]);
-    setPanelStates(prev => ({
+    setPanelStates((prev) => ({
       ...prev,
       [newId]: {
         nodeId: "",
         fieldName: "",
         value: "0",
-        isAutoUpdateEnabled: false
-      }
+        isAutoUpdateEnabled: false,
+      },
     }));
     setNextPanelId(nextPanelId + 1);
   };
 
   const removePanel = (id: number) => {
-    setPanels(panels.filter(panelId => panelId !== id));
-    setPanelStates(prev => {
+    setPanels(panels.filter((panelId) => panelId !== id));
+    setPanelStates((prev) => {
       const newState = { ...prev };
       delete newState[id];
       return newState;
     });
   };
 
-  const updatePanelState = (id: number, state: Partial<typeof panelStates[number]>) => {
-    setPanelStates(prev => ({
+  const updatePanelState = (
+    id: number,
+    state: Partial<(typeof panelStates)[number]>,
+  ) => {
+    setPanelStates((prev) => ({
       ...prev,
       [id]: {
         ...prev[id],
-        ...state
-      }
+        ...state,
+      },
     }));
   };
 
@@ -73,8 +77,8 @@ export const ControlPanelsContainer = () => {
         <Settings className="h-6 w-6" />
       </Button>
 
-      <Drawer 
-        open={isOpen} 
+      <Drawer
+        open={isOpen}
         onOpenChange={setIsOpen}
         direction="bottom"
         shouldScaleBackground={false}
@@ -107,12 +111,12 @@ export const ControlPanelsContainer = () => {
             }
           `}
         </style>
-        <DrawerContent 
+        <DrawerContent
           id="control-panel-drawer"
           className="max-h-[50vh] min-h-[200px] bg-background/90 backdrop-blur-md border-t shadow-lg overflow-hidden"
         >
           <DrawerTitle className="sr-only">Control Panels</DrawerTitle>
-          
+
           <div className="flex h-full">
             {/* Left side add button */}
             <div className="w-12 border-r flex items-start pt-4 justify-center bg-background/50">
@@ -133,9 +137,14 @@ export const ControlPanelsContainer = () => {
             <div className="flex-1 overflow-x-auto">
               <div className="flex gap-4 p-4 min-h-0">
                 {panels.map((id) => (
-                  <div key={id} className="flex-none w-80 border rounded-lg bg-white/95 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col max-h-[calc(50vh-3rem)]">
+                  <div
+                    key={id}
+                    className="flex-none w-80 border rounded-lg bg-white/95 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col max-h-[calc(50vh-3rem)]"
+                  >
                     <div className="flex justify-between items-center p-2 border-b bg-gray-50/80">
-                      <span className="font-medium">Control Panel {id + 1}</span>
+                      <span className="font-medium">
+                        Control Panel {id + 1}
+                      </span>
                       <Button
                         onClick={() => removePanel(id)}
                         variant="ghost"
@@ -146,7 +155,7 @@ export const ControlPanelsContainer = () => {
                       </Button>
                     </div>
                     <div className="flex-1 overflow-y-auto">
-                      <ControlPanel 
+                      <ControlPanel
                         panelState={panelStates[id]}
                         onStateChange={(state) => updatePanelState(id, state)}
                       />
@@ -160,4 +169,4 @@ export const ControlPanelsContainer = () => {
       </Drawer>
     </>
   );
-}; 
+};

@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+> **Note for ComfyUI Node Development:**  
+> - `npm run dev` uses a separate `./.next` directory that won't affect the ComfyUI node's static files
+> - `npm run build` creates production files in `../nodes/web/static` for use by the ComfyUI node
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

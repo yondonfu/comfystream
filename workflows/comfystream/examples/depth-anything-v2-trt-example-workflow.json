@@ -11,7 +11,7 @@
   },
   "2": {
     "inputs": {
-      "engine": "depth_anything_v2_vitb-fp16.engine",
+      "engine": "depth_anything_vitl14-fp16.engine",
       "images": [
         "1",
         0

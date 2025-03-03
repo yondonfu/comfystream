@@ -36,12 +36,13 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Select } from "./ui/select";
+import { Prompt } from "@/types";
 import { toast } from "sonner";
 
 export interface StreamConfig {
   streamUrl: string;
   frameRate: number;
-  prompts?: any;
+  prompts?: Prompt[] | null;
   selectedVideoDeviceId: string;
   selectedAudioDeviceId: string;
 }
@@ -120,10 +121,10 @@ interface ConfigFormProps {
 }
 
 interface PromptContextType {
-  originalPrompts: any;
-  currentPrompts: any;
-  setOriginalPrompts: (prompts: any) => void;
-  setCurrentPrompts: (prompts: any) => void;
+  originalPrompts: Prompt[] | null;
+  currentPrompts: Prompt[] | null;
+  setOriginalPrompts: (prompts: Prompt[]) => void;
+  setCurrentPrompts: (prompts: Prompt[]) => void;
 }
 
 export const PromptContext = createContext<PromptContextType>({
@@ -136,12 +137,16 @@ export const PromptContext = createContext<PromptContextType>({
 export const usePrompt = () => useContext(PromptContext);
 
 function ConfigForm({ config, onSubmit }: ConfigFormProps) {
-  const [prompts, setPrompts] = useState<any[]>([]);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const { setOriginalPrompts } = usePrompt();
   const [videoDevices, setVideoDevices] = useState<AVDevice[]>([]);
   const [audioDevices, setAudioDevices] = useState<AVDevice[]>([]);
-  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string | undefined>(config.selectedVideoDeviceId);
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | undefined>(config.selectedAudioDeviceId);
+  const [selectedVideoDevice, setSelectedVideoDevice] = useState<
+    string | undefined
+  >(config.selectedVideoDeviceId);
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<
+    string | undefined
+  >(config.selectedAudioDeviceId);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -159,11 +164,11 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       const videoDevices = [
         { deviceId: "none", label: "No Video" },
         ...devices
-        .filter((device) => device.kind === "videoinput")
-        .map((device) => ({
-          deviceId: device.deviceId,
-          label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`,
-        }))
+          .filter((device) => device.kind === "videoinput")
+          .map((device) => ({
+            deviceId: device.deviceId,
+            label: device.label || `Camera ${device.deviceId.slice(0, 5)}...`,
+          })),
       ];
 
       setVideoDevices(videoDevices);
@@ -176,13 +181,8 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       toast.error("Failed to get video devices", {
         description: "Please make sure your camera is connected and enabled.",
       });
-
-      // If we can't access video devices, still provide the None option
-      const videoDevices = [{ deviceId: "none", label: "No Video" }];
-      setVideoDevices(videoDevices);
-      setSelectedVideoDevice("none");
     }
-  }, []);
+  }, [selectedVideoDevice]);
 
   const getAudioDevices = useCallback(async () => {
     try {
@@ -194,27 +194,24 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
           .filter((device) => device.kind === "audioinput")
           .map((device) => ({
             deviceId: device.deviceId,
-            label: device.label || `Microphone ${device.deviceId.slice(0, 5)}...`,
-          }))
+            label:
+              device.label || `Microphone ${device.deviceId.slice(0, 5)}...`,
+          })),
       ];
 
       setAudioDevices(audioDevices);
       // Set default to first available microphone if no selection yet
       if (selectedAudioDevice == "none" && audioDevices.length > 1) {
-        setSelectedAudioDevice(audioDevices[1].deviceId);  // Index 1 because 0 is "No Audio"
+        setSelectedAudioDevice(audioDevices[0].deviceId); // Default to "No Audio" due to https://github.com/yondonfu/comfystream/issues/64
       }
     } catch (error) {
       console.error("Failed to get audio devices: ", error);
       toast.error("Failed to get audio devices", {
-        description: "Please make sure your microphone is connected and enabled.",
+        description:
+          "Please make sure your microphone is connected and enabled.",
       });
-
-      // If we can't access audio devices, still provide the None option
-      const audioDevices = [{ deviceId: "none", label: "No Audio" }];
-      setAudioDevices(audioDevices);
-      setSelectedAudioDevice("none");
     }
-  }, []);
+  }, [selectedAudioDevice]);
 
   // Handle device change events.
   useEffect(() => {
@@ -226,11 +223,11 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
     return () => {
       navigator.mediaDevices.removeEventListener(
         "devicechange",
-        getVideoDevices
+        getVideoDevices,
       );
       navigator.mediaDevices.removeEventListener(
         "devicechange",
-        getAudioDevices
+        getAudioDevices,
       );
     };
   }, [getVideoDevices, getAudioDevices]);
@@ -244,10 +241,12 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       prompts: prompts,
       selectedVideoDeviceId: selectedVideoDevice || "none",
       selectedAudioDeviceId: selectedAudioDevice || "none",
-      });
+    });
   };
 
-  const handlePromptsChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePromptsChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     if (!e.target.files?.length) return;
 
     try {
@@ -275,15 +274,22 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const handleCameraSelect = (deviceId: string) => {
     if (deviceId !== selectedVideoDevice) {
       setSelectedVideoDevice(deviceId);
+      // Unselect audio device when video is selected
+      if (deviceId !== "none") {
+        setSelectedAudioDevice("none");
+      }
     }
   };
 
   const handleMicrophoneSelect = (deviceId: string) => {
     if (deviceId !== selectedAudioDevice) {
       setSelectedAudioDevice(deviceId);
+      // Unselect video device when audio is selected
+      if (deviceId !== "none") {
+        setSelectedVideoDevice("none");
+      }
     }
   };
-
 
   return (
     <Form {...form}>
@@ -324,7 +330,10 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             onValueChange={handleCameraSelect}
           >
             <Select.Trigger className="w-full mt-2">
-              {selectedVideoDevice ? (videoDevices.find((d) => d.deviceId === selectedVideoDevice)?.label || "None") : "None"}
+              {selectedVideoDevice
+                ? videoDevices.find((d) => d.deviceId === selectedVideoDevice)
+                    ?.label || "None"
+                : "None"}
             </Select.Trigger>
             <Select.Content>
               {videoDevices.length === 0 ? (
@@ -344,23 +353,35 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
 
         <div className="mt-4 mb-4">
           <Label>Microphone</Label>
-          <Select value={selectedAudioDevice} onValueChange={handleMicrophoneSelect}>
+          <Select
+            value={selectedAudioDevice}
+            onValueChange={handleMicrophoneSelect}
+          >
             <Select.Trigger className="w-full mt-2">
-              {selectedAudioDevice ? (audioDevices.find((d) => d.deviceId === selectedAudioDevice)?.label || "None") : "None"}
+              {selectedAudioDevice
+                ? audioDevices.find((d) => d.deviceId === selectedAudioDevice)
+                    ?.label || "None"
+                : "None"}
             </Select.Trigger>
             <Select.Content>
-            {audioDevices.length === 0 ? (
+              {audioDevices.length === 0 ? (
                 <Select.Option disabled value="no-devices">
                   No audio devices found
                 </Select.Option>
               ) : (
                 audioDevices
-                .filter((device) => device.deviceId !== undefined && device.deviceId != "")
-                .map((device) => (
-                  <Select.Option key={device.deviceId} value={device.deviceId}>
-                    {device.label}
-                  </Select.Option>
-                ))
+                  .filter(
+                    (device) =>
+                      device.deviceId !== undefined && device.deviceId != "",
+                  )
+                  .map((device) => (
+                    <Select.Option
+                      key={device.deviceId}
+                      value={device.deviceId}
+                    >
+                      {device.label}
+                    </Select.Option>
+                  ))
               )}
             </Select.Content>
           </Select>

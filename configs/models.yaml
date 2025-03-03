@@ -38,3 +38,34 @@ models:
     url: "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11f1p_sd15_depth_fp16.safetensors"
     path: "controlnet/control_v11f1p_sd15_depth_fp16.safetensors"
     type: "controlnet" 
+
+  controlnet-mediapipe-face:
+    name: "ControlNet MediaPipe Face"
+    url: "https://huggingface.co/CrucibleAI/ControlNetMediaPipeFace/resolve/main/control_v2p_sd15_mediapipe_face.safetensors"
+    path: "controlnet/control_v2p_sd15_mediapipe_face.safetensors"
+    type: "controlnet"
+
+  # Lora models
+  ral-polygon-sd15:
+    name: "ral-polygon-sd15"
+    url: "https://huggingface.co/Livepeer-Studio/comfystream_loras/resolve/main/ral-polygon-sd15.safetensors"
+    path: "loras/SD1.5/ral-polygon-sd15.safetensors"
+    type: "lora"
+
+  ral-chrome-sdxl:
+    name: "ral-chrome-sd15"
+    url: "https://civitai.com/api/download/models/276570?type=Model&format=SafeTensor"
+    path: "loras/SD1.5/ral-chrome-sd15.safetensors"
+    type: "lora"
+
+  outfitToOutfit_v20:
+    name: "outfitToOutfit_v20"
+    url: "https://huggingface.co/EmmaJohnson311/outfitToOutfit/resolve/main/outfitToOutfit_v20_sd15.safetensors"
+    path: "controlnet/outfitToOutfit_v20.safetensors"
+    type: "controlnet"
+
+  cliptext:
+    name: "ClipTextModel"
+    url: "https://huggingface.co/Lykon/dreamshaper-8/resolve/main/text_encoder/model.fp16.safetensors"
+    path: "text_encoders/CLIPText/model.fp16.safetensors"
+    type: "text_encoder"

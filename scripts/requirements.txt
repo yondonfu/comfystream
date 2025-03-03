@@ -1,0 +1,8 @@
+# TensorDock Spinup requirements
+requests
+geopy
+colorama
+qrcode_terminal
+click
+bcrypt
+rich

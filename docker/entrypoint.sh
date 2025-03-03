@@ -15,6 +15,22 @@ if [ -d "/app" ] && [ ! -L "/workspace" ]; then
     cd /workspace/comfystream
 fi
 
+# Add help command to show usage
+show_help() {
+    echo "Usage: entrypoint.sh [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --download-models       Download default models"
+    echo "  --build-engines         Build TensorRT engines for default models"
+    echo "  --server                Start the Comfystream server, UI and ComfyUI"
+    echo "  --help                  Show this help message"
+    echo ""
+}
+if [ "$1" = "--help" ]; then
+    show_help
+    exit 0
+fi
+
 if [ "$1" = "--download-models" ]; then
     cd /workspace/comfystream
     conda activate comfystream

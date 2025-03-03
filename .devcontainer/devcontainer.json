@@ -3,7 +3,7 @@
 {
 	"name": "ComfyStream",
 	"build": {
-		"dockerfile": "Dockerfile",
+		"dockerfile": "../docker/Dockerfile",
 		"context": "../"
 	},
 	"runArgs": [

@@ -5,6 +5,7 @@ This guide will help you set up and run a development container for ComfyStream 
 ## Prerequisites
 
 - [Docker](https://www.docker.com/get-started)
+- [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 - [Visual Studio Code](https://code.visualstudio.com/)
 - [VS Code Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 
