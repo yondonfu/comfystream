@@ -3,7 +3,7 @@
   hosts: all
   become: yes
   vars:
-    docker_image: "livepeer/comfystream:latest"
+    docker_image: "livepeer/comfystream:0.0.3"
     comfyui_username: "comfyadmin"
     comfyui_password: "Ge}_^jn?*?5#/|FWx9I&K|S0$/)#au8"
 
@@ -140,22 +140,35 @@
         line: "import /etc/caddy/comfystream.caddy"
         create: yes
       notify: restart caddy
-    # Install, configure, and start ComfyUI with Comfystream
+    # Ensure NVIDIA Container Toolkit is installed and configured
+    - name: Check if NVIDIA Container Toolkit is installed
+      command: dpkg -l | grep nvidia-container-toolkit
+      register: nvidia_toolkit_installed
+      ignore_errors: yes
+      changed_when: false
+    - name: Check if NVIDIA runtime is configured in Docker
+      command: docker info | grep -i nvidia
+      register: nvidia_runtime_configured
+      ignore_errors: yes
+      changed_when: false
     - name: Add NVIDIA Container Toolkit repository key
       apt_key:
         url: https://nvidia.github.io/libnvidia-container/gpgkey
         keyring: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
         state: present
+      when: nvidia_toolkit_installed.rc != 0
     - name: Add NVIDIA Container Toolkit repository
       get_url:
         url: https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
         dest: /etc/apt/sources.list.d/nvidia-container-toolkit.list
         mode: "0644"
+      when: nvidia_toolkit_installed.rc != 0
     - name: Ensure NVIDIA repository uses correct signing key
       replace:
         path: /etc/apt/sources.list.d/nvidia-container-toolkit.list
         regexp: "^deb https://"
         replace: "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://"
+      when: nvidia_toolkit_installed.rc != 0
     - name: Install NVIDIA Container Toolkit
       apt:
         name: nvidia-container-toolkit
@@ -165,15 +178,18 @@
       delay: 30
       register: nvidia_toolkit_result
       until: nvidia_toolkit_result is success
+      when: nvidia_toolkit_installed.rc != 0
     - name: Configure Docker to use NVIDIA runtime
       command: nvidia-ctk runtime configure --runtime=docker
       register: nvidia_ctk_result
       changed_when: nvidia_ctk_result.rc == 0
+      when: nvidia_runtime_configured.rc != 0
     - name: Restart Docker service
       systemd:
         name: docker
         state: restarted
         enabled: yes
+      when: nvidia_runtime_configured.rc != 0
     # Install, configure, and start ComfyUI with Comfystream
     - name: Install community.docker collection
       command: ansible-galaxy collection install community.docker
