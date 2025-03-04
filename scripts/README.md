@@ -32,7 +32,10 @@ This repository includes an [Ansible playbook](https://docs.ansible.com/ansible/
 4. **Configure the Inventory File**:
    Add the VM’s public IP to `ansible/inventory.yml`.
 
-5. **Run the Playbook**:  
+5. **Change the ComfyUI Password:**  
+   Open the `ansible/plays/setup_comfystream.yaml` file and replace the `comfyui_password` value with your own secure password.
+
+6. **Run the Playbook**:  
    Execute:
 
     ```bash
@@ -42,7 +45,7 @@ This repository includes an [Ansible playbook](https://docs.ansible.com/ansible/
    > [!IMPORTANT]  
    > When using a non-sudo user, add `--ask-become-pass` to provide the sudo password or use an Ansible vault for secure storage.
 
-6. Access the Server:
+7. Access the Server:
    Once the **Ansible playbook** completes successfully, the **ComfyStream** container will start, downloading models and building TensorRT engines. When ready, access **ComfyUI** at `https://<VM_IP>:<PORT_THAT_FORWARDS_TO_8189>`.
 
 > [!IMPORTANT]

@@ -5,7 +5,7 @@
   vars:
     docker_image: "livepeer/comfystream:0.0.3"
     comfyui_username: "comfyadmin"
-    comfyui_password: "Ge}_^jn?*?5#/|FWx9I&K|S0$/)#au8"
+    comfyui_password: "Ge}_^jn?*?5#/|FWx9I&K|S0$/)#au8" # Set your own secure password!
 
   tasks:
     # Wait till VM is ready
