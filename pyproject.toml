@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "comfystream"
 description = "Build Live AI Video with ComfyUI"
-version = "0.0.2"
+version = "0.0.3"
 license = { file = "LICENSE" }
 dependencies = [
     "asyncio",
@@ -23,8 +23,8 @@ dev = ["pytest"]
 repository = "https://github.com/yondonfu/comfystream"
 
 [tool.comfy]
-PublisherId = "" # TODO (fill in Publisher ID from Comfy Registry Website).
-DisplayName = "ComfyStream" # Display name for the Custom Node. Can be changed later.
+PublisherId = "livepeer-comfystream"
+DisplayName = "ComfyStream"
 Icon = "https://avatars.githubusercontent.com/u/25355022?s=48&v=4" # SVG, PNG, JPG or GIF (MAX. 800x400px)
 
 [tool.setuptools]
