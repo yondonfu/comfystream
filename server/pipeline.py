@@ -10,8 +10,10 @@ WARMUP_RUNS = 5
 
 
 class Pipeline:
-    def __init__(self, **kwargs):
+    def __init__(self, width=512, height=512, **kwargs):
         self.client = ComfyStreamClient(**kwargs, max_workers=5) # TODO: hardcoded max workers, should it be configurable?
+        self.width = width
+        self.height = height
 
         self.video_incoming_frames = asyncio.Queue()
         self.audio_incoming_frames = asyncio.Queue()
@@ -20,7 +22,7 @@ class Pipeline:
 
     async def warm_video(self):
         dummy_frame = av.VideoFrame()
-        dummy_frame.side_data.input = torch.randn(1, 512, 512, 3)
+        dummy_frame.side_data.input = torch.randn(1, self.height, self.width, 3)
 
         for _ in range(WARMUP_RUNS):
             self.client.put_video_input(dummy_frame)
