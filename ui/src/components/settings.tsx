@@ -122,8 +122,12 @@ const formSchema = z.object({
   streamUrl: z.string().url(),
   frameRate: z.coerce.number(),
   resolution: z.object({
-    width: z.coerce.number().min(512).max(1024),
-    height: z.coerce.number().min(512).max(1024)
+    width: z.coerce.number().refine(val => [512, 768, 1024].includes(val), {
+      message: "Width must be 512, 768, or 1024"
+    }),
+    height: z.coerce.number().refine(val => [512, 768, 1024].includes(val), {
+      message: "Height must be 512, 768, or 1024"
+    })
   })
 });
 
@@ -343,7 +347,19 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
               <FormItem className="mt-4">
                 <FormLabel>Width</FormLabel>
                 <FormControl>
-                  <Input placeholder="Width" {...field} type="number" />
+                  <Select
+                    value={field.value.toString()}
+                    onValueChange={(value) => field.onChange(parseInt(value))}
+                  >
+                    <Select.Trigger className="w-full">
+                      {field.value.toString()}
+                    </Select.Trigger>
+                    <Select.Content>
+                      <Select.Option value="512">512</Select.Option>
+                      <Select.Option value="768">768</Select.Option>
+                      <Select.Option value="1024">1024</Select.Option>
+                    </Select.Content>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -357,7 +373,19 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
               <FormItem className="mt-4">
                 <FormLabel>Height</FormLabel>
                 <FormControl>
-                  <Input placeholder="Height" {...field} type="number" />
+                  <Select
+                    value={field.value.toString()}
+                    onValueChange={(value) => field.onChange(parseInt(value))}
+                  >
+                    <Select.Trigger className="w-full">
+                      {field.value.toString()}
+                    </Select.Trigger>
+                    <Select.Content>
+                      <Select.Option value="512">512</Select.Option>
+                      <Select.Option value="768">768</Select.Option>
+                      <Select.Option value="1024">1024</Select.Option>
+                    </Select.Content>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
