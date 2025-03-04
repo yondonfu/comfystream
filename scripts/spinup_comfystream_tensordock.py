@@ -2,6 +2,7 @@
 to the user's location.
 """
 
+import base64
 import logging
 import os
 import secrets
@@ -50,11 +51,15 @@ VM_SPECS = {
     "internal_ports": [22, 8189],
     "operating_system": "Ubuntu 22.04 LTS",
 }
-CLOUD_INIT_PATH = os.path.join(
-    os.path.dirname(__file__), "config", "cloud_init_comfystream_template.yaml"
+CADDY_TEMPLATE_PATH = os.path.join(
+    os.path.dirname(__file__), "templates", "comfystream.caddy.j2"
 )
-PASSWORD_PLACEHOLDER = "<PASSWORD_PLACEHOLDER>"
-DOCKER_IMAGE_PLACEHOLDER = "<DOCKER_IMAGE_PLACEHOLDER>"
+CLOUD_INIT_TEMPLATE_PATH = os.path.join(
+    os.path.dirname(__file__), "templates", "cloud_init_comfystream.yaml.j2"
+)
+PASSWORD_PLACEHOLDER = "{{ password_hash }}"
+COMFYSTREAM_CADDY_PLACEHOLDER = "{{ comfystream_caddy_placeholder }}"
+DOCKER_IMAGE_PLACEHOLDER = "{{ docker_image_placeholder }}"
 
 
 class ColorFormatter(logging.Formatter):
@@ -105,40 +110,43 @@ console = Console()
 
 
 def display_login_info(
-    comfyui_url: str,
-    comfyui_username: str,
-    comfyui_password: str,
-    ssh_command: str,
+    comfyui_url: str = None,
+    comfyui_username: str = None,
+    comfyui_password: str = None,
+    ssh_command: str = None,
 ):
-    """Display VM login information.
+    """Display VM login information, but only for values that are provided.
 
     Args:
-        comfystream_ui_url: URL to the Comfystream UI.
-        comfystream_server_url: URL to the Comfystream Server.
-        ssh_command: SSH command to access the VM.
-        comfyui_url: URL to the ComfyUI (if exposed
+        comfyui_url: The ComfyUI URL.
+        comfyui_username: The ComfyUI username.
+        comfyui_password: The ComfyUI password.
+        ssh_command: The SSH command.
     """
-    comfyui_url_text = Text("ComfyUI url: ", style="yellow")
-    comfyui_url_text.append(f"{comfyui_url}", style="white")
-    comfyui_username_text = Text(f"ComfyUI username: ", style="cyan")
-    comfyui_username_text.append(comfyui_username, style="white")
-    comfyui_password_text = Text(f"ComfyUI password: ", style="cyan")
-    comfyui_password_text.append(comfyui_password, style="white")
-    ssh_text = Text("SSH Command: ", style="green")
-    ssh_text.append(ssh_command, style="white")
+    labels_and_styles = {
+        "ComfyUI url: ": (comfyui_url, "yellow"),
+        "ComfyUI username: ": (comfyui_username, "cyan"),
+        "ComfyUI password: ": (comfyui_password, "cyan"),
+        "SSH Command: ": (ssh_command, "green"),
+    }
 
-    content = Text.assemble(
-        comfyui_url_text,
-        "\n",
-        comfyui_username_text,
-        "\n",
-        comfyui_password_text,
-        "\n",
-        ssh_text,
+    content_elements = []
+    for label, (value, style) in labels_and_styles.items():
+        if value:
+            text = Text(label, style=style)
+            text.append(value, style="white")
+            content_elements.append(text)
+
+    if not content_elements:
+        logger.warning("No access information available to display.")
+        return
+
+    final_content = Text.assemble(
+        *(sum(zip(content_elements, ["\n"] * len(content_elements)), ())[:-1])
     )
     console.print(
         Panel(
-            content,
+            final_content,
             title="[blue]Access Information[/blue]",
             border_style="blue",
             expand=False,
@@ -203,24 +211,39 @@ def get_cloud_init_script(
     Returns:
         The cloud-init script as a string.
     """
+    # Open cloud init template and read its content.
     try:
-        with open(CLOUD_INIT_PATH, "r", encoding="utf-8") as file:
+        with open(CLOUD_INIT_TEMPLATE_PATH, "r", encoding="utf-8") as file:
             cloud_init_content = file.read()
     except FileNotFoundError:
-        raise FileNotFoundError(f"Cloud-init template not found: {CLOUD_INIT_PATH}")
+        raise FileNotFoundError(
+            f"Cloud-init template not found: {CLOUD_INIT_TEMPLATE_PATH}"
+        )
     cloud_init_content = cloud_init_content.replace("\r\n", "\n").replace(
         "\r", "\n"
     )  # Normalize line endings
 
-    # Replace placeholders in the cloud-init script.
+    # Open Caddyfile template and read its content.
+    try:
+        with open(CADDY_TEMPLATE_PATH, "r", encoding="utf-8") as file:
+            caddyfile_content = file.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Caddyfile template not found: {CADDY_TEMPLATE_PATH}")
+
+    # Inject ComfyUI password and convert to base64.
     encoded_password = hash_password(comfyui_password)
+    caddyfile_content = caddyfile_content.replace(
+        PASSWORD_PLACEHOLDER, encoded_password
+    )
+    caddy_config_b64 = base64.b64encode(caddyfile_content.encode()).decode()
+
+    # Replace placeholders in the cloud-init script and return the final content.
     replacements = {
-        PASSWORD_PLACEHOLDER: encoded_password,
+        COMFYSTREAM_CADDY_PLACEHOLDER: caddy_config_b64,
         DOCKER_IMAGE_PLACEHOLDER: docker_image,
     }
     for placeholder, value in replacements.items():
         cloud_init_content = cloud_init_content.replace(placeholder, value)
-
     return cloud_init_content
 
 
@@ -415,22 +438,18 @@ def read_ssh_key(public_ssh_key: str) -> str:
     return None
 
 
-def get_vm_access_info(node_info: Dict, available_ports: List[int]) -> Tuple[str, str]:
-    """Get the access URLs and SSH command for the VM.
+def get_vm_access_info(node_info: Dict) -> Tuple[str, str]:
+    """Get SSH access command and ComfyUI URL for a deployed VM.
 
     Args:
         node_info: Dictionary of node information.
-        available_ports: List of available ports.
 
     Returns:
         Tuple of SSH command and ComfyUI URL.
     """
+    available_ports = list(node_info["port_forwards"].keys())
     ssh_command = f"ssh -p {available_ports[0]} user@{node_info['ip']}"
-    comfyui_url = (
-        f"https://{node_info['ip']}:{available_ports[3]}"
-        if len(available_ports) > 3
-        else None
-    )
+    comfyui_url = f"https://{node_info['ip']}:{available_ports[1]}"
     return ssh_command, comfyui_url
 
 
@@ -606,7 +625,7 @@ class TensorDockController:
             logger.error(f"Error deleting VM: {e}")
         return False
 
-    def deploy_comfystream_vm(
+    def deploy_vm_on_tensordock(
         self,
         host_nodes: Dict,
         vm_name: str,
@@ -615,23 +634,24 @@ class TensorDockController:
         comfyui_password: str,
         location: Tuple[int, int] = None,
         docker_image: str = "livepeer/comfystream:latest",
+        bare_vm: bool = False,
     ):
-        """Deploys Comfystream on a VM, selecting the closest available host node.
+        """Deploys a VM on TensorDock, optionally with Comfystream.
 
         Args:
-            controller: The TensorDockController instance.
             host_nodes: List of compatible host nodes.
             vm_name: Name of the VM.
             password: Password for the VM (if provided).
             public_ssh_key: Public SSH key for the VM (if provided).
-            comfyui_password: Password for the ComfyUI interface.
-            location: Location to search for host nodes close to (latitude, longitude).
-                If not provided, the current location is used.
-            docker_image: Docker image to use for the Comfystream deployment (e.g.
-            'repository/image:tag').
+            comfyui_password: Password for the ComfyUI interface (ignored if
+                bare_vm=True).
+            location: Location to search for host nodes close to.
+            docker_image: Docker image to use for Comfystream (ignored if
+                bare_vm=True).
+            bare_vm: If True, deploy a clean VM without ComfyStream.
 
         Returns:
-            dict: Information about the deployed node, or None if deployment failed.
+            Information about the deployed node, or None if deployment failed.
         """
         logger.info("Sorting nodes by distance from current location...")
         sorted_host_nodes = sort_nodes_by_distance(
@@ -645,10 +665,12 @@ class TensorDockController:
         logger.info(
             f"Attempting VM deployment on {len(sorted_host_nodes)} closest node..."
         )
-        cloud_init_script = get_cloud_init_script(
-            comfyui_password=comfyui_password,
-            docker_image=docker_image,
-        )
+        cloud_init_script = None
+        if not bare_vm:
+            cloud_init_script = get_cloud_init_script(
+                comfyui_password=comfyui_password,
+                docker_image=docker_image,
+            )
         for node_idx, node in enumerate(sorted_host_nodes):
             compatible_gpus = [
                 gpu
@@ -746,9 +768,9 @@ class TensorDockController:
     help="Public SSH key for the VM.",
 )
 @click.option(
-    "--qr-codes",
+    "--qr-code",
     is_flag=True,
-    help="Generate QR codes for easy access.",
+    help="Generate ComfyUI QR code for easy access. Ignored for bare VMs.",
 )
 @click.option(
     "--location",
@@ -766,6 +788,11 @@ class TensorDockController:
         "'repository/image:tag')."
     ),
 )
+@click.option(
+    "--bare-vm",
+    is_flag=True,
+    help="Spin up a VM without setting up ComfyStream (creates a clean VM).",
+)
 def main(
     api_key,
     api_token,
@@ -774,9 +801,10 @@ def main(
     max_price,
     password,
     public_ssh_key,
-    qr_codes,
+    qr_code,
     location,
     docker_image,
+    bare_vm,
 ):
     """Main function that collects command line arguments and deploys or deletes a VM
     with Comfystream on TensorDock close to the user's location.
@@ -789,11 +817,17 @@ def main(
         max_price: The maximum price per hour.
         password: The password for the VM.
         public_ssh_key: The public SSH key for the VM.
-        qr_codes: Whether to generate QR codes for easy access.
+        qr_code: Whether to generate QR codes for easy access.
         location: The location to search for host nodes (e.g. City, Country, Region).
+        docker_image: The Docker image to use for the Comfystream deployment.
+        bare_vm: Whether to spin up a VM without setting up ComfyStream.
     """
     api_key = api_key or click.prompt("TensorDock API Key", hide_input=True)
     api_token = api_token or click.prompt("TensorDock API Token", hide_input=True)
+    vm_type = "ComfyStream" if not bare_vm else "bare"
+    logger.info(
+        f"Starting {Fore.BLUE}{vm_type}{Style.RESET_ALL} TensorDock deployment..."
+    )
 
     controller = TensorDockController(api_key, api_token)
 
@@ -833,9 +867,9 @@ def main(
         sys.exit(1)
     logger.info(f"Found {len(filtered_nodes)} suitable host nodes.")
 
-    logger.info(f"Attempting Comfystream deployment on the close host nodes...")
-    comfyui_password = generate_strong_password()
-    node_info = controller.deploy_comfystream_vm(
+    logger.info(f"Attempting {vm_type} VM deployment on the close host nodes...")
+    comfyui_password = generate_strong_password() if not bare_vm else None
+    node_info = controller.deploy_vm_on_tensordock(
         host_nodes=filtered_nodes,
         vm_name=vm_name,
         password=password,
@@ -843,32 +877,32 @@ def main(
         comfyui_password=comfyui_password,
         location=location,
         docker_image=docker_image,
+        bare_vm=bare_vm,
     )
     if not node_info:
-        logger.error("Failed to deploy Comfystream VM.")
+        vm_type = "ComfyStream" if not bare_vm else "bare"
+        logger.error(f"Failed to deploy {vm_type} VM.")
         sys.exit(1)
 
-    logger.info(
-        f"{Fore.BLUE}Provisioning Comfystream and ComfyUI. This may take up to 30 minutes.{Style.RESET_ALL}"
-    )
-    logger.info("Once ready, you can access Comfystream using the following details:")
-    ssh_command, comfyui_url = get_vm_access_info(
-        node_info, list(node_info["port_forwards"].keys())
-    )
-    comfyui_url = (
-        f"https://{node_info['ip']}:{list(node_info['port_forwards'].values())[1]}"
-    )
+    # Print access information.
+    ssh_command, comfyui_url = get_vm_access_info(node_info)
+    if not bare_vm:
+        logger.info(
+            f"{Fore.BLUE}Provisioning Comfystream and ComfyUI. This may take up to `"
+            f"30 minutes.{Style.RESET_ALL}"
+        )
+        comfyui_username = "comfyadmin"
+    else:
+        comfyui_username, comfyui_url = None, None
     display_login_info(
         comfyui_url=comfyui_url,
-        comfyui_username="comfyadmin",
+        comfyui_username=comfyui_username,
         comfyui_password=comfyui_password,
         ssh_command=ssh_command,
     )
-
-    if qr_codes:
+    if qr_code and comfyui_url:
         logger.info("Generating QR codes for easy access:")
         generate_qr_code(comfyui_url)
-
     logger.warning(
         "Remember to remove the VM after use to avoid unnecessary costs. Run "
         f"'spinup_comfystream_tensordock.py --delete {node_info['server']}' to remove "
@@ -877,5 +911,4 @@ def main(
 
 
 if __name__ == "__main__":
-    logger.info("Starting Comfystream TensorDock deployment...")
     main()
