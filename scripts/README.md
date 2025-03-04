@@ -19,7 +19,7 @@ This repository includes an [Ansible playbook](https://docs.ansible.com/ansible/
    - **Storage**: 100GB
 
    > [!TIP]
-   > You can use the `spinup_comfystream_tensordock.py --bare-vm` script to create a [compatible VM on TensorDock](https://marketplace.tensordock.com/deploy?gpu=geforcertx4090-pcie-24gb&gpuCount=1&ramAmount=16&vcpuCount=4&storage=100&os=Ubuntu-22.04-LTS).
+   > You can use the `spinup_comfystream_tensordock.py --bare-vm` script to create a [compatible VM on TensorDock](https://marketplace.tensordock.com/deploy?gpu=geforcertx4090-pcie-24gb&gpuCount=1&ramAmount=16&vcpuCount=4&storage=100&os=Ubuntu-22.04-LTS)
 
 2. **Open Required Ports**:  
    Ensure the following ports are open **inbound and outbound** on the VM's firewall/security group:
@@ -39,12 +39,15 @@ This repository includes an [Ansible playbook](https://docs.ansible.com/ansible/
     ansible-playbook -i ansible/inventory.yaml ansible/plays/setup_comfystream.yaml
     ```
 
-6. **Access the Server**:  
-   After successful execution, the access URLs for **ComfyStream** will be displayed.
+   > [!IMPORTANT]  
+   > When using a non-sudo user, add `--ask-become-pass` to provide the sudo password or use an Ansible vault for secure storage.
+
+6. Access the Server:
+   Once the **Ansible playbook** completes successfully, the **ComfyStream** container will start, downloading models and building TensorRT engines. When ready, access **ComfyUI** at `https://<VM_IP>:<PORT_THAT_FORWARDS_TO_8189>`.
 
 > [!IMPORTANT]
 > If you encounter a `toomanyrequests` error while pulling the Docker image, either wait a few minutes or provide your Docker credentials when running the playbook:  
-> 
+>
 > ```bash
 > ansible-playbook -i ansible/inventory.yaml ansible/plays/setup_comfystream.yaml -e "docker_hub_username=your_dockerhub_username docker_hub_password=your_dockerhub_pat"
 > ```

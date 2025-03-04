@@ -142,12 +142,12 @@
       notify: restart caddy
     # Ensure NVIDIA Container Toolkit is installed and configured
     - name: Check if NVIDIA Container Toolkit is installed
-      command: dpkg -l | grep nvidia-container-toolkit
+      shell: dpkg -l | grep nvidia-container-toolkit
       register: nvidia_toolkit_installed
       ignore_errors: yes
       changed_when: false
     - name: Check if NVIDIA runtime is configured in Docker
-      command: docker info | grep -i nvidia
+      shell: docker info | grep -i nvidia
       register: nvidia_runtime_configured
       ignore_errors: yes
       changed_when: false
@@ -244,6 +244,9 @@
           - "8188:8188"
           - "8889:8889"
         command: "--download-models --build-engines --server"
+    - name: Display Ansible completion message
+      debug:
+        msg: ComfyStream is starting up, downloading models, and building TensorRT engines—this may take a while. Access ComfyUI when ready at https://<hosturl>:<COMFYUIPort>.
 
   handlers:
     - name: restart caddy
