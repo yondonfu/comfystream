@@ -1,0 +1,8 @@
+---
+all:
+  hosts:
+    comfystream_vm:
+      ansible_host: 123.234.102.170                     # Replace with your VM's IP address
+      ansible_port: 22                                  # Replace with your VM's SSH port
+      ansible_user: user                                # Replace with your SSH user
+      ansible_ssh_private_key_file: ~/.ssh/private_key  # Path to your SSH key
