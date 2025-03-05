@@ -120,7 +120,7 @@ To monitor the resource consumption of a running ComfyStream server, use the `mo
 2. **Retrieve the process ID (PID) of the server** using:
 
    ```bash
-   ps aux | grep app.py
+   pgrep -f app.py | xargs ps -o pid,cmd --pid
    ```
 
 3. **Run the profiling script:**
