@@ -39,6 +39,7 @@ def patch_controlnet_for_stream():
                 return result
             except Exception as e:
                 print(f"Error: Failed to clone ControlNet during inference: {str(e)}")
+                raise e
             finally:
                 # Mark CUDA graph step at end
                 if torch.cuda.is_available() and hasattr(torch.compiler, 'cudagraph_mark_step_begin'):
