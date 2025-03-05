@@ -28,21 +28,24 @@ def patch_controlnet_for_stream():
                 }
                
             # Get result from original merge function
-            result = original_control_merge(self, control, control_prev, output_dtype)
-           
-            # Clone all output tensors
-            result = {
-                k: [t.clone() if t is not None else None for t in v]
-                for k, v in result.items()
-            }
-           
-            # Mark CUDA graph step at end
-            if torch.cuda.is_available() and hasattr(torch.compiler, 'cudagraph_mark_step_begin'):
-                torch.compiler.cudagraph_mark_step_begin()
-                torch.cuda.synchronize()
-               
-            return result
-           
+            try:
+                result = original_control_merge(self, control, control_prev, output_dtype)
+            
+                # Clone all output tensors
+                result = {
+                    k: [t.clone() if t is not None else None for t in v]
+                    for k, v in result.items()
+                }
+                return result
+            except Exception as e:
+                print(f"Error: Failed to clone ControlNet during inference: {str(e)}")
+                raise e
+            finally:
+                # Mark CUDA graph step at end
+                if torch.cuda.is_available() and hasattr(torch.compiler, 'cudagraph_mark_step_begin'):
+                    torch.compiler.cudagraph_mark_step_begin()
+                    torch.cuda.synchronize()
+
         # Apply the patch
         ControlBase.control_merge = wrapped_control_merge
         print("Successfully patched ControlNet for torch.compile() compatibility")
