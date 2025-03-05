@@ -50,7 +50,7 @@
   },
   "7": {
     "inputs": {
-      "seed": 815587695135182,
+      "seed": 19146275436582,
       "steps": 2,
       "cfg": 1,
       "sampler_name": "lcm",
@@ -271,7 +271,7 @@
   },
   "26": {
     "inputs": {
-      "image": "pear512x512.png",
+      "image": "example.png",
       "upload": "image"
     },
     "class_type": "LoadImage",

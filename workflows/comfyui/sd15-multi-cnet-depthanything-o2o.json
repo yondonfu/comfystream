@@ -1,41 +1,184 @@
 {
-  "last_node_id": 23,
+  "last_node_id": 28,
   "last_link_id": 44,
   "nodes": [
     {
-      "id": 7,
-      "type": "KSampler",
+      "id": 2,
+      "type": "DepthAnythingTensorrt",
       "pos": [
-        1430,
-        318
+        515,
+        886
       ],
       "size": [
         315,
-        262
+        58
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DepthAnythingTensorrt"
+      },
+      "widgets_values": [
+        "depth_anything_vitl14-fp16.engine"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "TensorRTLoader",
+      "pos": [
+        100,
+        130
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TensorRTLoader"
+      },
+      "widgets_values": [
+        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+        "SD15"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "CLIPTextEncode",
+      "pos": [
+        942.5999755859375,
+        130
+      ],
+      "size": [
+        400,
+        200
       ],
       "flags": {},
       "order": 13,
       "mode": 0,
       "inputs": [
         {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            30
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "beautiful pencil sketch, masterpiece "
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        942.5999755859375,
+        460
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            31
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 7,
+      "type": "KSampler",
+      "pos": [
+        2272.60009765625,
+        130
+      ],
+      "size": [
+        315,
+        262
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
           "name": "model",
           "type": "MODEL",
-          "link": 25
+          "link": 26
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 26
+          "link": 27
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 27
+          "link": 28
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 28
+          "link": 29
         }
       ],
       "outputs": [
@@ -43,7 +186,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            35
+            36
           ]
         }
       ],
@@ -51,49 +194,80 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        976731256362361,
+        19146275436582,
         "randomize",
+        2,
         1,
-        0.6,
         "lcm",
         "normal",
         1
       ]
     },
     {
+      "id": 8,
+      "type": "ControlNetLoader",
+      "pos": [
+        100,
+        342
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
+          "links": [
+            34
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ControlNetLoader"
+      },
+      "widgets_values": [
+        "control_v11f1p_sd15_depth_fp16.safetensors"
+      ]
+    },
+    {
       "id": 9,
       "type": "ControlNetApplyAdvanced",
       "pos": [
-        1015,
-        318
+        1442.5999755859375,
+        130
       ],
       "size": [
         315,
         186
       ],
       "flags": {},
-      "order": 11,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 29
+          "link": 30
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 30
+          "link": 31
         },
         {
           "name": "control_net",
           "type": "CONTROL_NET",
-          "link": 31
+          "link": 32
         },
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 32
+          "link": 33
         },
         {
           "name": "vae",
@@ -107,14 +281,14 @@
           "name": "positive",
           "type": "CONDITIONING",
           "links": [
-            26
+            40
           ]
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
           "links": [
-            27
+            41
           ]
         }
       ],
@@ -122,7 +296,7 @@
         "Node name for S&R": "ControlNetApplyAdvanced"
       },
       "widgets_values": [
-        1,
+        0.9,
         0,
         1
       ]
@@ -132,20 +306,20 @@
       "type": "TorchCompileLoadControlNet",
       "pos": [
         515,
-        978
+        130
       ],
       "size": [
         327.5999755859375,
         106
       ],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "name": "controlnet",
           "type": "CONTROL_NET",
-          "link": 33
+          "link": 34
         }
       ],
       "outputs": [
@@ -153,7 +327,7 @@
           "name": "CONTROL_NET",
           "type": "CONTROL_NET",
           "links": [
-            31
+            32
           ]
         }
       ],
@@ -171,14 +345,14 @@
       "type": "VAELoader",
       "pos": [
         100,
-        990
+        530
       ],
       "size": [
         315,
         58
       ],
       "flags": {},
-      "order": 0,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -186,7 +360,7 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            34
+            35
           ]
         }
       ],
@@ -202,20 +376,20 @@
       "type": "TorchCompileLoadVAE",
       "pos": [
         515,
-        1214
+        366
       ],
       "size": [
         315,
         154
       ],
       "flags": {},
-      "order": 6,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
           "name": "vae",
           "type": "VAE",
-          "link": 34
+          "link": 35
         }
       ],
       "outputs": [
@@ -223,7 +397,7 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            36
+            37
           ]
         }
       ],
@@ -239,24 +413,64 @@
       ]
     },
     {
-      "id": 15,
-      "type": "PreviewImage",
+      "id": 14,
+      "type": "VAEDecode",
       "pos": [
-        2570,
+        2687.60009765625,
         130
       ],
       "size": [
         210,
-        246
+        46
       ],
       "flags": {},
-      "order": 17,
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 36
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            38
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "PreviewImage",
+      "pos": [
+        2997.60009765625,
+        130
+      ],
+      "size": [
+        210,
+        26
+      ],
+      "flags": {},
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 37
+          "link": 38
         }
       ],
       "outputs": [],
@@ -270,14 +484,14 @@
       "type": "EmptyLatentImage",
       "pos": [
         100,
-        1178
+        718
       ],
       "size": [
         315,
         106
       ],
       "flags": {},
-      "order": 1,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -285,7 +499,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            28
+            29
           ]
         }
       ],
@@ -299,11 +513,11 @@
       ]
     },
     {
-      "id": 20,
-      "type": "ImageToMask",
+      "id": 18,
+      "type": "CLIPSetLastLayer",
       "pos": [
-        1015,
-        130
+        515,
+        1074
       ],
       "size": [
         315,
@@ -314,248 +528,105 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 38
+          "name": "clip",
+          "type": "CLIP",
+          "link": 39
         }
       ],
       "outputs": [
         {
-          "name": "MASK",
-          "type": "MASK",
+          "name": "CLIP",
+          "type": "CLIP",
           "links": [
-            42
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImageToMask"
-      },
-      "widgets_values": [
-        "red"
-      ]
-    },
-    {
-      "id": 22,
-      "type": "ThresholdMask",
-      "pos": [
-        1430,
-        130
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": 42
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": [
-            41
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ThresholdMask"
-      },
-      "widgets_values": [
-        0.5
-      ]
-    },
-    {
-      "id": 3,
-      "type": "TensorRTLoader",
-      "pos": [
-        100,
-        362
-      ],
-      "size": [
-        315,
-        82
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
+            24,
             25
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "TensorRTLoader"
+        "Node name for S&R": "CLIPSetLastLayer"
       },
       "widgets_values": [
-        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
-        "SD15"
+        -2
       ]
     },
     {
-      "id": 8,
-      "type": "ControlNetLoader",
+      "id": 19,
+      "type": "ControlNetApplyAdvanced",
       "pos": [
-        100,
-        802
-      ],
-      "size": [
-        282,
-        72.30000305175781
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CONTROL_NET",
-          "type": "CONTROL_NET",
-          "links": [
-            33
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ControlNetLoader"
-      },
-      "widgets_values": [
-        "control_v11f1p_sd15_depth_fp16.safetensors"
-      ]
-    },
-    {
-      "id": 2,
-      "type": "DepthAnythingTensorrt",
-      "pos": [
-        515,
+        1857.5999755859375,
         130
       ],
       "size": [
         315,
-        58
+        186
       ],
       "flags": {},
-      "order": 10,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 22
-        }
-      ],
-      "outputs": [
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 40
+        },
         {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            38
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "DepthAnythingTensorrt"
-      },
-      "widgets_values": [
-        "depth_anything_vitl14-fp16.engine"
-      ]
-    },
-    {
-      "id": 5,
-      "type": "CLIPTextEncode",
-      "pos": [
-        515,
-        318
-      ],
-      "size": [
-        400,
-        200
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 41
+        },
         {
-          "name": "clip",
-          "type": "CLIP",
+          "name": "control_net",
+          "type": "CONTROL_NET",
+          "link": 42
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
           "link": 43
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "shape": 7,
+          "link": null
         }
       ],
       "outputs": [
         {
-          "name": "CONDITIONING",
+          "name": "positive",
           "type": "CONDITIONING",
           "links": [
-            29
+            27
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            28
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "CLIPTextEncode"
+        "Node name for S&R": "ControlNetApplyAdvanced"
       },
       "widgets_values": [
-        "hulk"
+        0.4,
+        0,
+        1
       ]
     },
     {
-      "id": 6,
-      "type": "CLIPTextEncode",
+      "id": 20,
+      "type": "ControlNetLoader",
       "pos": [
-        515,
-        648
-      ],
-      "size": [
-        400,
-        200
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 44
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            30
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        ""
-      ]
-    },
-    {
-      "id": 23,
-      "type": "CLIPLoader",
-      "pos": [
-        97.49937438964844,
-        537.5508422851562
+        100,
+        954
       ],
       "size": [
         315,
-        98
+        58
       ],
       "flags": {},
       "order": 4,
@@ -563,123 +634,109 @@
       "inputs": [],
       "outputs": [
         {
-          "name": "CLIP",
-          "type": "CLIP",
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
           "links": [
-            43,
             44
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "CLIPLoader"
+        "Node name for S&R": "ControlNetLoader"
       },
       "widgets_values": [
-        "CLIPText/model.fp16.safetensors",
-        "stable_diffusion",
-        "default"
+        "outfitToOutfit_v20.safetensors"
       ]
     },
     {
       "id": 21,
-      "type": "Composite",
+      "type": "TorchCompileLoadControlNet",
       "pos": [
-        2155,
-        130
+        515,
+        650
       ],
       "size": [
-        315,
-        98
+        327.5999755859375,
+        106
       ],
       "flags": {},
-      "order": 16,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
-          "name": "foregrounds",
-          "type": "IMAGE",
-          "link": 39
-        },
-        {
-          "name": "backgrounds",
-          "type": "IMAGE",
-          "link": 40
-        },
-        {
-          "name": "foreground_masks",
-          "type": "MASK",
-          "link": 41
+          "name": "controlnet",
+          "type": "CONTROL_NET",
+          "link": 44
         }
       ],
       "outputs": [
         {
-          "name": "IMAGE",
-          "type": "IMAGE",
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
           "links": [
-            37
+            42
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "Composite"
+        "Node name for S&R": "TorchCompileLoadControlNet"
       },
       "widgets_values": [
-        "cuda"
+        "inductor",
+        false,
+        "reduce-overhead"
       ]
     },
     {
-      "id": 14,
-      "type": "VAEDecode",
+      "id": 22,
+      "type": "MediaPipe-FaceMeshPreprocessor",
       "pos": [
-        1845,
-        130
+        100,
+        1142
       ],
       "size": [
-        210,
-        46
+        315,
+        106
       ],
       "flags": {},
-      "order": 15,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 35
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 36
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
         }
       ],
       "outputs": [
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [
-            39
-          ]
+          "links": null
         }
       ],
       "properties": {
-        "Node name for S&R": "VAEDecode"
+        "Node name for S&R": "MediaPipe-FaceMeshPreprocessor"
       },
-      "widgets_values": []
+      "widgets_values": [
+        1,
+        0.5,
+        512
+      ]
     },
     {
-      "id": 1,
+      "id": 26,
       "type": "LoadImage",
       "pos": [
         100,
-        130
+        1378
       ],
       "size": [
         315,
         314
       ],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -687,9 +744,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            22,
-            32,
-            40
+            23,
+            43
           ]
         },
         {
@@ -702,22 +758,71 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "pear512x512.png",
+        "example.png",
         "image"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "CLIPLoader",
+      "pos": [
+        512.876220703125,
+        1207.3714599609375
+      ],
+      "size": [
+        315,
+        98
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            39
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "CLIPText/model.fp16.safetensors",
+        "stable_diffusion",
+        "default"
       ]
     }
   ],
   "links": [
     [
-      22,
-      1,
+      23,
+      26,
       0,
       2,
       0,
       "IMAGE"
     ],
     [
+      24,
+      18,
+      0,
+      5,
+      0,
+      "CLIP"
+    ],
+    [
       25,
+      18,
+      0,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      26,
       3,
       0,
       7,
@@ -725,23 +830,23 @@
       "MODEL"
     ],
     [
-      26,
-      9,
+      27,
+      19,
       0,
       7,
       1,
       "CONDITIONING"
     ],
     [
-      27,
-      9,
+      28,
+      19,
       1,
       7,
       2,
       "CONDITIONING"
     ],
     [
-      28,
+      29,
       16,
       0,
       7,
@@ -749,7 +854,7 @@
       "LATENT"
     ],
     [
-      29,
+      30,
       5,
       0,
       9,
@@ -757,7 +862,7 @@
       "CONDITIONING"
     ],
     [
-      30,
+      31,
       6,
       0,
       9,
@@ -765,7 +870,7 @@
       "CONDITIONING"
     ],
     [
-      31,
+      32,
       10,
       0,
       9,
@@ -773,15 +878,15 @@
       "CONTROL_NET"
     ],
     [
-      32,
-      1,
+      33,
+      2,
       0,
       9,
       3,
       "IMAGE"
     ],
     [
-      33,
+      34,
       8,
       0,
       10,
@@ -789,7 +894,7 @@
       "CONTROL_NET"
     ],
     [
-      34,
+      35,
       11,
       0,
       13,
@@ -797,7 +902,7 @@
       "VAE"
     ],
     [
-      35,
+      36,
       7,
       0,
       14,
@@ -805,7 +910,7 @@
       "LATENT"
     ],
     [
-      36,
+      37,
       13,
       0,
       14,
@@ -813,78 +918,70 @@
       "VAE"
     ],
     [
-      37,
-      21,
+      38,
+      14,
       0,
       15,
       0,
       "IMAGE"
     ],
     [
-      38,
-      2,
-      0,
-      20,
-      0,
-      "IMAGE"
-    ],
-    [
       39,
-      14,
+      28,
       0,
-      21,
+      18,
       0,
-      "IMAGE"
+      "CLIP"
     ],
     [
       40,
-      1,
+      9,
       0,
-      21,
-      1,
-      "IMAGE"
+      19,
+      0,
+      "CONDITIONING"
     ],
     [
       41,
-      22,
-      0,
-      21,
-      2,
-      "MASK"
+      9,
+      1,
+      19,
+      1,
+      "CONDITIONING"
     ],
     [
       42,
-      20,
+      21,
       0,
-      22,
-      0,
-      "MASK"
+      19,
+      2,
+      "CONTROL_NET"
     ],
     [
       43,
-      23,
+      26,
       0,
-      5,
-      0,
-      "CLIP"
+      19,
+      3,
+      "IMAGE"
     ],
     [
       44,
-      23,
+      20,
       0,
-      6,
+      21,
       0,
-      "CLIP"
+      "CONTROL_NET"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.7513148009015801,
+      "scale": 0.6830134553650726,
       "offset": [
-        481.75188222431916,
-        -5.550296220125958
+        520.9097031243206,
+        -15.87689382012644
       ]
     }
   },

@@ -14,7 +14,7 @@
         58
       ],
       "flags": {},
-      "order": 10,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -83,7 +83,7 @@
         200
       ],
       "flags": {},
-      "order": 14,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -120,7 +120,7 @@
         200
       ],
       "flags": {},
-      "order": 15,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -157,7 +157,7 @@
         262
       ],
       "flags": {},
-      "order": 18,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -215,7 +215,7 @@
         186
       ],
       "flags": {},
-      "order": 16,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -282,7 +282,7 @@
         106
       ],
       "flags": {},
-      "order": 12,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -352,7 +352,7 @@
         154
       ],
       "flags": {},
-      "order": 8,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -393,7 +393,7 @@
         46
       ],
       "flags": {},
-      "order": 19,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -433,7 +433,7 @@
         26
       ],
       "flags": {},
-      "order": 20,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -493,7 +493,7 @@
         186
       ],
       "flags": {},
-      "order": 17,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -591,7 +591,7 @@
         106
       ],
       "flags": {},
-      "order": 9,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -630,7 +630,7 @@
         106
       ],
       "flags": {},
-      "order": 11,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -727,35 +727,6 @@
       ]
     },
     {
-      "id": 35,
-      "type": "ComfyStreamUIPreview",
-      "pos": [
-        1386.8121337890625,
-        501.9581298828125
-      ],
-      "size": [
-        700,
-        800
-      ],
-      "flags": {
-        "resizable": true
-      },
-      "order": 6,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "ComfyStream UI",
-      "properties": {
-        "Node name for S&R": "ComfyStreamUIPreview"
-      },
-      "widgets_values": [
-        "",
-        "",
-        ""
-      ],
-      "color": "#4B9CD3"
-    },
-    {
       "id": 18,
       "type": "CLIPSetLastLayer",
       "pos": [
@@ -767,7 +738,7 @@
         58
       ],
       "flags": {},
-      "order": 13,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -805,7 +776,7 @@
         98
       ],
       "flags": {},
-      "order": 7,
+      "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1019,8 +990,8 @@
     "ds": {
       "scale": 0.6830134553650726,
       "offset": [
-        531.1584031243204,
-        -43.69479382012637
+        509.1969031243204,
+        -69.56544082012647
       ]
     }
   },

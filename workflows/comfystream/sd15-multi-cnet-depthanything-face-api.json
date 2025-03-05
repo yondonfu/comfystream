@@ -283,16 +283,6 @@
       "title": "Load Image"
     }
   },
-  "35": {
-    "inputs": {
-      "Refresh UI": "",
-      "Open in New Tab": ""
-    },
-    "class_type": "ComfyStreamUIPreview",
-    "_meta": {
-      "title": "ComfyStream UI"
-    }
-  },
   "36": {
     "inputs": {
       "clip_name": "CLIPText/model.fp16.safetensors",
