@@ -52,7 +52,7 @@ VM_SPECS = {
     "operating_system": "Ubuntu 22.04 LTS",
 }
 CADDY_TEMPLATE_PATH = os.path.join(
-    os.path.dirname(__file__), "templates", "comfystream.caddy.j2"
+    os.path.dirname(__file__), "templates", "comfyui.caddy.j2"
 )
 CLOUD_INIT_TEMPLATE_PATH = os.path.join(
     os.path.dirname(__file__), "templates", "cloud_init_comfystream.yaml.j2"

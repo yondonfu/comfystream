@@ -5,9 +5,12 @@
   vars:
     docker_image: "livepeer/comfystream:0.0.3"
     comfyui_username: "comfyadmin"
-    comfyui_password: "Ge}_^jn?*?5#/|FWx9I&K|S0$/)#au8" # Set your own secure password!
 
   tasks:
+    # Retrieve ComfyUI server password
+    - name: Set ComfyUI password (static if provided, random if empty)
+      set_fact:
+        comfyui_password: "{{ comfyui_password | default(lookup('password', '/dev/null length=32 chars=ascii_letters,digits')) }}"
     # Wait till VM is ready
     - name: Check if we can connect to the VM
       wait_for_connection:
@@ -126,18 +129,18 @@
         - /etc/caddy/certificates/selfsigned.key
         - /etc/caddy/certificates/selfsigned.crt
       notify: restart caddy
-    - name: Create Caddy configuration for Comfystream
+    - name: Create Caddy configuration for ComfyUI server
       template:
-        src: ../../templates/comfystream.caddy.j2
-        dest: /etc/caddy/comfystream.caddy
+        src: ../../templates/comfyui.caddy.j2
+        dest: /etc/caddy/comfyui.caddy
         owner: caddy
         group: caddy
         mode: "0644"
       notify: restart caddy
-    - name: Ensure Caddyfile includes Comfystream configuration
+    - name: Ensure Caddyfile includes ComfyUI server configuration
       lineinfile:
         path: /etc/caddy/Caddyfile
-        line: "import /etc/caddy/comfystream.caddy"
+        line: "import /etc/caddy/comfyui.caddy"
         create: yes
       notify: restart caddy
     # Ensure NVIDIA Container Toolkit is installed and configured
@@ -246,7 +249,7 @@
         command: "--download-models --build-engines --server"
     - name: Display Ansible completion message
       debug:
-        msg: ComfyStream is starting up, downloading models, and building TensorRT engines—this may take a while. Access ComfyUI when ready at https://<hosturl>:<COMFYUIPort>.
+        msg: "ComfyStream is starting up, downloading models, and building TensorRT engines—this may take a while. Access ComfyUI when ready at https://{{ ansible_default_ipv4.address }}:<COMFYUIPort>."
 
   handlers:
     - name: restart caddy
