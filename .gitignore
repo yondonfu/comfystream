@@ -19,3 +19,4 @@ launch.json
 .env.production
 
 nodes/web/static/*
+.cursor/
