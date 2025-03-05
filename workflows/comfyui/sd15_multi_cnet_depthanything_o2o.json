@@ -50,7 +50,7 @@
   },
   "7": {
     "inputs": {
-      "seed": 59962529669489,
+      "seed": 815587695135182,
       "steps": 2,
       "cfg": 1,
       "sampler_name": "lcm",
@@ -198,8 +198,8 @@
     "inputs": {
       "stop_at_clip_layer": -2,
       "clip": [
-        "27",
-        1
+        "28",
+        0
       ]
     },
     "class_type": "CLIPSetLastLayer",
@@ -209,7 +209,7 @@
   },
   "19": {
     "inputs": {
-      "strength": 0.9,
+      "strength": 0.4,
       "start_percent": 0,
       "end_percent": 1,
       "positive": [
@@ -225,7 +225,7 @@
         0
       ],
       "image": [
-        "22",
+        "26",
         0
       ]
     },
@@ -236,7 +236,7 @@
   },
   "20": {
     "inputs": {
-      "control_net_name": "control_v2p_sd15_mediapipe_face.safetensors"
+      "control_net_name": "outfitToOutfit_v20.safetensors"
     },
     "class_type": "ControlNetLoader",
     "_meta": {
@@ -262,11 +262,7 @@
     "inputs": {
       "max_faces": 1,
       "min_confidence": 0.5,
-      "resolution": 512,
-      "image": [
-        "26",
-        0
-      ]
+      "resolution": 512
     },
     "class_type": "MediaPipe-FaceMeshPreprocessor",
     "_meta": {
@@ -275,7 +271,7 @@
   },
   "26": {
     "inputs": {
-      "image": "pasted/image (2).png",
+      "image": "pear512x512.png",
       "upload": "image"
     },
     "class_type": "LoadImage",
@@ -283,13 +279,15 @@
       "title": "Load Image"
     }
   },
-  "27": {
+  "28": {
     "inputs": {
-      "ckpt_name": "dreamshaper_8.safetensors"
+      "clip_name": "CLIPText/model.fp16.safetensors",
+      "type": "stable_diffusion",
+      "device": "default"
     },
-    "class_type": "CheckpointLoaderSimple",
+    "class_type": "CLIPLoader",
     "_meta": {
-      "title": "Load Checkpoint"
+      "title": "Load CLIP"
     }
   }
 }

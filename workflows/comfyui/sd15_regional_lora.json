@@ -1,6 +1,6 @@
 {
-  "last_node_id": 48,
-  "last_link_id": 64,
+  "last_node_id": 49,
+  "last_link_id": 65,
   "nodes": [
     {
       "id": 7,
@@ -51,7 +51,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        881065402091907,
+        717613555187566,
         "randomize",
         1,
         1,
@@ -139,7 +139,7 @@
         106
       ],
       "flags": {},
-      "order": 12,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -387,7 +387,7 @@
         26
       ],
       "flags": {},
-      "order": 13,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -445,44 +445,6 @@
       },
       "widgets_values": [
         "worst quality, low quality"
-      ]
-    },
-    {
-      "id": 36,
-      "type": "CLIPSetLastLayer",
-      "pos": [
-        515,
-        130
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 49
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            53,
-            55
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPSetLastLayer"
-      },
-      "widgets_values": [
-        -2
       ]
     },
     {
@@ -905,47 +867,6 @@
       ]
     },
     {
-      "id": 4,
-      "type": "CheckpointLoaderSimple",
-      "pos": [
-        100,
-        342
-      ],
-      "size": [
-        315,
-        98
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": null
-        },
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            49
-          ]
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
-      },
-      "widgets_values": [
-        "SD1.5/dreamshaper-8.safetensors"
-      ]
-    },
-    {
       "id": 8,
       "type": "ControlNetLoader",
       "pos": [
@@ -957,7 +878,7 @@
         90.21019744873047
       ],
       "flags": {},
-      "order": 6,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -988,7 +909,7 @@
         318
       ],
       "flags": {},
-      "order": 7,
+      "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1059,7 +980,7 @@
         106
       ],
       "flags": {},
-      "order": 8,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -1085,6 +1006,77 @@
         "SD1.5/ral-polygon-sd15.safetensors",
         1.1,
         1
+      ]
+    },
+    {
+      "id": 36,
+      "type": "CLIPSetLastLayer",
+      "pos": [
+        515,
+        130
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 65
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            53,
+            55
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPSetLastLayer"
+      },
+      "widgets_values": [
+        -2
+      ]
+    },
+    {
+      "id": 49,
+      "type": "CLIPLoader",
+      "pos": [
+        101.492431640625,
+        292.6708679199219
+      ],
+      "size": [
+        315,
+        98
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            65
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "CLIPText/model.fp16.safetensors",
+        "stable_diffusion",
+        "default"
       ]
     }
   ],
@@ -1218,14 +1210,6 @@
       "CLIP"
     ],
     [
-      49,
-      4,
-      1,
-      36,
-      0,
-      "CLIP"
-    ],
-    [
       50,
       43,
       0,
@@ -1344,16 +1328,24 @@
       48,
       0,
       "IMAGE"
+    ],
+    [
+      65,
+      49,
+      0,
+      36,
+      0,
+      "CLIP"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.564473930053779,
+      "scale": 0.683013455365073,
       "offset": [
-        137.3462492243213,
-        -0.04118822012597434
+        257.72791098243624,
+        -193.48981505483152
       ]
     }
   },

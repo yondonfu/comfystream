@@ -1,6 +1,6 @@
 {
-  "last_node_id": 27,
-  "last_link_id": 46,
+  "last_node_id": 36,
+  "last_link_id": 47,
   "nodes": [
     {
       "id": 2,
@@ -14,7 +14,7 @@
         58
       ],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -83,7 +83,7 @@
         200
       ],
       "flags": {},
-      "order": 13,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -120,7 +120,7 @@
         200
       ],
       "flags": {},
-      "order": 14,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -157,7 +157,7 @@
         262
       ],
       "flags": {},
-      "order": 17,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -215,7 +215,7 @@
         186
       ],
       "flags": {},
-      "order": 15,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -352,7 +352,7 @@
         154
       ],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -393,7 +393,7 @@
         46
       ],
       "flags": {},
-      "order": 18,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -418,7 +418,8 @@
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
-      }
+      },
+      "widgets_values": []
     },
     {
       "id": 15,
@@ -432,7 +433,7 @@
         26
       ],
       "flags": {},
-      "order": 19,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
@@ -444,7 +445,8 @@
       "outputs": [],
       "properties": {
         "Node name for S&R": "PreviewImage"
-      }
+      },
+      "widgets_values": []
     },
     {
       "id": 16,
@@ -480,44 +482,6 @@
       ]
     },
     {
-      "id": 18,
-      "type": "CLIPSetLastLayer",
-      "pos": [
-        515,
-        1310
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 40
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            25,
-            26
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPSetLastLayer"
-      },
-      "widgets_values": [
-        -2
-      ]
-    },
-    {
       "id": 19,
       "type": "ControlNetApplyAdvanced",
       "pos": [
@@ -529,7 +493,7 @@
         186
       ],
       "flags": {},
-      "order": 16,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -627,7 +591,7 @@
         106
       ],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -666,7 +630,7 @@
         106
       ],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -732,47 +696,6 @@
       ]
     },
     {
-      "id": 27,
-      "type": "CheckpointLoaderSimple",
-      "pos": [
-        100,
-        1374
-      ],
-      "size": [
-        315,
-        98
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": null
-        },
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            40
-          ]
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
-      },
-      "widgets_values": [
-        "SD1.5/dreamshaper-8.safetensors"
-      ]
-    },
-    {
       "id": 8,
       "type": "ControlNetLoader",
       "pos": [
@@ -784,7 +707,7 @@
         106.31529998779297
       ],
       "flags": {},
-      "order": 6,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -801,6 +724,106 @@
       },
       "widgets_values": [
         "control_v11f1p_sd15_depth_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 35,
+      "type": "ComfyStreamUIPreview",
+      "pos": [
+        1386.8121337890625,
+        501.9581298828125
+      ],
+      "size": [
+        700,
+        800
+      ],
+      "flags": {
+        "resizable": true
+      },
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "ComfyStream UI",
+      "properties": {
+        "Node name for S&R": "ComfyStreamUIPreview"
+      },
+      "widgets_values": [
+        "",
+        "",
+        ""
+      ],
+      "color": "#4B9CD3"
+    },
+    {
+      "id": 18,
+      "type": "CLIPSetLastLayer",
+      "pos": [
+        515,
+        1310
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 47
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            25,
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPSetLastLayer"
+      },
+      "widgets_values": [
+        -2
+      ]
+    },
+    {
+      "id": 36,
+      "type": "CLIPLoader",
+      "pos": [
+        105.7249755859375,
+        1548.789306640625
+      ],
+      "size": [
+        315,
+        98
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            47
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "CLIPText/model.fp16.safetensors",
+        "stable_diffusion",
+        "default"
       ]
     }
   ],
@@ -934,14 +957,6 @@
       "IMAGE"
     ],
     [
-      40,
-      27,
-      1,
-      18,
-      0,
-      "CLIP"
-    ],
-    [
       41,
       9,
       0,
@@ -988,6 +1003,14 @@
       22,
       0,
       "IMAGE"
+    ],
+    [
+      47,
+      36,
+      0,
+      18,
+      0,
+      "CLIP"
     ]
   ],
   "groups": [],
@@ -996,8 +1019,8 @@
     "ds": {
       "scale": 0.6830134553650726,
       "offset": [
-        -54.481596875677866,
-        -74.44089382012628
+        531.1584031243204,
+        -43.69479382012637
       ]
     }
   },
