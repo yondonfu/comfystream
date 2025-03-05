@@ -193,11 +193,14 @@ def monitor_resources(
 
     # Start main resources monitoring loop.
     pynvml.nvmlInit()
+    monitor_start_time = time.time()
     end_time = time.time() + duration
     logs = []
     cpu_usages, ram_usages, gpu_usages, vram_usages = [], [], [], []
     while time.time() < end_time:
         start_time = time.time()
+        elapsed_monitor_time = time.time() - monitor_start_time
+        progress = (elapsed_monitor_time / duration) * 100
         try:
             cpu_usage = total_cpu_percent_with_children(pid)
             memory_usage = total_memory_with_children(pid)
@@ -210,7 +213,8 @@ def monitor_resources(
                 "VRAM (MB)": vram_usage,
             }
             click.echo(
-                f"CPU: {cpu_usage:.2f}%, RAM: {memory_usage:.2f}MB, GPU: {gpu_usage:.2f}%, VRAM: {vram_usage:.2f}MB"
+                f"[{progress:.1f}%] CPU: {cpu_usage:.2f}%, RAM: {memory_usage:.2f}MB, "
+                f"GPU: {gpu_usage:.2f}%, VRAM: {vram_usage:.2f}MB"
             )
             logs.append(log_entry)
             cpu_usages.append(cpu_usage)
