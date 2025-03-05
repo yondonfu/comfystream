@@ -45,8 +45,12 @@ This repository includes an [Ansible playbook](https://docs.ansible.com/ansible/
    > [!IMPORTANT]  
    > When using a non-sudo user, add `--ask-become-pass` to provide the sudo password or use an Ansible vault for secure storage.
 
-7. Access the Server:
-   Once the **Ansible playbook** completes successfully, the **ComfyStream** container will start, downloading models and building TensorRT engines. When ready, access **ComfyUI** at `https://<VM_IP>:<PORT_THAT_FORWARDS_TO_8189>`.
+7. **Access the Server**:  
+   After the playbook completes, **ComfyStream** will start, and you can access **ComfyUI** at `https://<VM_IP>:<PORT_FOR_8189>`. Credentials are shown in the output and regenerated each time. To persist the password, set the `comfyui_password` variable when running the playbook:
+
+   ```bash
+   ansible-playbook -i ansible/inventory.yaml ansible/plays/setup_comfystream.yaml -e "comfyui_password=YourSecurePasswordHere"
+   ```
 
 > [!IMPORTANT]
 > If you encounter a `toomanyrequests` error while pulling the Docker image, either wait a few minutes or provide your Docker credentials when running the playbook:  
