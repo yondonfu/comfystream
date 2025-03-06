@@ -51,7 +51,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        717613555187566,
+        878443241318109,
         "randomize",
         1,
         1,
@@ -139,7 +139,7 @@
         106
       ],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -275,8 +275,7 @@
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
-      },
-      "widgets_values": []
+      }
     },
     {
       "id": 15,
@@ -302,8 +301,7 @@
       "outputs": [],
       "properties": {
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": []
+      }
     },
     {
       "id": 16,
@@ -387,7 +385,7 @@
         26
       ],
       "flags": {},
-      "order": 12,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -407,8 +405,7 @@
       ],
       "properties": {
         "Node name for S&R": "InvertMask"
-      },
-      "widgets_values": []
+      }
     },
     {
       "id": 35,
@@ -835,69 +832,6 @@
       ]
     },
     {
-      "id": 3,
-      "type": "TensorRTLoader",
-      "pos": [
-        100,
-        130
-      ],
-      "size": [
-        315,
-        82
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            33
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "TensorRTLoader"
-      },
-      "widgets_values": [
-        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
-        "SD15"
-      ]
-    },
-    {
-      "id": 8,
-      "type": "ControlNetLoader",
-      "pos": [
-        100,
-        570
-      ],
-      "size": [
-        332.7156066894531,
-        90.21019744873047
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CONTROL_NET",
-          "type": "CONTROL_NET",
-          "links": [
-            41
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ControlNetLoader"
-      },
-      "widgets_values": [
-        "control_v11f1p_sd15_depth_fp16.safetensors"
-      ]
-    },
-    {
       "id": 31,
       "type": "LoadImageMask",
       "pos": [
@@ -909,7 +843,7 @@
         318
       ],
       "flags": {},
-      "order": 6,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -929,6 +863,46 @@
         "example.png",
         "red",
         "image"
+      ]
+    },
+    {
+      "id": 46,
+      "type": "CreateHookLora",
+      "pos": [
+        100,
+        1654
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prev_hooks",
+          "type": "HOOKS",
+          "shape": 7,
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "HOOKS",
+          "type": "HOOKS",
+          "links": [
+            56
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateHookLora"
+      },
+      "widgets_values": [
+        "SD1.5/ral-polygon-sd15.safetensors",
+        1.1,
+        1
       ]
     },
     {
@@ -969,43 +943,66 @@
       ]
     },
     {
-      "id": 46,
-      "type": "CreateHookLora",
+      "id": 8,
+      "type": "ControlNetLoader",
       "pos": [
         100,
-        1654
+        570
       ],
       "size": [
         315,
-        106
+        58
       ],
       "flags": {},
-      "order": 7,
+      "order": 6,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "prev_hooks",
-          "type": "HOOKS",
-          "shape": 7,
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "name": "HOOKS",
-          "type": "HOOKS",
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
           "links": [
-            56
+            41
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "CreateHookLora"
+        "Node name for S&R": "ControlNetLoader"
       },
       "widgets_values": [
-        "SD1.5/ral-polygon-sd15.safetensors",
-        1.1,
-        1
+        "control_v11f1p_sd15_depth_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "TensorRTLoader",
+      "pos": [
+        100,
+        130
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TensorRTLoader"
+      },
+      "widgets_values": [
+        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+        "SD15"
       ]
     },
     {
@@ -1050,8 +1047,8 @@
       "id": 49,
       "type": "CLIPLoader",
       "pos": [
-        101.492431640625,
-        292.6708679199219
+        107.04177856445312,
+        326.7558898925781
       ],
       "size": [
         315,
@@ -1342,10 +1339,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.5131581182307084,
+      "scale": 0.751314800901578,
       "offset": [
-        750.2575930224345,
-        -27.272152564832016
+        -29.843806191131534,
+        -42.812405201536194
       ]
     }
   },

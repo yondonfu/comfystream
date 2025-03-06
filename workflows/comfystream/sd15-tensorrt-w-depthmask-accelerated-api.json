@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "image": "example.png",
+      "image": "example-512x512.png",
       "upload": "image"
     },
     "class_type": "LoadImage",
@@ -34,7 +34,7 @@
   },
   "5": {
     "inputs": {
-      "text": "the hulk",
+      "text": "hulk",
       "clip": [
         "23",
         0
@@ -60,9 +60,9 @@
   },
   "7": {
     "inputs": {
-      "seed": 905056445574169,
+      "seed": 334323477134419,
       "steps": 1,
-      "cfg": 1,
+      "cfg": 0.6,
       "sampler_name": "lcm",
       "scheduler": "normal",
       "denoise": 1,
@@ -115,7 +115,7 @@
         0
       ],
       "image": [
-        "2",
+        "1",
         0
       ]
     },
@@ -184,7 +184,7 @@
   "15": {
     "inputs": {
       "images": [
-        "14",
+        "21",
         0
       ]
     },
@@ -202,6 +202,53 @@
     "class_type": "EmptyLatentImage",
     "_meta": {
       "title": "Empty Latent Image"
+    }
+  },
+  "20": {
+    "inputs": {
+      "channel": "red",
+      "image": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "ImageToMask",
+    "_meta": {
+      "title": "Convert Image to Mask"
+    }
+  },
+  "21": {
+    "inputs": {
+      "mode": "cuda",
+      "foregrounds": [
+        "14",
+        0
+      ],
+      "backgrounds": [
+        "1",
+        0
+      ],
+      "foreground_masks": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "Composite",
+    "_meta": {
+      "title": "Composite"
+    }
+  },
+  "22": {
+    "inputs": {
+      "value": 0.5,
+      "mask": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "ThresholdMask",
+    "_meta": {
+      "title": "ThresholdMask"
     }
   },
   "23": {
