@@ -2,7 +2,7 @@ __pycache__
 *.egg-info
 build
 .DS_STORE
-comfyui/
+./comfyui/
 ComfyUI/
 cuda_temp
 
