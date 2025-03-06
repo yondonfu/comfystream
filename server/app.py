@@ -24,7 +24,9 @@ from aiortc.codecs import h264
 from aiortc.rtcrtpsender import RTCRtpSender
 from pipeline import Pipeline
 from twilio.rest import Client
-from utils import FPSMeter, StreamStats, add_prefix_to_app_routes, patch_loop_datagram
+from utils import patch_loop_datagram, add_prefix_to_app_routes, FPSMeter
+from metrics import MetricsManager, StreamStatsManager
+import time
 
 logger = logging.getLogger(__name__)
 logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
@@ -56,7 +58,9 @@ class VideoStreamTrack(MediaStreamTrack):
         super().__init__()
         self.track = track
         self.pipeline = pipeline
-        self.fps_meter = FPSMeter()
+        self.fps_meter = FPSMeter(
+            metrics_manager=app["metrics_manager"], track_id=track.id
+        )
 
         asyncio.create_task(self.collect_frames())
 
@@ -312,6 +316,18 @@ if __name__ == "__main__":
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level",
     )
+    parser.add_argument(
+        "--monitor",
+        default=False,
+        action="store_true",
+        help="Start a Prometheus metrics endpoint for monitoring.",
+    )
+    parser.add_argument(
+        "--stream-id-label",
+        default=False,
+        action="store_true",
+        help="Include stream ID as a label in Prometheus metrics.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -335,11 +351,23 @@ if __name__ == "__main__":
     app.router.add_post("/prompt", set_prompt)
 
     # Add routes for getting stream statistics.
-    stream_stats = StreamStats(app)
-    app.router.add_get("/streams/stats", stream_stats.collect_all_stream_metrics)
+    stream_stats_manager = StreamStatsManager(app)
     app.router.add_get(
-        "/stream/{stream_id}/stats", stream_stats.collect_stream_metrics_by_id
+        "/streams/stats", stream_stats_manager.collect_all_stream_metrics
     )
+    app.router.add_get(
+        "/stream/{stream_id}/stats", stream_stats_manager.collect_stream_metrics_by_id
+    )
+
+    # Add Prometheus metrics endpoint.
+    app["metrics_manager"] = MetricsManager(include_stream_id=args.stream_id_label)
+    if args.monitor:
+        app["metrics_manager"].enable()
+        logger.info(
+            f"Monitoring enabled - Prometheus metrics available at: "
+            f"http://{args.host}:{args.port}/metrics"
+        )
+        app.router.add_get("/metrics", app["metrics_manager"].metrics_handler)
 
     # Add hosted platform route prefix.
     # NOTE: This ensures that the local and hosted experiences have consistent routes.
