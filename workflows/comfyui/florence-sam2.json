@@ -1,0 +1,383 @@
+{
+  "last_node_id": 19,
+  "last_link_id": 15,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        100,
+        130
+      ],
+      "size": [
+        315,
+        314
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            8,
+            11
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "BoundingBoxToCenter",
+      "pos": [
+        1083.5999755859375,
+        130
+      ],
+      "size": [
+        355.20001220703125,
+        26
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "bbox_data",
+          "type": "JSON",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "center_coordinates",
+          "type": "STRING",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BoundingBoxToCenter"
+      }
+    },
+    {
+      "id": 18,
+      "type": "PreviewImage",
+      "pos": [
+        1981.39990234375,
+        130
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 14
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 13,
+      "type": "Sam2RealtimeSegmentation",
+      "pos": [
+        1538.800048828125,
+        130
+      ],
+      "size": [
+        342.5999755859375,
+        146
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        },
+        {
+          "name": "sam2_model",
+          "type": "SAM2MODEL",
+          "link": 15
+        },
+        {
+          "name": "coordinates_positive",
+          "type": "STRING",
+          "shape": 7,
+          "pos": [
+            10,
+            56
+          ],
+          "widget": {
+            "name": "coordinates_positive"
+          },
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "PROCESSED_IMAGES",
+          "type": "IMAGE",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Sam2RealtimeSegmentation"
+      },
+      "widgets_values": [
+        "",
+        "",
+        false
+      ]
+    },
+    {
+      "id": 9,
+      "type": "DownloadAndLoadFlorence2Model",
+      "pos": [
+        92.6795654296875,
+        561.1170043945312
+      ],
+      "size": [
+        365.4000244140625,
+        130
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "lora",
+          "type": "PEFTLORA",
+          "shape": 7,
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "florence2_model",
+          "type": "FL2MODEL",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DownloadAndLoadFlorence2Model"
+      },
+      "widgets_values": [
+        "microsoft/Florence-2-base-ft",
+        "bf16",
+        "sdpa",
+        false
+      ]
+    },
+    {
+      "id": 19,
+      "type": "DownloadAndLoadSAM2RealtimeModel",
+      "pos": [
+        88.06327056884766,
+        794.2868041992188
+      ],
+      "size": [
+        378,
+        130
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "sam2_model",
+          "type": "SAM2MODEL",
+          "links": [
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DownloadAndLoadSAM2RealtimeModel"
+      },
+      "widgets_values": [
+        "sam2_hiera_tiny.pt",
+        "realtime",
+        "cuda",
+        "fp16"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "Florence2Run",
+      "pos": [
+        578,
+        130
+      ],
+      "size": [
+        405.5999755859375,
+        408
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 8
+        },
+        {
+          "name": "florence2_model",
+          "type": "FL2MODEL",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "caption",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "data",
+          "type": "JSON",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "processing_stats",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Florence2Run"
+      },
+      "widgets_values": [
+        "shirt",
+        "on task change",
+        "caption_to_phrase_grounding",
+        "red",
+        true,
+        "",
+        1024,
+        1,
+        false,
+        false,
+        false
+      ]
+    }
+  ],
+  "links": [
+    [
+      8,
+      3,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      9,
+      0,
+      10,
+      1,
+      "FL2MODEL"
+    ],
+    [
+      10,
+      10,
+      3,
+      11,
+      0,
+      "JSON"
+    ],
+    [
+      11,
+      3,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      13,
+      11,
+      0,
+      13,
+      2,
+      "STRING"
+    ],
+    [
+      14,
+      13,
+      0,
+      18,
+      0,
+      "IMAGE"
+    ],
+    [
+      15,
+      19,
+      0,
+      13,
+      1,
+      "SAM2MODEL"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6830134553650723,
+      "offset": [
+        27.600528007213136,
+        31.464657600115473
+      ]
+    }
+  },
+  "version": 0.4
+}
