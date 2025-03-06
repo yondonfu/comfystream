@@ -4,5 +4,5 @@
 .git/
 .venv/
 .github/
-ui/node_modules/
+ui/
 .dockerignore

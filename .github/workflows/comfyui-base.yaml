@@ -1,10 +1,20 @@
-name: Docker build and push images
+name: Build and push comfyui-base docker image
 
 on:
   pull_request:
+    paths:
+      - docker/Dockerfile.base
+      - src/comfystream/scripts/
+      - configs/
+      - .github/workflows/comfyui-base.yaml
     branches:
       - main
   push:
+    paths:
+      - docker/Dockerfile.base
+      - src/comfystream/scripts/
+      - configs/
+      - .github/workflows/comfyui-base.yaml
     branches:
       - main
     tags:
@@ -15,12 +25,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  docker:
     name: docker builds
     permissions:
       packages: write
       contents: read
-    runs-on: [self-hosted, linux, amd64]
+    runs-on: [self-hosted, linux, gpu]
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -39,7 +49,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ github.repository }}
+            livepeer/comfyui-base
           tags: |
             type=sha
             type=ref,event=pr
@@ -56,6 +66,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push livepeer docker image
+        timeout-minutes: 200
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -63,8 +74,8 @@ jobs:
           sbom: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          file: docker/Dockerfile
+          file: docker/Dockerfile.base
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          cache-from: type=registry,ref=${{ github.repository }}:build-cache
-          cache-to: type=registry,mode=max,ref=${{ github.repository }}:build-cache
+          cache-from: type=registry,ref=livepeer/comfyui-base:build-cache
+          cache-to: type=registry,mode=max,ref=livepeer/comfyui-base:build-cache
