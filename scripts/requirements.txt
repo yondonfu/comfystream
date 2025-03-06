@@ -1,4 +1,4 @@
-# TensorDock Spinup requirements
+# TensorDock Spinup
 requests
 geopy
 colorama

@@ -2,8 +2,9 @@ __pycache__
 *.egg-info
 build
 .DS_STORE
-comfyui*
-ComfyUI*
+comfyui/
+ComfyUI/
+cuda_temp
 
 # VS Code settings
 .vscode/
