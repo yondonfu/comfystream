@@ -100,6 +100,21 @@ const InputControl = ({
           className="p-2 border rounded w-full"
         />
       );
+      case "combo":
+      const options = Array.isArray(input.value) ? input.value : [];
+      return (
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="p-2 border rounded w-full"
+        >
+          {options.map((option: string) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
     default:
       console.warn(`Unhandled input type: ${input.type}`); // Debug log
       return (
@@ -394,7 +409,9 @@ export const ControlPanel = ({
                 "int",
                 "string",
                 "combo",
-              ].includes(type);
+              ].includes(
+                type,
+              ) || info.widget === "combo";
             })
             .map(([field, info]) => (
               <option key={field} value={field}>
