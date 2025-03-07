@@ -14,7 +14,7 @@
   },
   "3": {
     "inputs": {
-      "unet_name": "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+      "unet_name": "ComfyUI_STAT_SD15_$stat-b-1-h-512-w-512_00001_.engine",
       "model_type": "SD15"
     },
     "class_type": "TensorRTLoader",
@@ -50,7 +50,7 @@
   },
   "7": {
     "inputs": {
-      "seed": 831178787295449,
+      "seed": 722042942226989,
       "steps": 2,
       "cfg": 1,
       "sampler_name": "lcm",
@@ -61,12 +61,12 @@
         0
       ],
       "positive": [
-        "19",
+        "38",
         0
       ],
       "negative": [
-        "19",
-        1
+        "37",
+        0
       ],
       "latent_image": [
         "16",
@@ -213,12 +213,12 @@
       "start_percent": 0,
       "end_percent": 1,
       "positive": [
-        "9",
+        "5",
         0
       ],
       "negative": [
-        "9",
-        1
+        "6",
+        0
       ],
       "control_net": [
         "21",
@@ -292,6 +292,38 @@
     "class_type": "CLIPLoader",
     "_meta": {
       "title": "Load CLIP"
+    }
+  },
+  "37": {
+    "inputs": {
+      "conditioning_to": [
+        "9",
+        1
+      ],
+      "conditioning_from": [
+        "19",
+        1
+      ]
+    },
+    "class_type": "ConditioningConcat",
+    "_meta": {
+      "title": "Conditioning (Concat)"
+    }
+  },
+  "38": {
+    "inputs": {
+      "conditioning_to": [
+        "9",
+        0
+      ],
+      "conditioning_from": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "ConditioningConcat",
+    "_meta": {
+      "title": "Conditioning (Concat)"
     }
   }
 }
