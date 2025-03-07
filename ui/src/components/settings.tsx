@@ -292,22 +292,14 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
    * @param deviceId
    */
   const handleCameraSelect = (deviceId: string) => {
-    if (deviceId !== selectedVideoDevice) {
+    if (deviceId !== "" && deviceId !== selectedVideoDevice) {
       setSelectedVideoDevice(deviceId);
-      // Unselect audio device when video is selected
-      if (deviceId !== "none") {
-        setSelectedAudioDevice("none");
-      }
     }
   };
 
   const handleMicrophoneSelect = (deviceId: string) => {
-    if (deviceId !== selectedAudioDevice) {
+    if (deviceId !== "" && deviceId !== selectedAudioDevice) {
       setSelectedAudioDevice(deviceId);
-      // Unselect video device when audio is selected
-      if (deviceId !== "none") {
-        setSelectedVideoDevice("none");
-      }
     }
   };
 
