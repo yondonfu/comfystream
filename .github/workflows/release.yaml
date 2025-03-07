@@ -1,4 +1,4 @@
-name: Create release draft
+name: Create ui-kit release artifact
 
 on:
   push:
