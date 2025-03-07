@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     name: docker builds
+    if: ${{ github.repository == 'livepeer/comfystream' }}
     permissions:
       packages: write
       contents: read
