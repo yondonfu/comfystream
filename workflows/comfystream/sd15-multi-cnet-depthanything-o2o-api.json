@@ -14,7 +14,7 @@
   },
   "3": {
     "inputs": {
-      "unet_name": "ComfyUI_STAT_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+      "unet_name": "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
       "model_type": "SD15"
     },
     "class_type": "TensorRTLoader",
