@@ -25,12 +25,13 @@ from aiortc import (
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
 from pipeline import Pipeline
-from utils import patch_loop_datagram, StreamStats, add_prefix_to_app_routes
+from utils import patch_loop_datagram, add_prefix_to_app_routes
+from metrics import MetricsManager, StreamStatsManager
 import time
 
 logger = logging.getLogger(__name__)
-logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
-logging.getLogger('aiortc.rtcrtpreceiver').setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
 
 
 MAX_BITRATE = 2000000
@@ -45,7 +46,9 @@ class VideoStreamTrack(MediaStreamTrack):
         track (MediaStreamTrack): The underlying media stream track.
         pipeline (Pipeline): The processing pipeline to apply to each video frame.
     """
+
     kind = "video"
+
     def __init__(self, track: MediaStreamTrack, pipeline: Pipeline):
         """Initialize the VideoStreamTrack.
 
@@ -88,7 +91,11 @@ class VideoStreamTrack(MediaStreamTrack):
                 current_time = time.monotonic()
                 if self._last_fps_calculation_time is not None:
                     time_diff = current_time - self._last_fps_calculation_time
-                    self._fps = self._fps_interval_frame_count / time_diff
+                    self._fps = (
+                        self._fps_interval_frame_count / time_diff
+                        if time_diff > 0
+                        else 0.0
+                    )
                     self._fps_measurements.append(
                         {
                             "timestamp": current_time - self._fps_loop_start_time,
@@ -96,10 +103,14 @@ class VideoStreamTrack(MediaStreamTrack):
                         }
                     )  # Store the FPS measurement with timestamp
 
-                # Reset start_time and frame_count for the next interval.
+                # Reset tracking variables for the next interval.
                 self._last_fps_calculation_time = current_time
                 self._fps_interval_frame_count = 0
-            await asyncio.sleep(1)  # Calculate FPS every second.
+
+            # Update Prometheus metrics if enabled.
+            app["metrics_manager"].update_metrics(self.track.id, self._fps)
+
+            await asyncio.sleep(1)  # Calculate FPS every second
 
     @property
     async def fps(self) -> float:
@@ -129,11 +140,12 @@ class VideoStreamTrack(MediaStreamTrack):
             The average FPS over the last minute.
         """
         async with self._lock:
-            if not self._fps_measurements:
-                return 0.0
-            return sum(
-                measurement["fps"] for measurement in self._fps_measurements
-            ) / len(self._fps_measurements)
+            return (
+                sum(m["fps"] for m in self._fps_measurements)
+                / len(self._fps_measurements)
+                if self._fps_measurements
+                else self._fps
+            )
 
     @property
     async def last_fps_calculation_time(self) -> float:
@@ -159,6 +171,7 @@ class VideoStreamTrack(MediaStreamTrack):
 
 class AudioStreamTrack(MediaStreamTrack):
     kind = "audio"
+
     def __init__(self, track: MediaStreamTrack, pipeline):
         super().__init__()
         self.track = track
@@ -257,6 +270,7 @@ async def offer(request):
     @pc.on("datachannel")
     def on_datachannel(channel):
         if channel.label == "control":
+
             @channel.on("message")
             async def on_message(message):
                 try:
@@ -264,23 +278,21 @@ async def offer(request):
 
                     if params.get("type") == "get_nodes":
                         nodes_info = await pipeline.get_nodes_info()
-                        response = {
-                            "type": "nodes_info",
-                            "nodes": nodes_info
-                        }
+                        response = {"type": "nodes_info", "nodes": nodes_info}
                         channel.send(json.dumps(response))
                     elif params.get("type") == "update_prompts":
                         if "prompts" not in params:
-                            logger.warning("[Control] Missing prompt in update_prompt message")
+                            logger.warning(
+                                "[Control] Missing prompt in update_prompt message"
+                            )
                             return
                         await pipeline.update_prompts(params["prompts"])
-                        response = {
-                            "type": "prompts_updated",
-                            "success": True
-                        }
+                        response = {"type": "prompts_updated", "success": True}
                         channel.send(json.dumps(response))
                     else:
-                        logger.warning("[Server] Invalid message format - missing required fields")
+                        logger.warning(
+                            "[Server] Invalid message format - missing required fields"
+                        )
                 except json.JSONDecodeError:
                     logger.error("[Server] Invalid JSON received")
                 except Exception as e:
@@ -385,12 +397,18 @@ if __name__ == "__main__":
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level",
     )
+    parser.add_argument(
+        "--monitor",
+        default=False,
+        action="store_true",
+        help="Start a Prometheus metrics endpoint for monitoring.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
         level=args.log_level.upper(),
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        datefmt='%H:%M:%S'
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S",
     )
 
     app = web.Application()
@@ -408,11 +426,23 @@ if __name__ == "__main__":
     app.router.add_post("/prompt", set_prompt)
 
     # Add routes for getting stream statistics.
-    stream_stats = StreamStats(app)
-    app.router.add_get("/streams/stats", stream_stats.collect_all_stream_metrics)
+    stream_stats_manager = StreamStatsManager(app)
     app.router.add_get(
-        "/stream/{stream_id}/stats", stream_stats.collect_stream_metrics_by_id
+        "/streams/stats", stream_stats_manager.collect_all_stream_metrics
     )
+    app.router.add_get(
+        "/stream/{stream_id}/stats", stream_stats_manager.collect_stream_metrics_by_id
+    )
+
+    # Add Prometheus metrics endpoint.
+    app["metrics_manager"] = MetricsManager()
+    if args.monitor:
+        app["metrics_manager"].enable()
+        logger.info(
+            f"Monitoring enabled - Prometheus metrics available at: "
+            f"http://{args.host}:{args.port}/metrics"
+        )
+        app.router.add_get("/metrics", app["metrics_manager"].metrics_handler)
 
     # Add hosted platform route prefix.
     # NOTE: This ensures that the local and hosted experiences have consistent routes.
