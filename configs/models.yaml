@@ -57,3 +57,12 @@ models:
     url: "https://civitai.com/api/download/models/276570?type=Model&format=SafeTensor"
     path: "loras/SD1.5/ral-chrome-sd15.safetensors"
     type: "lora"
+
+  cliptext:
+    name: "ClipTextModel"
+    url: "https://huggingface.co/Lykon/dreamshaper-8/resolve/main/text_encoder/model.fp16.safetensors"
+    path: "text_encoders/CLIPText/model.fp16.safetensors"
+    type: "text_encoder"
+    extra_files:
+      - url: "https://huggingface.co/Lykon/dreamshaper-8/resolve/main/text_encoder/config.json"
+        path: "text_encoders/CLIPText/config.json"
