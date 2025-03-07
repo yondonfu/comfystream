@@ -1,9 +1,8 @@
-import asyncio
 import argparse
-import os
+import asyncio
 import json
 import logging
-from collections import deque
+import os
 import sys
 
 import torch
@@ -13,24 +12,23 @@ if torch.cuda.is_available():
     torch.cuda.init()
 
 
-from twilio.rest import Client
 from aiohttp import web
 from aiortc import (
-    RTCPeerConnection,
-    RTCSessionDescription,
+    MediaStreamTrack,
     RTCConfiguration,
     RTCIceServer,
-    MediaStreamTrack,
+    RTCPeerConnection,
+    RTCSessionDescription,
 )
-from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
+from aiortc.rtcrtpsender import RTCRtpSender
 from pipeline import Pipeline
-from utils import patch_loop_datagram, StreamStats, add_prefix_to_app_routes
-import time
+from twilio.rest import Client
+from utils import FPSMeter, StreamStats, add_prefix_to_app_routes, patch_loop_datagram
 
 logger = logging.getLogger(__name__)
-logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
-logging.getLogger('aiortc.rtcrtpreceiver').setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
 
 
 MAX_BITRATE = 2000000
@@ -45,7 +43,9 @@ class VideoStreamTrack(MediaStreamTrack):
         track (MediaStreamTrack): The underlying media stream track.
         pipeline (Pipeline): The processing pipeline to apply to each video frame.
     """
+
     kind = "video"
+
     def __init__(self, track: MediaStreamTrack, pipeline: Pipeline):
         """Initialize the VideoStreamTrack.
 
@@ -56,21 +56,14 @@ class VideoStreamTrack(MediaStreamTrack):
         super().__init__()
         self.track = track
         self.pipeline = pipeline
-
-        self._lock = asyncio.Lock()
-        self._fps_interval_frame_count = 0
-        self._last_fps_calculation_time = None
-        self._fps_loop_start_time = time.monotonic()
-        self._fps = 0.0
-        self._fps_measurements = deque(maxlen=60)
-        self._running_event = asyncio.Event()
+        self.fps_meter = FPSMeter()
 
         asyncio.create_task(self.collect_frames())
 
-        # Start metrics collection tasks.
-        self._fps_stats_task = asyncio.create_task(self._calculate_fps_loop())
-
     async def collect_frames(self):
+        """Continuously collect video frames from the underlying track and pass them to
+        the processing pipeline.
+        """
         while True:
             try:
                 frame = await self.track.recv()
@@ -79,86 +72,21 @@ class VideoStreamTrack(MediaStreamTrack):
                 await self.pipeline.cleanup()
                 raise Exception(f"Error collecting video frames: {str(e)}")
 
-    async def _calculate_fps_loop(self):
-        """Loop to calculate FPS periodically."""
-        await self._running_event.wait()
-        self._fps_loop_start_time = time.monotonic()
-        while self.readyState != "ended":
-            async with self._lock:
-                current_time = time.monotonic()
-                if self._last_fps_calculation_time is not None:
-                    time_diff = current_time - self._last_fps_calculation_time
-                    self._fps = self._fps_interval_frame_count / time_diff
-                    self._fps_measurements.append(
-                        {
-                            "timestamp": current_time - self._fps_loop_start_time,
-                            "fps": self._fps,
-                        }
-                    )  # Store the FPS measurement with timestamp
-
-                # Reset start_time and frame_count for the next interval.
-                self._last_fps_calculation_time = current_time
-                self._fps_interval_frame_count = 0
-            await asyncio.sleep(1)  # Calculate FPS every second.
-
-    @property
-    async def fps(self) -> float:
-        """Get the current output frames per second (FPS).
-
-        Returns:
-            The current output FPS.
-        """
-        async with self._lock:
-            return self._fps
-
-    @property
-    async def fps_measurements(self) -> list:
-        """Get the array of FPS measurements for the last minute.
-
-        Returns:
-            The array of FPS measurements for the last minute.
-        """
-        async with self._lock:
-            return list(self._fps_measurements)
-
-    @property
-    async def average_fps(self) -> float:
-        """Calculate the average FPS from the measurements taken in the last minute.
-
-        Returns:
-            The average FPS over the last minute.
-        """
-        async with self._lock:
-            if not self._fps_measurements:
-                return 0.0
-            return sum(
-                measurement["fps"] for measurement in self._fps_measurements
-            ) / len(self._fps_measurements)
-
-    @property
-    async def last_fps_calculation_time(self) -> float:
-        """Get the elapsed time since the last FPS calculation.
-
-        Returns:
-            The elapsed time in seconds since the last FPS calculation.
-        """
-        async with self._lock:
-            return self._last_fps_calculation_time - self._fps_loop_start_time
-
     async def recv(self):
+        """Receive a processed video frame from the pipeline, increment the frame
+        count for FPS calculation and return the processed frame to the client.
+        """
         processed_frame = await self.pipeline.get_processed_video_frame()
 
-        # Increment frame count for FPS calculation.
-        async with self._lock:
-            self._fps_interval_frame_count += 1
-            if not self._running_event.is_set():
-                self._running_event.set()
+        # Increment the frame count to calculate FPS.
+        await self.fps_meter.increment_frame_count()
 
         return processed_frame
 
 
 class AudioStreamTrack(MediaStreamTrack):
     kind = "audio"
+
     def __init__(self, track: MediaStreamTrack, pipeline):
         super().__init__()
         self.track = track
@@ -257,6 +185,7 @@ async def offer(request):
     @pc.on("datachannel")
     def on_datachannel(channel):
         if channel.label == "control":
+
             @channel.on("message")
             async def on_message(message):
                 try:
@@ -264,23 +193,21 @@ async def offer(request):
 
                     if params.get("type") == "get_nodes":
                         nodes_info = await pipeline.get_nodes_info()
-                        response = {
-                            "type": "nodes_info",
-                            "nodes": nodes_info
-                        }
+                        response = {"type": "nodes_info", "nodes": nodes_info}
                         channel.send(json.dumps(response))
                     elif params.get("type") == "update_prompts":
                         if "prompts" not in params:
-                            logger.warning("[Control] Missing prompt in update_prompt message")
+                            logger.warning(
+                                "[Control] Missing prompt in update_prompt message"
+                            )
                             return
                         await pipeline.update_prompts(params["prompts"])
-                        response = {
-                            "type": "prompts_updated",
-                            "success": True
-                        }
+                        response = {"type": "prompts_updated", "success": True}
                         channel.send(json.dumps(response))
                     else:
-                        logger.warning("[Server] Invalid message format - missing required fields")
+                        logger.warning(
+                            "[Server] Invalid message format - missing required fields"
+                        )
                 except json.JSONDecodeError:
                     logger.error("[Server] Invalid JSON received")
                 except Exception as e:
@@ -389,8 +316,8 @@ if __name__ == "__main__":
 
     logging.basicConfig(
         level=args.log_level.upper(),
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        datefmt='%H:%M:%S'
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S",
     )
 
     app = web.Application()
