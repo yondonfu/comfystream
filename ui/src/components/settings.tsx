@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Suspense,
   useCallback,
   useEffect,
   useState,
@@ -72,9 +73,21 @@ export function StreamSettings({
   onOpenChange,
   onSave,
 }: StreamSettingsProps) {
+  return (
+    <Suspense fallback={<div>Loading settings...</div>}>
+      <StreamSettingsInner open={open} onOpenChange={onOpenChange} onSave={onSave} />
+    </Suspense>
+  );
+}
+
+function StreamSettingsInner({
+  open,
+  onOpenChange,
+  onSave,
+}: StreamSettingsProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const searchParams = useSearchParams();
-
+  
   const initialConfig: StreamConfig = {
     ...DEFAULT_CONFIG,
     streamUrl: searchParams.get("streamUrl") || DEFAULT_CONFIG.streamUrl,
