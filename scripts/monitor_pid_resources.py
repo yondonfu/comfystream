@@ -1,4 +1,4 @@
-"""A Python script to monitor system resources for a given PID and optionally create 
+"""A Python script to monitor system resources for a given PID and optionally create
 a py-spy profiler report."""
 
 import psutil
@@ -8,25 +8,51 @@ import subprocess
 import click
 import threading
 import csv
+from pathlib import Path
+from typing import List
 
 
-def total_cpu_percent_with_children(pid: int) -> float:
-    """Return total CPU usage (%) for process `pid` and its children.
+def is_running_inside_container():
+    """Detects if the script is running inside a container."""
+    if Path("/.dockerenv").exists():
+        return True
+    try:
+        with open("/proc/1/cgroup", "rt") as f:
+            return any("docker" in line or "kubepods" in line for line in f)
+    except FileNotFoundError:
+        return False
+
+
+def get_all_processes(pid: int) -> List[psutil.Process]:
+    """Return the parent process and all its children.
 
     Args:
-        pid: Process ID to monitor.
+        pid: Parent process ID.
 
     Returns:
-        Total CPU usage (%) for the process and its children.
+        List of all processes (parent and children).
     """
     try:
         parent = psutil.Process(pid)
+        children = parent.children(recursive=True)
+        return [parent] + children
     except psutil.NoSuchProcess:
+        return []
+
+
+def total_cpu_percent(pids: List[psutil.Process]) -> float:
+    """Return total CPU usage (%) for a list of process IDs.
+    Args:
+        pids: List of process IDs to monitor.
+
+    Returns:
+        Total CPU usage (%) for the process IDs.
+    """
+    if not pids:
         return 0.0
 
     # Prime CPU measurement for child processes.
-    processes = [parent] + parent.children(recursive=True)
-    for proc in processes:
+    for proc in pids:
         try:
             proc.cpu_percent(interval=None)  # Prime the reading
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -36,7 +62,7 @@ def total_cpu_percent_with_children(pid: int) -> float:
 
     # Get the real CPU usage for all processes.
     total_cpu = 0.0
-    for proc in processes:
+    for proc in pids:
         try:
             total_cpu += proc.cpu_percent(interval=0.0)  # Get real CPU %
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -44,60 +70,53 @@ def total_cpu_percent_with_children(pid: int) -> float:
     return total_cpu
 
 
-def total_memory_with_children(pid: int) -> float:
-    """Return total memory usage (MB) for a process and its children.
+def total_memory(pids: List[psutil.Process]) -> float:
+    """Return total memory usage (MB) for a list of process IDs.
 
     Args:
-        pid: Parent process ID.
+        pids: List of process IDs to monitor.
 
     Returns:
-        Total memory usage in MB.
+        Total memory usage in MB for the process IDs.
     """
-    try:
-        parent = psutil.Process(pid)
-        children = parent.children(recursive=True)
-        all_processes = [parent] + children
-        total_mem = 0
-        for proc in all_processes:
-            try:
-                mem_info = proc.memory_info()
-                total_mem += mem_info.rss  # Count physical memory (RAM)
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue  # Ignore processes we can't access
-        return total_mem / (1024 * 1024)  # Convert bytes to MB
-    except psutil.NoSuchProcess:
-        return 0.0  # Process not found
+    if not pids:
+        return 0.0
+
+    total_mem = 0
+    for proc in pids:
+        try:
+            mem_info = proc.memory_info()
+            total_mem += mem_info.rss  # Count physical memory (RAM)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue  # Ignore processes we can't access
+    return total_mem / (1024 * 1024)  # Convert bytes to MB
 
 
-def total_gpu_usage_with_children(pid: int) -> tuple:
-    """Return total GPU and VRAM usage (%) for process `pid` and its children.
+def total_gpu_usage(pids: List[int]) -> tuple:
+    """Return total GPU and VRAM usage (%) for a list of process IDs.
 
     Args:
-        pid: Process ID to monitor.
+        pids: List of process IDs to monitor.
 
     Returns:
-        Tuple containing total GPU usage (%) and total VRAM usage (MB) for the process
-        and its children.
+        Tuple containing total GPU usage (%) and total VRAM usage (MB) for the
+        proccess IDs.
     """
-    total_gpu_usage = 0
+    total_usage = 0
     total_vram_usage = 0
 
     try:
-        parent = psutil.Process(pid)
-        children = parent.children(recursive=True)
-        all_processes = [parent] + children
-
         device_count = pynvml.nvmlDeviceGetCount()
         for i in range(device_count):
             handle = pynvml.nvmlDeviceGetHandleByIndex(i)
             processes = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
             for proc_info in processes:
-                if proc_info.pid in [p.pid for p in all_processes]:
-                    total_gpu_usage += pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
+                if proc_info.pid in pids:
+                    total_usage += pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
                     total_vram_usage += proc_info.usedGpuMemory / (1024 * 1024)  # MB
     except Exception:
         pass  # Ignore errors (e.g., no GPU available)
-    return total_gpu_usage, total_vram_usage
+    return total_usage, total_vram_usage
 
 
 def find_pid_by_name(name: str) -> int:
@@ -136,6 +155,12 @@ def find_pid_by_name(name: str) -> int:
 @click.option(
     "--spy-output", type=str, default="pyspy_profile.svg", help="Py-Spy output file"
 )
+@click.option(
+    "--host-pid",
+    type=int,
+    default=None,
+    help="Host PID for GPU monitoring when running inside a container. Use 'pgrep -f app.py' to find the PID.",
+)
 def monitor_resources(
     pid: int,
     name: str,
@@ -144,6 +169,7 @@ def monitor_resources(
     output: str,
     spy: bool,
     spy_output: str,
+    host_pid: int,
 ):
     """Monitor system resources for a given PID and optionally create a py-spy profiler
     report.
@@ -156,6 +182,7 @@ def monitor_resources(
         output (str): File to save logs (optional).
         spy (bool): Enable py-spy profiling.
         spy_output (str): Py-Spy output file.
+        host_pid (int): Host PID for GPU monitoring (useful inside containers).
     """
     if pid == "auto":
         pid = find_pid_by_name(name)
@@ -163,6 +190,24 @@ def monitor_resources(
             return
     else:
         pid = int(pid)
+
+    if is_running_inside_container():
+        if not host_pid:
+            click.echo(
+                click.style(
+                    "Warning: Running inside a container. GPU monitoring may not work correctly "
+                    "since `nvidia-smi` uses the host PID namespace. To fix this, provide the "
+                    "host PID using the `--host-pid` flag.",
+                    fg="yellow",
+                )
+            )
+        else:
+            click.echo(
+                click.style(
+                    f"Running inside a container. Monitoring GPU using host PID {host_pid}.",
+                    fg="cyan",
+                )
+            )
 
     if not psutil.pid_exists(pid):
         click.echo(click.style(f"Error: Process with PID {pid} not found.", fg="red"))
@@ -202,9 +247,12 @@ def monitor_resources(
         elapsed_monitor_time = time.time() - monitor_start_time
         progress = (elapsed_monitor_time / duration) * 100
         try:
-            cpu_usage = total_cpu_percent_with_children(pid)
-            memory_usage = total_memory_with_children(pid)
-            gpu_usage, vram_usage = total_gpu_usage_with_children(pid)
+            all_processes = get_all_processes(pid)
+            cpu_usage = total_cpu_percent(all_processes)
+            memory_usage = total_memory(all_processes)
+            gpu_usage, vram_usage = total_gpu_usage(
+                [proc.pid for proc in all_processes] if not host_pid else [host_pid]
+            )
 
             log_entry = {
                 "CPU (%)": cpu_usage,
