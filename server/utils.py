@@ -10,6 +10,7 @@ from aiortc import MediaStreamTrack
 from typing import List, Tuple, Any, Dict
 import time
 from collections import deque
+from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,25 @@ def patch_loop_datagram(local_ports: List[int]):
 
     loop.create_datagram_endpoint = types.MethodType(create_datagram_endpoint, loop)
     loop._patch_done = True
+
+
+@asynccontextmanager
+async def temporary_log_level(logger_name: str, level: int):
+    """Temporarily set the log level of a logger.
+
+    Args:
+        logger_name: The name of the logger to set the level for.
+        level: The log level to set.
+    """
+    if level is not None:
+        logger = logging.getLogger(logger_name)
+        original_level = logger.level
+        logger.setLevel(level)
+    try:
+        yield
+    finally:
+        if level is not None:
+            logger.setLevel(original_level)
 
 
 def add_prefix_to_app_routes(app: web.Application, prefix: str):
