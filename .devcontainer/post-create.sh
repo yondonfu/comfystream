@@ -7,10 +7,16 @@ cd /workspace/comfystream
 echo -e "\e[32mInstalling Comfystream in editable mode...\e[0m"
 /workspace/miniconda3/envs/comfystream/bin/python3 -m pip install -e . --root-user-action=ignore > /dev/null
 
+# Install npm packages if needed
+if [ ! -d "/workspace/comfystream/ui/node_modules" ]; then
+    echo -e "\e[32mInstalling npm packages for Comfystream UI...\e[0m"
+    cd /workspace/comfystream/ui
+    npm install
+fi
+
 if [ ! -d "/workspace/comfystream/nodes/web/static" ]; then
     echo -e "\e[32mBuilding web assets...\e[0m"
     cd /workspace/comfystream/ui
-    npm install
     npm run build
 fi
 
