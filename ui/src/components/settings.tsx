@@ -347,21 +347,17 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
               <FormItem className="mt-4">
                 <FormLabel>Width</FormLabel>
                 <FormControl>
-                  <Select
-                    value={field.value.toString()}
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                  >
-                    <Select.Trigger className="w-full">
-                      {field.value.toString()}
-                    </Select.Trigger>
-                    <Select.Content>
-                      {Array.from({ length: 32 }, (_, i) => (i + 1) * 64).map((size) => (
-                        <Select.Option key={size} value={size.toString()}>
-                          {size}
-                        </Select.Option>
-                      ))}
-                    </Select.Content>
-                  </Select>
+                  <Input
+                    type="number"
+                    min="64"
+                    max="2048"
+                    step="64"
+                    {...field}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      field.onChange(value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -375,21 +371,17 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
               <FormItem className="mt-4">
                 <FormLabel>Height</FormLabel>
                 <FormControl>
-                  <Select
-                    value={field.value.toString()}
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                  >
-                    <Select.Trigger className="w-full">
-                      {field.value.toString()}
-                    </Select.Trigger>
-                    <Select.Content>
-                      {Array.from({ length: 32 }, (_, i) => (i + 1) * 64).map((size) => (
-                        <Select.Option key={size} value={size.toString()}>
-                          {size}
-                        </Select.Option>
-                      ))}
-                    </Select.Content>
-                  </Select>
+                  <Input
+                    type="number"
+                    min="64"
+                    max="2048"
+                    step="64"
+                    {...field}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      field.onChange(value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
