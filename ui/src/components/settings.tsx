@@ -122,11 +122,11 @@ const formSchema = z.object({
   streamUrl: z.string().url(),
   frameRate: z.coerce.number(),
   resolution: z.object({
-    width: z.coerce.number().refine(val => [256, 512, 768, 1024].includes(val), {
-      message: "Width must be 256, 512, 768, or 1024"
+    width: z.coerce.number().refine(val => val % 64 === 0 && val >= 64 && val <= 2048, {
+      message: "Width must be a multiple of 64 (between 64 and 2048)"
     }),
-    height: z.coerce.number().refine(val => [256, 512, 768, 1024].includes(val), {
-      message: "Height must be 256, 512, 768, or 1024"
+    height: z.coerce.number().refine(val => val % 64 === 0 && val >= 64 && val <= 2048, {
+      message: "Height must be a multiple of 64 (between 64 and 2048)"
     })
   })
 });
@@ -355,10 +355,11 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
                       {field.value.toString()}
                     </Select.Trigger>
                     <Select.Content>
-                      <Select.Option value="256">256</Select.Option>
-                      <Select.Option value="512">512</Select.Option>
-                      <Select.Option value="768">768</Select.Option>
-                      <Select.Option value="1024">1024</Select.Option>
+                      {Array.from({ length: 32 }, (_, i) => (i + 1) * 64).map((size) => (
+                        <Select.Option key={size} value={size.toString()}>
+                          {size}
+                        </Select.Option>
+                      ))}
                     </Select.Content>
                   </Select>
                 </FormControl>
@@ -382,10 +383,11 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
                       {field.value.toString()}
                     </Select.Trigger>
                     <Select.Content>
-                      <Select.Option value="256">256</Select.Option>
-                      <Select.Option value="512">512</Select.Option>
-                      <Select.Option value="768">768</Select.Option>
-                      <Select.Option value="1024">1024</Select.Option>
+                      {Array.from({ length: 32 }, (_, i) => (i + 1) * 64).map((size) => (
+                        <Select.Option key={size} value={size.toString()}>
+                          {size}
+                        </Select.Option>
+                      ))}
                     </Select.Content>
                   </Select>
                 </FormControl>
