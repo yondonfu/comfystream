@@ -73,7 +73,7 @@ Replace `/path/to/your/model-files` and `path/to/your/output-files` with the pat
 Start ComfyUI:
 
 ```sh
-cd /workspace/comfystream/ComfyUI
+cd /workspace/ComfyUI
 conda activate comfyui
 python main.py --listen
 ```
@@ -81,7 +81,7 @@ python main.py --listen
 When using TensorRT engine enabled workflows, you should include the `---disable-cuda-malloc` flag as shown below:
 
 ```sh
-cd /workspace/comfystream/ComfyUI
+cd /workspace/ComfyUI
 conda activate comfyui
 python main.py --listen --disable-cuda-malloc
 ```
