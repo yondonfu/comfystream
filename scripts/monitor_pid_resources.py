@@ -129,7 +129,7 @@ def find_pid_by_name(name: str) -> int:
         Process ID of the process with the given name.
     """
     for proc in psutil.process_iter(["pid", "name", "cmdline"]):
-        if name in proc.info["cmdline"]:
+        if proc.info["cmdline"] and name in proc.info["cmdline"]:
             found_pid = proc.info["pid"]
             click.echo(
                 click.style(f"Found process '{name}' with PID {found_pid}.", fg="green")
