@@ -53,14 +53,13 @@ def download_and_extract_ui_files(version: str):
 
     output_dir = os.path.join(os.getcwd(), "nodes", "web")
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
-    base_url = urllib.parse.urljoin("https://github.com/livepeer/comfystream/releases/download/", f"v{version}/comfystream-uikit-v{version}.zip")
-    fallback_url = "https://github.com/yondonfu/comfystream/releases/latest/download/static.tar.gz"
+    base_url = urllib.parse.urljoin("https://github.com/livepeer/comfystream/releases/download/", f"v{version}/comfystream-uikit.zip")
+    fallback_url = "https://github.com/livepeer/comfystream/releases/latest/download/comfystream-uikit.zip"
     
     # Create a temporary directory instead of a temporary file
     with tempfile.TemporaryDirectory() as temp_dir:
         # Define the path for the downloaded file
-        is_tar = fallback_url.endswith('.tar.gz')
-        download_path = os.path.join(temp_dir, f"comfystream-uikit{'.zip' if not is_tar else '.tar.gz'}")
+        download_path = os.path.join(temp_dir, "comfystream-uikit.zip")
         
         # Download zip file
         logger.info(f"Downloading {base_url}")
@@ -81,12 +80,8 @@ def download_and_extract_ui_files(version: str):
         # Extract contents
         try:
             logger.info(f"Extracting files to {output_dir}")
-            if is_tar:
-                with tarfile.open(download_path, 'r:gz') as tar_ref:
-                    tar_ref.extractall(path=output_dir)
-            else:
-                with zipfile.ZipFile(download_path, 'r') as zip_ref:
-                    zip_ref.extractall(path=output_dir)
+            with zipfile.ZipFile(download_path, 'r') as zip_ref:
+                zip_ref.extractall(path=output_dir)
         except Exception as e:
             logger.error(f"Error extracting files: {e}")
             raise
