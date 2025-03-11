@@ -11,12 +11,16 @@ WARMUP_RUNS = 5
 
 class Pipeline:
     def __init__(self, **kwargs):
-        self.client = ComfyStreamClient(**kwargs, max_workers=5) # TODO: hardcoded max workers, should it be configurable?
+        self.client = ComfyStreamClient(**kwargs)
 
         self.video_incoming_frames = asyncio.Queue()
         self.audio_incoming_frames = asyncio.Queue()
 
         self.processed_audio_buffer = np.array([], dtype=np.int16)
+
+    def assign_worker(self, prompt_id: str, worker_id: str):
+        """Assign a specific worker to handle a prompt."""
+        self.client.executor.assign_prompt(prompt_id, worker_id)
 
     async def warm_video(self):
         dummy_frame = av.VideoFrame()
