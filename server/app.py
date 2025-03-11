@@ -94,12 +94,11 @@ class VideoStreamTrack(MediaStreamTrack):
             
             # Perform cleanup outside the exception handler
             logger.info("Video frame collection stopped")
-            await self.pipeline.cleanup()
         except asyncio.CancelledError:
             logger.info("Frame collection task cancelled")
-            await self.pipeline.cleanup()
         except Exception as e:
             logger.error(f"Unexpected error in frame collection: {str(e)}")
+        finally:
             await self.pipeline.cleanup()
 
     async def recv(self):
@@ -154,12 +153,11 @@ class AudioStreamTrack(MediaStreamTrack):
             
             # Perform cleanup outside the exception handler
             logger.info("Audio frame collection stopped")
-            await self.pipeline.cleanup()
         except asyncio.CancelledError:
             logger.info("Frame collection task cancelled")
-            await self.pipeline.cleanup()
         except Exception as e:
             logger.error(f"Unexpected error in audio frame collection: {str(e)}")
+        finally:
             await self.pipeline.cleanup()
 
     async def recv(self):
