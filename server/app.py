@@ -61,20 +61,46 @@ class VideoStreamTrack(MediaStreamTrack):
         self.fps_meter = FPSMeter(
             metrics_manager=app["metrics_manager"], track_id=track.id
         )
-
-        asyncio.create_task(self.collect_frames())
+        self.running = True
+        self.collect_task = asyncio.create_task(self.collect_frames())
+        
+        # Add cleanup when track ends
+        @track.on("ended")
+        async def on_ended():
+            logger.info("Source video track ended, stopping collection")
+            self.running = False
+            if hasattr(self, 'collect_task') and not self.collect_task.done():
+                self.collect_task.cancel()
 
     async def collect_frames(self):
-        """Continuously collect video frames from the underlying track and pass them to
-        the processing pipeline.
+        """Collect video frames from the underlying track and pass them to
+        the processing pipeline. Stops when track ends or connection closes.
         """
-        while True:
-            try:
-                frame = await self.track.recv()
-                await self.pipeline.put_video_frame(frame)
-            except Exception as e:
-                await self.pipeline.cleanup()
-                raise Exception(f"Error collecting video frames: {str(e)}")
+        try:
+            while self.running:
+                try:
+                    frame = await self.track.recv()
+                    await self.pipeline.put_video_frame(frame)
+                except asyncio.CancelledError:
+                    logger.info("Frame collection cancelled")
+                    break
+                except Exception as e:
+                    if "MediaStreamError" in str(type(e)):
+                        logger.info("Media stream ended")
+                    else:
+                        logger.error(f"Error collecting video frames: {str(e)}")
+                    self.running = False
+                    break
+            
+            # Perform cleanup outside the exception handler
+            logger.info("Video frame collection stopped")
+            await self.pipeline.cleanup()
+        except asyncio.CancelledError:
+            logger.info("Frame collection task cancelled")
+            await self.pipeline.cleanup()
+        except Exception as e:
+            logger.error(f"Unexpected error in frame collection: {str(e)}")
+            await self.pipeline.cleanup()
 
     async def recv(self):
         """Receive a processed video frame from the pipeline, increment the frame
@@ -95,16 +121,46 @@ class AudioStreamTrack(MediaStreamTrack):
         super().__init__()
         self.track = track
         self.pipeline = pipeline
-        asyncio.create_task(self.collect_frames())
+        self.running = True
+        self.collect_task = asyncio.create_task(self.collect_frames())
+        
+        # Add cleanup when track ends
+        @track.on("ended")
+        async def on_ended():
+            logger.info("Source audio track ended, stopping collection")
+            self.running = False
+            if hasattr(self, 'collect_task') and not self.collect_task.done():
+                self.collect_task.cancel()
 
     async def collect_frames(self):
-        while True:
-            try:
-                frame = await self.track.recv()
-                await self.pipeline.put_audio_frame(frame)
-            except Exception as e:
-                await self.pipeline.cleanup()
-                raise Exception(f"Error collecting audio frames: {str(e)}")
+        """Collect audio frames from the underlying track and pass them to
+        the processing pipeline. Stops when track ends or connection closes.
+        """
+        try:
+            while self.running:
+                try:
+                    frame = await self.track.recv()
+                    await self.pipeline.put_audio_frame(frame)
+                except asyncio.CancelledError:
+                    logger.info("Audio frame collection cancelled")
+                    break
+                except Exception as e:
+                    if "MediaStreamError" in str(type(e)):
+                        logger.info("Media stream ended")
+                    else:
+                        logger.error(f"Error collecting audio frames: {str(e)}")
+                    self.running = False
+                    break
+            
+            # Perform cleanup outside the exception handler
+            logger.info("Audio frame collection stopped")
+            await self.pipeline.cleanup()
+        except asyncio.CancelledError:
+            logger.info("Frame collection task cancelled")
+            await self.pipeline.cleanup()
+        except Exception as e:
+            logger.error(f"Unexpected error in audio frame collection: {str(e)}")
+            await self.pipeline.cleanup()
 
     async def recv(self):
         return await self.pipeline.get_processed_audio_frame()
