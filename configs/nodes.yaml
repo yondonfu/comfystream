@@ -5,7 +5,7 @@ nodes:
     url: "https://github.com/yondonfu/ComfyUI_TensorRT.git"
     branch: "quantization_with_controlnet_fixes"
     type: "tensorrt"
-    dependencies: 
+    dependencies:
       - "onnxruntime-gpu>=1.17.0"
       - "onnx>=1.17.0"
 
@@ -26,7 +26,7 @@ nodes:
     name: "ComfyUI Misc Effects"
     url: "https://github.com/ryanontheinside/ComfyUI-Misc-Effects.git"
     type: "effects"
-   
+
   comfyui-realtimenode:
     name: "ComfyUI RealTimeNodes"
     url: "https://github.com/ryanontheinside/ComfyUI_RealTimeNodes.git"
@@ -38,7 +38,7 @@ nodes:
     name: "ComfyUI Florence2 Vision"
     url: "https://github.com/ad-astra-video/ComfyUI-Florence2-Vision.git"
     type: "vision"
-   
+
   comfyui-sam2-realtime:
     name: "ComfyUI SAM2 Realtime"
     branch: "main"

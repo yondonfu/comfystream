@@ -1,47 +1,47 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
-	"name": "ComfyStream",
-	"build": {
-		"dockerfile": "../docker/Dockerfile",
-		"context": "../"
-	},
-	"runArgs": [
-		"--gpus=all"
-	], 
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// Configure tool-specific properties.
-	"customizations": {
-		"vscode": {
-			"settings": {
-				"python.defaultInterpreterPath": "/workspace/miniconda3/envs/comfystream/bin/python",
-				"python.venvPath": "/workspace/miniconda3/envs",
-				"python.terminal.activateEnvInCurrentTerminal": false,
-				"python.terminal.activateEnvironment": true,
-				"terminal.integrated.shellIntegration.enabled": true
-			},
-			"extensions": [
-				"ms-python.python",
-				"ms-python.black-formatter",
-				"ms-python.vscode-pylance",
-				"ms-python.debugpy"
-			]
-		}
-	},
-	"appPort": [
-		"8188:8188",  // ComfyUI
-		"8889:8889",  // ComfyStream
-		"3000:3000"   // ComfyStream UI (optional)
-	],
-	"forwardPorts": [8188, 8889, 3000],
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// Use 'mounts' to make a list of local folders available inside the container.
-	"workspaceFolder": "/workspace/comfystream",
-	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace/comfystream,type=bind",
-	"mounts": [
-		// Use 'mounts' to map to comfyui models on the host
-		"source=${localEnv:HOME}/models/ComfyUI--models,target=/workspace/ComfyUI/models,type=bind,consistency=cached",
-		"source=${localEnv:HOME}/models/ComfyUI--output,target=/workspace/ComfyUI/output,type=bind,consistency=cached"
-	],
-	"postCreateCommand": ".devcontainer/post-create.sh"
+  "name": "ComfyStream",
+  "build": {
+    "dockerfile": "../docker/Dockerfile",
+    "context": "../"
+  },
+  "runArgs": [
+    "--gpus=all"
+  ],
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/workspace/miniconda3/envs/comfystream/bin/python",
+        "python.venvPath": "/workspace/miniconda3/envs",
+        "python.terminal.activateEnvInCurrentTerminal": false,
+        "python.terminal.activateEnvironment": true,
+        "terminal.integrated.shellIntegration.enabled": true
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy"
+      ]
+    }
+  },
+  "appPort": [
+    "8188:8188",  // ComfyUI
+    "8889:8889",  // ComfyStream
+    "3000:3000"   // ComfyStream UI (optional)
+  ],
+  "forwardPorts": [8188, 8889, 3000],
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // Use 'mounts' to make a list of local folders available inside the container.
+  "workspaceFolder": "/workspace/comfystream",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/comfystream,type=bind",
+  "mounts": [
+    // Use 'mounts' to map to comfyui models on the host
+    "source=${localEnv:HOME}/models/ComfyUI--models,target=/workspace/ComfyUI/models,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/models/ComfyUI--output,target=/workspace/ComfyUI/output,type=bind,consistency=cached"
+  ],
+  "postCreateCommand": ".devcontainer/post-create.sh"
 }

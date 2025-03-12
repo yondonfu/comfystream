@@ -1,41 +1,41 @@
-ARG	BASE_IMAGE=livepeer/comfyui-base:latest
+ARG     BASE_IMAGE=livepeer/comfyui-base:latest
 
-FROM	${BASE_IMAGE}
+FROM    ${BASE_IMAGE}
 
-ENV	PATH="/workspace/miniconda3/bin:${PATH}" \
-	NVM_DIR=/root/.nvm \
-	NODE_VERSION=18.18.0
+ENV     PATH="/workspace/miniconda3/bin:${PATH}" \
+        NVM_DIR=/root/.nvm \
+        NODE_VERSION=18.18.0
 
-RUN	echo "Using base image: ${BASE_IMAGE}" && \
-	apt update && \
-	apt install -yqq supervisor && \
-	wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+RUN     echo "Using base image: ${BASE_IMAGE}" && \
+        apt update && \
+        apt install -yqq supervisor && \
+        wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
-WORKDIR	/
+WORKDIR /
 
 # Install node and npm
-RUN	bash -c "source $NVM_DIR/nvm.sh && \
-	nvm install $NODE_VERSION  && \
-	nvm alias default $NODE_VERSION && \
-	nvm use default"
+RUN     bash -c "source $NVM_DIR/nvm.sh && \
+        nvm install $NODE_VERSION  && \
+        nvm alias default $NODE_VERSION && \
+        nvm use default"
 
 # Add node and npm to path so the commands are available
-ENV	NODE_PATH="$NVM_DIR/v$NODE_VERSION/lib/node_modules" \
-	PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
+ENV     NODE_PATH="$NVM_DIR/v$NODE_VERSION/lib/node_modules" \
+        PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
 
-RUN	conda init bash
+RUN     conda init bash
 
 # Create the supervisor configuration file for ComfyUI and ComfyStream
-COPY	docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY    docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-WORKDIR	/workspace/comfystream
-COPY --chmod=0755	docker/entrypoint.sh /workspace/comfystream/docker/entrypoint.sh
+WORKDIR /workspace/comfystream
+COPY --chmod=0755       docker/entrypoint.sh /workspace/comfystream/docker/entrypoint.sh
 
-EXPOSE	8188
-EXPOSE	8889
-EXPOSE	3000
-EXPOSE	1024-65535/udp
+EXPOSE  8188
+EXPOSE  8889
+EXPOSE  3000
+EXPOSE  1024-65535/udp
 
-ENTRYPOINT	[ "/workspace/comfystream/docker/entrypoint.sh" ]
+ENTRYPOINT      [ "/workspace/comfystream/docker/entrypoint.sh" ]
 
-CMD	[ "/bin/bash" ]
+CMD     [ "/bin/bash" ]

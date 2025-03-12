@@ -33,12 +33,12 @@ function StreamCanvas({
     const video = videoRef.current!;
 
     let isActive = true;
-    
+
     const drawFrame = () => {
       if (!isActive || !video) {
         return;
       }
-      
+
       if (!video?.videoWidth) {
         requestAnimationFrame(drawFrame);
         return;
@@ -53,7 +53,7 @@ function StreamCanvas({
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, 512, 512);
       ctx.drawImage(video, offsetX, offsetY, scaledWidth, scaledHeight);
-      
+
       requestAnimationFrame(drawFrame);
     };
     drawFrame();
@@ -68,10 +68,10 @@ function StreamCanvas({
     if (!stream || stream.getVideoTracks().length === 0 || !videoRef.current) {
       return;
     }
-    
+
     const video = videoRef.current;
     video.srcObject = stream;
-    
+
     video.onloadedmetadata = () => {
       video.play().catch((error) => {
         console.error("Video play failed:", error);
@@ -99,13 +99,7 @@ function StreamCanvas({
     <>
       <div className="relative">
         {/* Hidden video element that will be used as the source for the canvas */}
-        <video 
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="hidden"
-        />
+        <video ref={videoRef} autoPlay playsInline muted className="hidden" />
         <canvas
           ref={canvasRef}
           width={512}

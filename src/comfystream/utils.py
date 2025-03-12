@@ -36,7 +36,7 @@ def convert_prompt(prompt: PromptDictInput) -> Prompt:
         "PreviewImage": [],
         "SaveImage": [],
     }
-    
+
     for key, node in prompt.items():
         class_type = node.get("class_type")
 
@@ -49,7 +49,12 @@ def convert_prompt(prompt: PromptDictInput) -> Prompt:
             num_primary_inputs += 1
         elif class_type in ["LoadImage", "LoadTensor", "LoadAudioTensor"]:
             num_inputs += 1
-        elif class_type in ["PreviewImage", "SaveImage", "SaveTensor", "SaveAudioTensor"]:
+        elif class_type in [
+            "PreviewImage",
+            "SaveImage",
+            "SaveTensor",
+            "SaveAudioTensor",
+        ]:
             num_outputs += 1
 
     # Only handle single primary input

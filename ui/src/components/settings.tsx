@@ -75,7 +75,11 @@ export function StreamSettings({
 }: StreamSettingsProps) {
   return (
     <Suspense fallback={<div>Loading settings...</div>}>
-      <StreamSettingsInner open={open} onOpenChange={onOpenChange} onSave={onSave} />
+      <StreamSettingsInner
+        open={open}
+        onOpenChange={onOpenChange}
+        onSave={onSave}
+      />
     </Suspense>
   );
 }
@@ -87,12 +91,15 @@ function StreamSettingsInner({
 }: StreamSettingsProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const searchParams = useSearchParams();
-  
+
   const initialConfig: StreamConfig = {
     ...DEFAULT_CONFIG,
     streamUrl: searchParams.get("streamUrl") || DEFAULT_CONFIG.streamUrl,
-    frameRate: parseInt(searchParams.get("frameRate") || `${DEFAULT_CONFIG.frameRate}`, 10),
-  }
+    frameRate: parseInt(
+      searchParams.get("frameRate") || `${DEFAULT_CONFIG.frameRate}`,
+      10
+    ),
+  };
   const [config, setConfig] = useState<StreamConfig>(initialConfig);
 
   const handleSubmit = (config: StreamConfig) => {
@@ -243,11 +250,11 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
     return () => {
       navigator.mediaDevices.removeEventListener(
         "devicechange",
-        getVideoDevices,
+        getVideoDevices
       );
       navigator.mediaDevices.removeEventListener(
         "devicechange",
-        getAudioDevices,
+        getAudioDevices
       );
     };
   }, [getVideoDevices, getAudioDevices]);
@@ -265,7 +272,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   };
 
   const handlePromptsChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (!e.target.files?.length) return;
 
@@ -384,7 +391,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
                 audioDevices
                   .filter(
                     (device) =>
-                      device.deviceId !== undefined && device.deviceId != "",
+                      device.deviceId !== undefined && device.deviceId != ""
                   )
                   .map((device) => (
                     <Select.Option

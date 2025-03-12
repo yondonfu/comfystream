@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
-import path from 'path';
-import fs from 'fs';
+import path from "path";
+import fs from "fs";
 
 // Get the extension name dynamically from the directory structure
 const getExtensionName = () => {
@@ -11,9 +11,9 @@ const getExtensionName = () => {
     const extensionName = path.basename(path.dirname(currentDir));
     return extensionName;
   } catch (error) {
-    console.warn('Failed to get extension name dynamically:', error);
+    console.warn("Failed to get extension name dynamically:", error);
     // Fallback to the current name
-    return 'ComfyStream';
+    return "ComfyStream";
   }
 };
 
@@ -21,19 +21,19 @@ const extensionName = getExtensionName();
 
 // Check if we're in development mode
 // This is set by the NEXT_PUBLIC_DEV environment variable in package.json scripts
-const isDev = process.env.NEXT_PUBLIC_DEV === 'true';
-console.log(`Running in ${isDev ? 'DEVELOPMENT' : 'PRODUCTION'} mode`);
-console.log(`Output directory: ${isDev ? './.next' : '../nodes/web/static'}`);
+const isDev = process.env.NEXT_PUBLIC_DEV === "true";
+console.log(`Running in ${isDev ? "DEVELOPMENT" : "PRODUCTION"} mode`);
+console.log(`Output directory: ${isDev ? "./.next" : "../nodes/web/static"}`);
 
-const distDir = isDev ? './.next' : '../nodes/web/static';
+const distDir = isDev ? "./.next" : "../nodes/web/static";
 
 const nextConfig: NextConfig = {
-  output: isDev ? undefined : 'export',
+  output: isDev ? undefined : "export",
   distDir: distDir,
   // Set base path for the app when served from ComfyUI
-  basePath: isDev ? '' : `/extensions/${extensionName}/static`,
+  basePath: isDev ? "" : `/extensions/${extensionName}/static`,
   // Set asset prefix for static files
-  assetPrefix: isDev ? '' : `/extensions/${extensionName}/static`,
+  assetPrefix: isDev ? "" : `/extensions/${extensionName}/static`,
   // Disable image optimization since we're doing static export
   images: {
     unoptimized: true,
