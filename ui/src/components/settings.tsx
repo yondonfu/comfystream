@@ -1,6 +1,7 @@
 /**
  * @file Contains a StreamSettings component for configuring stream settings.
  */
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Suspense,
   useCallback,
   useEffect,
   useState,
@@ -79,9 +81,27 @@ export function StreamSettings({
   onOpenChange,
   onSave,
 }: StreamSettingsProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
+  return (
+    <Suspense fallback={<div>Loading settings...</div>}>
+      <StreamSettingsInner open={open} onOpenChange={onOpenChange} onSave={onSave} />
+    </Suspense>
+  );
+}
 
-  const [config, setConfig] = useState<StreamConfig>(DEFAULT_CONFIG);
+function StreamSettingsInner({
+  open,
+  onOpenChange,
+  onSave,
+}: StreamSettingsProps) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const searchParams = useSearchParams();
+  
+  const initialConfig: StreamConfig = {
+    ...DEFAULT_CONFIG,
+    streamUrl: searchParams.get("streamUrl") || DEFAULT_CONFIG.streamUrl,
+    frameRate: parseInt(searchParams.get("frameRate") || `${DEFAULT_CONFIG.frameRate}`, 10),
+  }
+  const [config, setConfig] = useState<StreamConfig>(initialConfig);
 
   const handleSubmit = (config: StreamConfig) => {
     setConfig(config);
@@ -289,22 +309,14 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
    * @param deviceId
    */
   const handleCameraSelect = (deviceId: string) => {
-    if (deviceId !== selectedVideoDevice) {
+    if (deviceId !== "" && deviceId !== selectedVideoDevice) {
       setSelectedVideoDevice(deviceId);
-      // Unselect audio device when video is selected
-      if (deviceId !== "none") {
-        setSelectedAudioDevice("none");
-      }
     }
   };
 
   const handleMicrophoneSelect = (deviceId: string) => {
-    if (deviceId !== selectedAudioDevice) {
+    if (deviceId !== "" && deviceId !== selectedAudioDevice) {
       setSelectedAudioDevice(deviceId);
-      // Unselect video device when audio is selected
-      if (deviceId !== "none") {
-        setSelectedVideoDevice("none");
-      }
     }
   };
 

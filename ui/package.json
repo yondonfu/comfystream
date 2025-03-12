@@ -1,6 +1,6 @@
 {
   "name": "ui",
-  "version": "0.1.0",
+  "version": "0.0.3",
   "private": true,
   "scripts": {
     "dev": "cross-env NEXT_PUBLIC_DEV=true next dev",
@@ -39,7 +39,7 @@
     "cross-env": "^7.0.3",
     "eslint": "^8",
     "eslint-config-next": "15.0.2",
-    "husky": "^8.0.0",
+    "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
     "postcss": "^8",
     "prettier": "^3.5.2",

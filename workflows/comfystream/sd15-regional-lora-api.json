@@ -9,18 +9,9 @@
       "title": "TensorRT Loader"
     }
   },
-  "4": {
-    "inputs": {
-      "ckpt_name": "dreamshaper_8.safetensors"
-    },
-    "class_type": "CheckpointLoaderSimple",
-    "_meta": {
-      "title": "Load Checkpoint"
-    }
-  },
   "7": {
     "inputs": {
-      "seed": 393392643060621,
+      "seed": 878443241318109,
       "steps": 1,
       "cfg": 1,
       "sampler_name": "lcm",
@@ -191,7 +182,7 @@
   },
   "31": {
     "inputs": {
-      "image": "binary_mask.png",
+      "image": "example.png",
       "channel": "red",
       "upload": "image"
     },
@@ -217,8 +208,8 @@
     "inputs": {
       "stop_at_clip_layer": -2,
       "clip": [
-        "4",
-        1
+        "49",
+        0
       ]
     },
     "class_type": "CLIPSetLastLayer",
@@ -383,6 +374,17 @@
     "class_type": "DepthAnythingTensorrt",
     "_meta": {
       "title": "Depth Anything Tensorrt"
+    }
+  },
+  "49": {
+    "inputs": {
+      "clip_name": "CLIPText/model.fp16.safetensors",
+      "type": "stable_diffusion",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
     }
   }
 }

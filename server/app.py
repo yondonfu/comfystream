@@ -1,8 +1,8 @@
-import asyncio
 import argparse
-import os
+import asyncio
 import json
 import logging
+import os
 import sys
 
 import torch
@@ -12,31 +12,25 @@ if torch.cuda.is_available():
     torch.cuda.init()
 
 
-import torch
-
-# Initialize CUDA before any other imports to prevent core dump.
-if torch.cuda.is_available():
-    torch.cuda.init()
-
-
-from twilio.rest import Client
 from aiohttp import web
 from aiortc import (
-    RTCPeerConnection,
-    RTCSessionDescription,
+    MediaStreamTrack,
     RTCConfiguration,
     RTCIceServer,
-    MediaStreamTrack,
-    RTCDataChannel,
+    RTCPeerConnection,
+    RTCSessionDescription,
 )
-from aiortc.rtcrtpsender import RTCRtpSender
 from aiortc.codecs import h264
+from aiortc.rtcrtpsender import RTCRtpSender
 from pipeline import Pipeline
-from utils import patch_loop_datagram
+from twilio.rest import Client
+from utils import patch_loop_datagram, add_prefix_to_app_routes, FPSMeter
+from metrics import MetricsManager, StreamStatsManager
+import time
 
 logger = logging.getLogger(__name__)
-logging.getLogger('aiortc.rtcrtpsender').setLevel(logging.WARNING)
-logging.getLogger('aiortc.rtcrtpreceiver').setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
+logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
 
 
 MAX_BITRATE = 2000000
@@ -44,42 +38,123 @@ MIN_BITRATE = 2000000
 
 
 class VideoStreamTrack(MediaStreamTrack):
+    """video stream track that processes video frames using a pipeline.
+
+    Attributes:
+        kind (str): The kind of media, which is "video" for this class.
+        track (MediaStreamTrack): The underlying media stream track.
+        pipeline (Pipeline): The processing pipeline to apply to each video frame.
+    """
+
     kind = "video"
-    def __init__(self, track: MediaStreamTrack, pipeline):
+
+    def __init__(self, track: MediaStreamTrack, pipeline: Pipeline):
+        """Initialize the VideoStreamTrack.
+
+        Args:
+            track: The underlying media stream track.
+            pipeline: The processing pipeline to apply to each video frame.
+        """
         super().__init__()
         self.track = track
         self.pipeline = pipeline
-        asyncio.create_task(self.collect_frames())
+        self.fps_meter = FPSMeter(
+            metrics_manager=app["metrics_manager"], track_id=track.id
+        )
+        self.running = True
+        self.collect_task = asyncio.create_task(self.collect_frames())
+        
+        # Add cleanup when track ends
+        @track.on("ended")
+        async def on_ended():
+            logger.info("Source video track ended, stopping collection")
+            await cancel_collect_frames(self)
 
     async def collect_frames(self):
-        while True:
-            try:
-                frame = await self.track.recv()
-                await self.pipeline.put_video_frame(frame)
-            except Exception as e:
-                await self.pipeline.cleanup()
-                raise Exception(f"Error collecting video frames: {str(e)}")
+        """Collect video frames from the underlying track and pass them to
+        the processing pipeline. Stops when track ends or connection closes.
+        """
+        try:
+            while self.running:
+                try:
+                    frame = await self.track.recv()
+                    await self.pipeline.put_video_frame(frame)
+                except asyncio.CancelledError:
+                    logger.info("Frame collection cancelled")
+                    break
+                except Exception as e:
+                    if "MediaStreamError" in str(type(e)):
+                        logger.info("Media stream ended")
+                    else:
+                        logger.error(f"Error collecting video frames: {str(e)}")
+                    self.running = False
+                    break
+            
+            # Perform cleanup outside the exception handler
+            logger.info("Video frame collection stopped")
+        except asyncio.CancelledError:
+            logger.info("Frame collection task cancelled")
+        except Exception as e:
+            logger.error(f"Unexpected error in frame collection: {str(e)}")
+        finally:
+            await self.pipeline.cleanup()
 
     async def recv(self):
-        return await self.pipeline.get_processed_video_frame()
-    
+        """Receive a processed video frame from the pipeline, increment the frame
+        count for FPS calculation and return the processed frame to the client.
+        """
+        processed_frame = await self.pipeline.get_processed_video_frame()
+
+        # Increment the frame count to calculate FPS.
+        await self.fps_meter.increment_frame_count()
+
+        return processed_frame
+
 
 class AudioStreamTrack(MediaStreamTrack):
     kind = "audio"
+
     def __init__(self, track: MediaStreamTrack, pipeline):
         super().__init__()
         self.track = track
         self.pipeline = pipeline
-        asyncio.create_task(self.collect_frames())
+        self.running = True
+        self.collect_task = asyncio.create_task(self.collect_frames())
+        
+        # Add cleanup when track ends
+        @track.on("ended")
+        async def on_ended():
+            logger.info("Source audio track ended, stopping collection")
+            await cancel_collect_frames(self)
 
     async def collect_frames(self):
-        while True:
-            try:
-                frame = await self.track.recv()
-                await self.pipeline.put_audio_frame(frame)
-            except Exception as e:
-                await self.pipeline.cleanup()
-                raise Exception(f"Error collecting audio frames: {str(e)}")
+        """Collect audio frames from the underlying track and pass them to
+        the processing pipeline. Stops when track ends or connection closes.
+        """
+        try:
+            while self.running:
+                try:
+                    frame = await self.track.recv()
+                    await self.pipeline.put_audio_frame(frame)
+                except asyncio.CancelledError:
+                    logger.info("Audio frame collection cancelled")
+                    break
+                except Exception as e:
+                    if "MediaStreamError" in str(type(e)):
+                        logger.info("Media stream ended")
+                    else:
+                        logger.error(f"Error collecting audio frames: {str(e)}")
+                    self.running = False
+                    break
+            
+            # Perform cleanup outside the exception handler
+            logger.info("Audio frame collection stopped")
+        except asyncio.CancelledError:
+            logger.info("Frame collection task cancelled")
+        except Exception as e:
+            logger.error(f"Unexpected error in audio frame collection: {str(e)}")
+        finally:
+            await self.pipeline.cleanup()
 
     async def recv(self):
         return await self.pipeline.get_processed_audio_frame()
@@ -167,27 +242,24 @@ async def offer(request):
     @pc.on("datachannel")
     def on_datachannel(channel):
         if channel.label == "control":
+
             @channel.on("message")
             async def on_message(message):
                 try:
                     params = json.loads(message)
-                    
+
                     if params.get("type") == "get_nodes":
                         nodes_info = await pipeline.get_nodes_info()
-                        response = {
-                            "type": "nodes_info",
-                            "nodes": nodes_info
-                        }
+                        response = {"type": "nodes_info", "nodes": nodes_info}
                         channel.send(json.dumps(response))
                     elif params.get("type") == "update_prompts":
                         if "prompts" not in params:
-                            logger.warning("[Control] Missing prompt in update_prompt message")
+                            logger.warning(
+                                "[Control] Missing prompt in update_prompt message"
+                            )
                             return
                         await pipeline.update_prompts(params["prompts"])
-                        response = {
-                            "type": "prompts_updated",
-                            "success": True
-                        }
+                        response = {"type": "prompts_updated", "success": True}
                         channel.send(json.dumps(response))
                     elif params.get("type") == "update_resolution":
                         if "width" not in params or "height" not in params:
@@ -211,7 +283,9 @@ async def offer(request):
                         }
                         channel.send(json.dumps(response))
                     else:
-                        logger.warning("[Server] Invalid message format - missing required fields")
+                        logger.warning(
+                            "[Server] Invalid message format - missing required fields"
+                        )
                 except json.JSONDecodeError:
                     logger.error("[Server] Invalid JSON received")
                 except Exception as e:
@@ -225,6 +299,10 @@ async def offer(request):
             tracks["video"] = videoTrack
             sender = pc.addTrack(videoTrack)
 
+            # Store video track in app for stats.
+            stream_id = track.id
+            request.app["video_tracks"][stream_id] = videoTrack
+
             codec = "video/H264"
             force_codec(pc, sender, codec)
         elif track.kind == "audio":
@@ -235,6 +313,7 @@ async def offer(request):
         @track.on("ended")
         async def on_ended():
             logger.info(f"{track.kind} track ended")
+            request.app["video_tracks"].pop(track.id, None)
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -264,6 +343,14 @@ async def offer(request):
         ),
     )
 
+async def cancel_collect_frames(track):
+    track.running = False
+    if hasattr(track, 'collect_task') is not None and not track.collect_task.done():
+        try:
+            track.collect_task.cancel()
+            await track.collect_task
+        except (asyncio.CancelledError):
+            pass
 
 async def set_prompt(request):
     pipeline = request.app["pipeline"]
@@ -290,6 +377,7 @@ async def on_startup(app: web.Application):
         gpu_only=True
     )
     app["pcs"] = set()
+    app["video_tracks"] = {}
 
 
 async def on_shutdown(app: web.Application):
@@ -315,12 +403,24 @@ if __name__ == "__main__":
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level",
     )
+    parser.add_argument(
+        "--monitor",
+        default=False,
+        action="store_true",
+        help="Start a Prometheus metrics endpoint for monitoring.",
+    )
+    parser.add_argument(
+        "--stream-id-label",
+        default=False,
+        action="store_true",
+        help="Include stream ID as a label in Prometheus metrics.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
         level=args.log_level.upper(),
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        datefmt='%H:%M:%S'
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S",
     )
 
     app = web.Application()
@@ -330,10 +430,35 @@ if __name__ == "__main__":
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
 
-    app.router.add_post("/offer", offer)
-    app.router.add_post("/prompt", set_prompt)
     app.router.add_get("/", health)
     app.router.add_get("/health", health)
+
+    # WebRTC signalling and control routes.
+    app.router.add_post("/offer", offer)
+    app.router.add_post("/prompt", set_prompt)
+
+    # Add routes for getting stream statistics.
+    stream_stats_manager = StreamStatsManager(app)
+    app.router.add_get(
+        "/streams/stats", stream_stats_manager.collect_all_stream_metrics
+    )
+    app.router.add_get(
+        "/stream/{stream_id}/stats", stream_stats_manager.collect_stream_metrics_by_id
+    )
+
+    # Add Prometheus metrics endpoint.
+    app["metrics_manager"] = MetricsManager(include_stream_id=args.stream_id_label)
+    if args.monitor:
+        app["metrics_manager"].enable()
+        logger.info(
+            f"Monitoring enabled - Prometheus metrics available at: "
+            f"http://{args.host}:{args.port}/metrics"
+        )
+        app.router.add_get("/metrics", app["metrics_manager"].metrics_handler)
+
+    # Add hosted platform route prefix.
+    # NOTE: This ensures that the local and hosted experiences have consistent routes.
+    add_prefix_to_app_routes(app, "/live")
 
     def force_print(*args, **kwargs):
         print(*args, **kwargs, flush=True)

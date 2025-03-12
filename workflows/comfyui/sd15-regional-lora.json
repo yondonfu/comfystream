@@ -1,6 +1,6 @@
 {
-  "last_node_id": 48,
-  "last_link_id": 64,
+  "last_node_id": 49,
+  "last_link_id": 65,
   "nodes": [
     {
       "id": 7,
@@ -51,7 +51,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        881065402091907,
+        878443241318109,
         "randomize",
         1,
         1,
@@ -275,8 +275,7 @@
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
-      },
-      "widgets_values": []
+      }
     },
     {
       "id": 15,
@@ -302,8 +301,7 @@
       "outputs": [],
       "properties": {
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": []
+      }
     },
     {
       "id": 16,
@@ -387,7 +385,7 @@
         26
       ],
       "flags": {},
-      "order": 13,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -407,8 +405,7 @@
       ],
       "properties": {
         "Node name for S&R": "InvertMask"
-      },
-      "widgets_values": []
+      }
     },
     {
       "id": 35,
@@ -445,44 +442,6 @@
       },
       "widgets_values": [
         "worst quality, low quality"
-      ]
-    },
-    {
-      "id": 36,
-      "type": "CLIPSetLastLayer",
-      "pos": [
-        515,
-        130
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 49
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            53,
-            55
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPSetLastLayer"
-      },
-      "widgets_values": [
-        -2
       ]
     },
     {
@@ -873,110 +832,6 @@
       ]
     },
     {
-      "id": 3,
-      "type": "TensorRTLoader",
-      "pos": [
-        100,
-        130
-      ],
-      "size": [
-        315,
-        82
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            33
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "TensorRTLoader"
-      },
-      "widgets_values": [
-        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
-        "SD15"
-      ]
-    },
-    {
-      "id": 4,
-      "type": "CheckpointLoaderSimple",
-      "pos": [
-        100,
-        342
-      ],
-      "size": [
-        315,
-        98
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": null
-        },
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            49
-          ]
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
-      },
-      "widgets_values": [
-        "SD1.5/dreamshaper-8.safetensors"
-      ]
-    },
-    {
-      "id": 8,
-      "type": "ControlNetLoader",
-      "pos": [
-        100,
-        570
-      ],
-      "size": [
-        332.7156066894531,
-        90.21019744873047
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CONTROL_NET",
-          "type": "CONTROL_NET",
-          "links": [
-            41
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ControlNetLoader"
-      },
-      "widgets_values": [
-        "control_v11f1p_sd15_depth_fp16.safetensors"
-      ]
-    },
-    {
       "id": 31,
       "type": "LoadImageMask",
       "pos": [
@@ -988,7 +843,7 @@
         318
       ],
       "flags": {},
-      "order": 7,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1008,6 +863,46 @@
         "example.png",
         "red",
         "image"
+      ]
+    },
+    {
+      "id": 46,
+      "type": "CreateHookLora",
+      "pos": [
+        100,
+        1654
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prev_hooks",
+          "type": "HOOKS",
+          "shape": 7,
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "HOOKS",
+          "type": "HOOKS",
+          "links": [
+            56
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateHookLora"
+      },
+      "widgets_values": [
+        "SD1.5/ral-polygon-sd15.safetensors",
+        1.1,
+        1
       ]
     },
     {
@@ -1048,43 +943,137 @@
       ]
     },
     {
-      "id": 46,
-      "type": "CreateHookLora",
+      "id": 8,
+      "type": "ControlNetLoader",
       "pos": [
         100,
-        1654
+        570
       ],
       "size": [
         315,
-        106
+        58
       ],
       "flags": {},
-      "order": 8,
+      "order": 6,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "prev_hooks",
-          "type": "HOOKS",
-          "shape": 7,
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "name": "HOOKS",
-          "type": "HOOKS",
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
           "links": [
-            56
+            41
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "CreateHookLora"
+        "Node name for S&R": "ControlNetLoader"
       },
       "widgets_values": [
-        "SD1.5/ral-polygon-sd15.safetensors",
-        1.1,
-        1
+        "control_v11f1p_sd15_depth_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "TensorRTLoader",
+      "pos": [
+        100,
+        130
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TensorRTLoader"
+      },
+      "widgets_values": [
+        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+        "SD15"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "CLIPSetLastLayer",
+      "pos": [
+        515,
+        130
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 65
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            53,
+            55
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPSetLastLayer"
+      },
+      "widgets_values": [
+        -2
+      ]
+    },
+    {
+      "id": 49,
+      "type": "CLIPLoader",
+      "pos": [
+        107.04177856445312,
+        326.7558898925781
+      ],
+      "size": [
+        315,
+        98
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            65
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "CLIPText/model.fp16.safetensors",
+        "stable_diffusion",
+        "default"
       ]
     }
   ],
@@ -1218,14 +1207,6 @@
       "CLIP"
     ],
     [
-      49,
-      4,
-      1,
-      36,
-      0,
-      "CLIP"
-    ],
-    [
       50,
       43,
       0,
@@ -1344,16 +1325,24 @@
       48,
       0,
       "IMAGE"
+    ],
+    [
+      65,
+      49,
+      0,
+      36,
+      0,
+      "CLIP"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.564473930053779,
+      "scale": 0.751314800901578,
       "offset": [
-        137.3462492243213,
-        -0.04118822012597434
+        -29.843806191131534,
+        -42.812405201536194
       ]
     }
   },

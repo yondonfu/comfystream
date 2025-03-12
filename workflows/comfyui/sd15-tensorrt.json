@@ -1,83 +1,7 @@
 {
-  "last_node_id": 22,
-  "last_link_id": 21,
+  "last_node_id": 23,
+  "last_link_id": 23,
   "nodes": [
-    {
-      "id": 5,
-      "type": "CLIPTextEncode",
-      "pos": [
-        1104,
-        615
-      ],
-      "size": [
-        400,
-        200
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            4
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        "the hulk"
-      ]
-    },
-    {
-      "id": 6,
-      "type": "CLIPTextEncode",
-      "pos": [
-        1104,
-        891
-      ],
-      "size": [
-        400,
-        200
-      ],
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 3
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            5
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        ""
-      ]
-    },
     {
       "id": 9,
       "type": "ControlNetApplyAdvanced",
@@ -116,8 +40,8 @@
         {
           "name": "vae",
           "type": "VAE",
-          "link": null,
-          "shape": 7
+          "shape": 7,
+          "link": null
         }
       ],
       "outputs": [
@@ -301,7 +225,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        723874613633120,
+        905056445574169,
         "randomize",
         1,
         1,
@@ -564,11 +488,87 @@
       ]
     },
     {
-      "id": 4,
-      "type": "CheckpointLoaderSimple",
+      "id": 5,
+      "type": "CLIPTextEncode",
       "pos": [
-        654.4420776367188,
-        733.6654052734375
+        1104,
+        615
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "the hulk"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        1075.010498046875,
+        919.9890747070312
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            5
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 23,
+      "type": "CLIPLoader",
+      "pos": [
+        667.5541381835938,
+        707.4666748046875
       ],
       "size": [
         315,
@@ -580,30 +580,21 @@
       "inputs": [],
       "outputs": [
         {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": null
-        },
-        {
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            2,
-            3
-          ],
-          "slot_index": 1
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": null
+            22,
+            23
+          ]
         }
       ],
       "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
+        "Node name for S&R": "CLIPLoader"
       },
       "widgets_values": [
-        "SD1.5/dreamshaper-8.safetensors"
+        "CLIPText/model.fp16.safetensors",
+        "stable_diffusion",
+        "default"
       ]
     }
   ],
@@ -615,22 +606,6 @@
       2,
       0,
       "IMAGE"
-    ],
-    [
-      2,
-      4,
-      1,
-      5,
-      0,
-      "CLIP"
-    ],
-    [
-      3,
-      4,
-      1,
-      6,
-      0,
-      "CLIP"
     ],
     [
       4,
@@ -735,16 +710,32 @@
       7,
       3,
       "LATENT"
+    ],
+    [
+      22,
+      23,
+      0,
+      5,
+      0,
+      "CLIP"
+    ],
+    [
+      23,
+      23,
+      0,
+      6,
+      0,
+      "CLIP"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.5131581182307078,
+      "scale": 0.6830134553650705,
       "offset": [
-        -447.4875238927874,
-        173.493736000115
+        -415.064488191131,
+        178.10564379846417
       ]
     },
     "node_versions": {

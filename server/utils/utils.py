@@ -1,8 +1,10 @@
+"""General utility functions."""
+
 import asyncio
 import random
 import types
 import logging
-
+from aiohttp import web
 from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
@@ -48,3 +50,16 @@ def patch_loop_datagram(local_ports: List[int]):
 
     loop.create_datagram_endpoint = types.MethodType(create_datagram_endpoint, loop)
     loop._patch_done = True
+
+
+def add_prefix_to_app_routes(app: web.Application, prefix: str):
+    """Add a prefix to all routes in the given application.
+
+    Args:
+        app: The web application whose routes will be prefixed.
+        prefix: The prefix to add to all routes.
+    """
+    prefix = prefix.rstrip("/")
+    for route in list(app.router.routes()):
+        new_path = prefix + route.resource.canonical
+        app.router.add_route(route.method, new_path, route.handler)

@@ -53,6 +53,7 @@ def download_and_extract_ui_files(version: str):
     output_dir = os.path.join(os.getcwd(), "nodes", "web")
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
     base_url = urllib.parse.urljoin("https://github.com/yondonfu/comfystream/releases/download/", f"v{version}/static.tar.gz")
+    fallback_url = "https://github.com/yondonfu/comfystream/releases/latest/download/static.tar.gz"
     
     # Create a temporary directory instead of a temporary file
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -63,13 +64,25 @@ def download_and_extract_ui_files(version: str):
         logger.info(f"Downloading {base_url}")
         try:
             urllib.request.urlretrieve(base_url, download_path)
-            
-            # Extract contents
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                logger.warning(f"{base_url} not found, trying {fallback_url}")
+                try:
+                    urllib.request.urlretrieve(fallback_url, download_path)
+                except Exception as e:
+                    logger.error(f"Error downloading latest ui package: {e}")
+                    raise
+            else:
+                logger.error(f"Error downloading package: {e}")
+                raise
+        
+        # Extract contents
+        try:
             logger.info(f"Extracting files to {output_dir}")
             with tarfile.open(download_path, 'r:gz') as tar:
                 tar.extractall(path=output_dir)
         except Exception as e:
-            logger.error(f"Error downloading or extracting files: {e}")
+            logger.error(f"Error extracting files: {e}")
             raise
 
 if __name__ == "__main__":
@@ -100,14 +113,14 @@ if __name__ == "__main__":
 
     if workspace is None:
         logger.warning("No ComfyUI workspace found. Please specify a valid workspace path to fully install")
-
-    logger.info("Downloading and extracting UI files...")
-    version = get_project_version(os.getcwd())
-    download_and_extract_ui_files(version)
     
     if workspace is not None:
         logger.info("Ensuring __init__.py files exist in ComfyUI directories...")
         ensure_init_files(workspace)
         logger.info("Installing custom node requirements...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "."])
+    
+    logger.info("Downloading and extracting UI files...")
+    version = get_project_version(os.getcwd())
+    download_and_extract_ui_files(version)
     logger.info("Installation completed successfully.")

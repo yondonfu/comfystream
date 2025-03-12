@@ -103,13 +103,11 @@ class ComfyStreamClient:
                 # Get set of class types we need metadata for, excluding LoadTensor and SaveTensor
                 needed_class_types = {
                     node.get('class_type') 
-                    for node in prompt.values() 
-                    if node.get('class_type') not in ('LoadTensor', 'SaveTensor')
+                    for node in prompt.values()
                 }
                 remaining_nodes = {
                     node_id 
                     for node_id, node in prompt.items() 
-                    if node.get('class_type') not in ('LoadTensor', 'SaveTensor')
                 }
                 nodes_info = {}
                 
@@ -181,7 +179,7 @@ class ComfyStreamClient:
 
                     all_prompts_nodes_info[prompt_index] = nodes_info
             
-            return all_prompts_nodes_info[0] # TODO: make it for for multiple prompts
+            return all_prompts_nodes_info
             
         except Exception as e:
             logger.error(f"Error getting node info: {str(e)}")

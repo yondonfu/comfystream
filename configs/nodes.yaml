@@ -2,9 +2,12 @@ nodes:
   # Core TensorRT nodes
   comfyui-tensorrt:
     name: "ComfyUI TensorRT"
-    url: "https://github.com/yondonfu/ComfyUI_TensorRT"
+    url: "https://github.com/yondonfu/ComfyUI_TensorRT.git"
     branch: "quantization_with_controlnet_fixes"
     type: "tensorrt"
+    dependencies: 
+      - "onnxruntime-gpu>=1.17.0"
+      - "onnx>=1.17.0"
 
   comfyui-depthanything-tensorrt:
     name: "ComfyUI DepthAnything TensorRT"
@@ -66,5 +69,3 @@ nodes:
     name: "ComfyUI ControlNet Auxiliary"
     url: "https://github.com/Fannovel16/comfyui_controlnet_aux"
     type: "utility"
-    dependencies: 
-      - "mediapipe==0.10.8"

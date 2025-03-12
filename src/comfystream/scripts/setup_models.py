@@ -88,6 +88,7 @@ def setup_directories(workspace_dir):
         "vae",
         "tensorrt",
         "unet",
+        "LLM",
     ]
     for dir_name in model_dirs:
         (models_dir / dir_name).mkdir(parents=True, exist_ok=True)
