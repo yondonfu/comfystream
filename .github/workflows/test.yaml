@@ -1,0 +1,52 @@
+name: Test project
+
+on:
+  pull_request:
+    branches:
+      - "main"
+  push:
+    branches:
+      - "main"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: Perform CodeQL analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: typescript,javascript,python
+          config-file: ./.github/codeql-config.yaml
+          build-mode: autobuild
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  editorconfig:
+    name: Run editorconfig checker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          # Check https://github.com/livepeer/go-livepeer/pull/1891
+          # for ref value discussion
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install editorconfig-checker
+        uses: editorconfig-checker/action-editorconfig-checker@main
+
+      - name: Run editorconfig checker against the repo
+        run: editorconfig-checker --format github-actions
