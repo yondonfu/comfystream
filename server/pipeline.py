@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class Pipeline:
-    def __init__(self, width=512, height=512, **kwargs):
+    def __init__(self, **kwargs):
         self.client = ComfyStreamClient(**kwargs, max_workers=5) # TODO: hardcoded max workers, should it be configurable?
-        self.width = width
-        self.height = height
+        self.width = kwargs.get("width", 512)
+        self.height = kwargs.get("height", 512)
 
         self.video_incoming_frames = asyncio.Queue()
         self.audio_incoming_frames = asyncio.Queue()
