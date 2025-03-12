@@ -20,3 +20,4 @@ launch.json
 .env.production
 
 nodes/web/static/*
+!nodes/web/static/.gitkeep

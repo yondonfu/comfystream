@@ -51,7 +51,7 @@ def ensure_init_files(workspace: str):
 def download_and_extract_ui_files(version: str):
     """Download and extract UI files to the workspace"""
 
-    output_dir = os.path.join(os.getcwd(), "nodes", "web")
+    output_dir = os.path.join(os.getcwd(), "nodes", "web", "static")
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
     base_url = urllib.parse.urljoin("https://github.com/livepeer/comfystream/releases/download/", f"v{version}/comfystream-uikit.zip")
     fallback_url = "https://github.com/livepeer/comfystream/releases/latest/download/comfystream-uikit.zip"

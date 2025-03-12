@@ -11,7 +11,7 @@ if [ ! -d "/workspace/comfystream/nodes/web/static" ]; then
     echo -e "\e[32mBuilding web assets...\e[0m"
     cd /workspace/comfystream/ui
     npm install
-    npm run build
+    # removed it as we are already getting the built files from install.py
 fi
 
 # Create a symlink to the entrypoint script.
