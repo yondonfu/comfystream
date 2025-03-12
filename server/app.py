@@ -147,6 +147,9 @@ async def offer(request):
     pcs.add(pc)
 
     tracks = {"video": None, "audio": None}
+    
+    # Flag to track if we've received resolution update
+    resolution_received = {"value": False}
 
     # Only add video transceiver if video is present in the offer
     if "m=video" in offer.sdp:
@@ -194,6 +197,14 @@ async def offer(request):
                         pipeline.width = params["width"]
                         pipeline.height = params["height"]
                         logger.info(f"[Control] Updated resolution to {params['width']}x{params['height']}")
+                        
+                        # Mark that we've received resolution
+                        resolution_received["value"] = True
+                        
+                        # Warm the video pipeline with the new resolution
+                        if "m=video" in pc.remoteDescription.sdp:
+                            await pipeline.warm_video()
+                            
                         response = {
                             "type": "resolution_updated",
                             "success": True
@@ -237,10 +248,11 @@ async def offer(request):
 
     await pc.setRemoteDescription(offer)
 
+    # Only warm audio here, video warming happens after resolution update
     if "m=audio" in pc.remoteDescription.sdp:
         await pipeline.warm_audio()
-    if "m=video" in pc.remoteDescription.sdp:
-        await pipeline.warm_video()
+    
+    # We no longer warm video here - it will be warmed after receiving resolution
 
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
