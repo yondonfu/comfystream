@@ -6,3 +6,6 @@ qrcode_terminal
 click
 bcrypt
 rich
+# Profiler
+psutil
+pynvml

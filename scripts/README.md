@@ -4,6 +4,7 @@ This directory contains helper scripts to simplify the deployment and management
 
 - **Ansible Playbook (`ansible/plays/setup_comfystream.yml`)** – Deploys ComfyStream on any cloud provider.  
 - **`spinup_comfystream_tensordock.py`** – Fully automates VM creation and ComfyStream setup on a [TensorDock server](https://tensordock.com/).  
+- `monitor_pid_resources.py`: Monitors and profiles the resource usage of a running ComfyStream server.
 
 ## Usage Instructions
 
@@ -84,16 +85,16 @@ The `spinup_comfystream_tensordock.py` script automates VM provisioning, setup, 
 3. **View Available Script Options** *(Optional)*:  
    To see all available options, run:
 
-    ```bash
-    python spinup_comfystream_tensordock.py --help
-    ```
+   ```bash
+   python spinup_comfystream_tensordock.py --help
+   ```
 
 4. **Run the Script**:  
    Execute the following command to provision a VM and set up ComfyStream automatically:
 
-    ```bash
-    python spinup_comfystream_tensordock.py --api-key <API_KEY> --api-token <API_TOKEN>
-    ```
+   ```bash
+   python spinup_comfystream_tensordock.py --api-key <API_KEY> --api-token <API_TOKEN>
+   ```
 
 5. **Access the Server**:  
    Once the setup is complete, the script will display the URLs to access ComfyStream.
@@ -101,12 +102,53 @@ The `spinup_comfystream_tensordock.py` script automates VM provisioning, setup, 
 6. **Stop & Delete the VM** *(When No Longer Needed)*:
    To stop and remove the instance, run:
 
-    ```bash
-    python spinup_comfystream_tensordock.py --delete <VM_ID>
-    ```
+   ```bash
+   python spinup_comfystream_tensordock.py --delete <VM_ID>
+   ```
 
    Replace `<VM_ID>` with the VM ID found in the script logs or the [TensorDock dashboard](https://dashboard.tensordock.com/instances).
 
 > [!WARNING]
 > If you encounter `max retries exceeded with URL` errors, the VM might have been created but is inaccessible.  
 > Check the [TensorDock dashboard](https://dashboard.tensordock.com/instances), delete the VM manually, wait **2-3 minutes**, then rerun the script.
+
+### Profiling a Running ComfyStream Server
+
+To monitor the resource consumption of a running ComfyStream server, use the `monitor_pid_resources.py` script:
+
+1. **Start the ComfyStream server** and execute a streaming workflow.
+2. **Run the profiling script**:
+
+   ```bash
+   python monitor_pid_resources.py --name app.py
+   ```
+
+   The script will automatically try to find the process ID (PID) of the server. If you prefer to specify the PID manually, you can retrieve it using:
+
+   ```bash
+   pgrep -f app.py | xargs ps -o pid,cmd --pid
+   ```
+
+   Then run the profiling script with the retrieved PID:
+
+   ```bash
+   python monitor_pid_resources.py --pid <PID>
+   ```
+
+3. **Running Inside a Container**: If you are running the script inside a container, use the `--host-pid` option to provide the host PID for accurate GPU monitoring:
+
+   ```bash
+   python monitor_pid_resources.py --name app.py --host-pid <HOST_PID>
+   ```
+
+   Find `<HOST_PID>` with `nvidia-smi` on the host.
+
+The script will continuously track **CPU and memory usage** at specified intervals. If the `--spy` flag is used, it will also generate a **detailed Py-Spy profiler report** for deeper performance insights.
+
+### Additional Options
+
+For a complete list of available options, run:
+
+```bash
+python monitor_pid_resources.py --help
+```
