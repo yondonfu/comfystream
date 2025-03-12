@@ -56,7 +56,7 @@ export const ControlPanelsContainer = () => {
 
   const updatePanelState = (
     id: number,
-    state: Partial<(typeof panelStates)[number]>,
+    state: Partial<typeof panelStates[number]>
   ) => {
     setPanelStates((prev) => ({
       ...prev,
@@ -90,22 +90,22 @@ export const ControlPanelsContainer = () => {
               background-color: transparent !important;
               background: transparent !important;
             }
-            
+
             /* Custom scrollbar styling */
             #control-panel-drawer ::-webkit-scrollbar {
               width: 8px;
               height: 8px;
             }
-            
+
             #control-panel-drawer ::-webkit-scrollbar-track {
               background: transparent;
             }
-            
+
             #control-panel-drawer ::-webkit-scrollbar-thumb {
               background: #cbd5e1;
               border-radius: 4px;
             }
-            
+
             #control-panel-drawer ::-webkit-scrollbar-thumb:hover {
               background: #94a3b8;
             }

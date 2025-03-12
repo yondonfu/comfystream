@@ -37,7 +37,7 @@ models:
     name: "ControlNet Depth"
     url: "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11f1p_sd15_depth_fp16.safetensors"
     path: "controlnet/control_v11f1p_sd15_depth_fp16.safetensors"
-    type: "controlnet" 
+    type: "controlnet"
 
   controlnet-mediapipe-face:
     name: "ControlNet MediaPipe Face"

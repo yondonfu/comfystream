@@ -63,7 +63,7 @@ class VideoStreamTrack(MediaStreamTrack):
         )
         self.running = True
         self.collect_task = asyncio.create_task(self.collect_frames())
-        
+
         # Add cleanup when track ends
         @track.on("ended")
         async def on_ended():
@@ -89,7 +89,7 @@ class VideoStreamTrack(MediaStreamTrack):
                         logger.error(f"Error collecting video frames: {str(e)}")
                     self.running = False
                     break
-            
+
             # Perform cleanup outside the exception handler
             logger.info("Video frame collection stopped")
         except asyncio.CancelledError:
@@ -120,7 +120,7 @@ class AudioStreamTrack(MediaStreamTrack):
         self.pipeline = pipeline
         self.running = True
         self.collect_task = asyncio.create_task(self.collect_frames())
-        
+
         # Add cleanup when track ends
         @track.on("ended")
         async def on_ended():
@@ -146,7 +146,7 @@ class AudioStreamTrack(MediaStreamTrack):
                         logger.error(f"Error collecting audio frames: {str(e)}")
                     self.running = False
                     break
-            
+
             # Perform cleanup outside the exception handler
             logger.info("Audio frame collection stopped")
         except asyncio.CancelledError:
@@ -318,14 +318,16 @@ async def offer(request):
         ),
     )
 
+
 async def cancel_collect_frames(track):
     track.running = False
-    if hasattr(track, 'collect_task') is not None and not track.collect_task.done():
+    if hasattr(track, "collect_task") is not None and not track.collect_task.done():
         try:
             track.collect_task.cancel()
             await track.collect_task
-        except (asyncio.CancelledError):
+        except asyncio.CancelledError:
             pass
+
 
 async def set_prompt(request):
     pipeline = request.app["pipeline"]
