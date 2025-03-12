@@ -98,13 +98,11 @@ async def install_node(node, workspace_dir):
         requirements_file = node_path / "requirements.txt"
         if requirements_file.exists():
             subprocess.run(["conda", "run", "-n", "comfystream", "pip", "install", "-r", str(requirements_file)], check=True)
-            subprocess.run(["conda", "run", "-n", "comfyui", "pip", "install", "-r", str(requirements_file)], check=True)
 
         # Install additional dependencies if specified
         if "dependencies" in node:
             for dep in node["dependencies"].split(','):
                 subprocess.run(["conda", "run", "-n", "comfystream", "pip", "install", dep.strip()], check=True)
-                subprocess.run(["conda", "run", "-n", "comfyui", "pip", "install", dep.strip()], check=True)
 
     except Exception as e:
         logger.error(f"Error installing {dir_name} {e}")
