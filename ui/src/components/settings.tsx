@@ -58,8 +58,8 @@ const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
     process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8889",
   frameRate: 30,
-  selectedVideoDeviceId: "none",
-  selectedAudioDeviceId: "none",
+  selectedVideoDeviceId: "",
+  selectedAudioDeviceId: "",
 };
 
 interface StreamSettingsProps {
@@ -75,7 +75,11 @@ export function StreamSettings({
 }: StreamSettingsProps) {
   return (
     <Suspense fallback={<div>Loading settings...</div>}>
-      <StreamSettingsInner open={open} onOpenChange={onOpenChange} onSave={onSave} />
+      <StreamSettingsInner
+        open={open}
+        onOpenChange={onOpenChange}
+        onSave={onSave}
+      />
     </Suspense>
   );
 }
@@ -87,12 +91,15 @@ function StreamSettingsInner({
 }: StreamSettingsProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const searchParams = useSearchParams();
-  
+
   const initialConfig: StreamConfig = {
     ...DEFAULT_CONFIG,
     streamUrl: searchParams.get("streamUrl") || DEFAULT_CONFIG.streamUrl,
-    frameRate: parseInt(searchParams.get("frameRate") || `${DEFAULT_CONFIG.frameRate}`, 10),
-  }
+    frameRate: parseInt(
+      searchParams.get("frameRate") || `${DEFAULT_CONFIG.frameRate}`,
+      10,
+    ),
+  };
   const [config, setConfig] = useState<StreamConfig>(initialConfig);
 
   const handleSubmit = (config: StreamConfig) => {
@@ -150,8 +157,8 @@ interface PromptContextType {
 export const PromptContext = createContext<PromptContextType>({
   originalPrompts: null,
   currentPrompts: null,
-  setOriginalPrompts: () => {},
-  setCurrentPrompts: () => {},
+  setOriginalPrompts: () => { },
+  setCurrentPrompts: () => { },
 });
 
 export const usePrompt = () => useContext(PromptContext);
@@ -192,8 +199,8 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       ];
 
       setVideoDevices(videoDevices);
-      // Set default to first available camera if no selection yet
-      if (selectedVideoDevice == "none" && videoDevices.length > 1) {
+      // Set first available camera as default if no selection yet.
+      if (selectedVideoDevice == "" && videoDevices.length > 1) {
         setSelectedVideoDevice(videoDevices[1].deviceId); // Index 1 because 0 is "No Video"
       }
     } catch (error) {
@@ -220,8 +227,8 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       ];
 
       setAudioDevices(audioDevices);
-      // Set default to first available microphone if no selection yet
-      if (selectedAudioDevice == "none" && audioDevices.length > 1) {
+      // Set first available microphone as default if no selection yet.
+      if (selectedAudioDevice == "" && audioDevices.length > 1) {
         setSelectedAudioDevice(audioDevices[0].deviceId); // Default to "No Audio" due to https://github.com/yondonfu/comfystream/issues/64
       }
     } catch (error) {
@@ -289,7 +296,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
 
   /**
    * Handles the camera selection.
-   * @param deviceId
+   * @param deviceId - The device ID of the selected camera.
    */
   const handleCameraSelect = (deviceId: string) => {
     if (deviceId !== "" && deviceId !== selectedVideoDevice) {
@@ -297,6 +304,10 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
     }
   };
 
+  /**
+   * Handles the microphone selection.
+   * @param deviceId - The device ID of the selected microphone.
+   */
   const handleMicrophoneSelect = (deviceId: string) => {
     if (deviceId !== "" && deviceId !== selectedAudioDevice) {
       setSelectedAudioDevice(deviceId);
@@ -336,15 +347,16 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
 
         <div className="mt-4 mb-4">
           <Label>Camera</Label>
+          {/* TODO: Temporary fix to Warn if no camera or mic; improve later */}
           <Select
-            required={true}
-            value={selectedVideoDevice}
+            required={selectedAudioDevice == "none" && selectedVideoDevice == "none" ? true : false}
+            value={selectedVideoDevice == "none" ? "" : selectedVideoDevice}
             onValueChange={handleCameraSelect}
           >
             <Select.Trigger className="w-full mt-2">
               {selectedVideoDevice
                 ? videoDevices.find((d) => d.deviceId === selectedVideoDevice)
-                    ?.label || "None"
+                  ?.label || "None"
                 : "None"}
             </Select.Trigger>
             <Select.Content>
@@ -372,7 +384,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             <Select.Trigger className="w-full mt-2">
               {selectedAudioDevice
                 ? audioDevices.find((d) => d.deviceId === selectedAudioDevice)
-                    ?.label || "None"
+                  ?.label || "None"
                 : "None"}
             </Select.Trigger>
             <Select.Content>
