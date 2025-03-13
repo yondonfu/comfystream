@@ -1,6 +1,6 @@
 {
-  "last_node_id": 48,
-  "last_link_id": 64,
+  "last_node_id": 40,
+  "last_link_id": 60,
   "nodes": [
     {
       "id": 7,
@@ -139,7 +139,7 @@
         106
       ],
       "flags": {},
-      "order": 12,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -158,6 +158,8 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfyui-torch-compile",
+        "ver": "28b36d2569b39c303b2d9b0e5540ec5d628164af",
         "Node name for S&R": "TorchCompileLoadControlNet"
       },
       "widgets_values": [
@@ -191,6 +193,8 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
         "Node name for S&R": "VAELoader"
       },
       "widgets_values": [
@@ -228,6 +232,8 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfyui-torch-compile",
+        "ver": "28b36d2569b39c303b2d9b0e5540ec5d628164af",
         "Node name for S&R": "TorchCompileLoadVAE"
       },
       "widgets_values": [
@@ -274,6 +280,8 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
         "Node name for S&R": "VAEDecode"
       },
       "widgets_values": []
@@ -301,6 +309,8 @@
       ],
       "outputs": [],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
         "Node name for S&R": "PreviewImage"
       },
       "widgets_values": []
@@ -330,6 +340,8 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
         "Node name for S&R": "EmptyLatentImage"
       },
       "widgets_values": [
@@ -459,7 +471,7 @@
         58
       ],
       "flags": {},
-      "order": 11,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -479,434 +491,17 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "CLIPSetLastLayer"
+        "cnr_id": "comfyui-torch-compile",
+        "ver": "28b36d2569b39c303b2d9b0e5540ec5d628164af",
+        "Node name for S&R": "TorchCompileLoadControlNet"
       },
       "widgets_values": [
         -2
       ]
     },
     {
-      "id": 37,
-      "type": "PairConditioningSetProperties",
-      "pos": [
-        1857.5999755859375,
-        130
-      ],
-      "size": [
-        315,
-        162
-      ],
-      "flags": {},
-      "order": 20,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "positive_NEW",
-          "type": "CONDITIONING",
-          "link": 50
-        },
-        {
-          "name": "negative_NEW",
-          "type": "CONDITIONING",
-          "link": 51
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "shape": 7,
-          "link": 52
-        },
-        {
-          "name": "hooks",
-          "type": "HOOKS",
-          "shape": 7,
-          "link": null
-        },
-        {
-          "name": "timesteps",
-          "type": "TIMESTEPS_RANGE",
-          "shape": 7,
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "links": [
-            57
-          ]
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "links": [
-            58
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PairConditioningSetProperties"
-      },
-      "widgets_values": [
-        1,
-        "default"
-      ]
-    },
-    {
-      "id": 38,
-      "type": "SetClipHooks",
-      "pos": [
-        942.5999755859375,
-        130
-      ],
-      "size": [
-        315,
-        102
-      ],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 53
-        },
-        {
-          "name": "hooks",
-          "type": "HOOKS",
-          "shape": 7,
-          "link": 54
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            48,
-            62
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SetClipHooks"
-      },
-      "widgets_values": [
-        true,
-        false
-      ]
-    },
-    {
-      "id": 39,
-      "type": "SetClipHooks",
-      "pos": [
-        942.5999755859375,
-        362
-      ],
-      "size": [
-        315,
-        102
-      ],
-      "flags": {},
-      "order": 15,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 55
-        },
-        {
-          "name": "hooks",
-          "type": "HOOKS",
-          "shape": 7,
-          "link": 56
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            46,
-            63
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SetClipHooks"
-      },
-      "widgets_values": [
-        true,
-        false
-      ]
-    },
-    {
-      "id": 40,
-      "type": "PairConditioningSetPropertiesAndCombine",
-      "pos": [
-        2272.60009765625,
-        130
-      ],
-      "size": [
-        340.20001220703125,
-        202
-      ],
-      "flags": {},
-      "order": 21,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "link": 57
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "link": 58
-        },
-        {
-          "name": "positive_NEW",
-          "type": "CONDITIONING",
-          "link": 59
-        },
-        {
-          "name": "negative_NEW",
-          "type": "CONDITIONING",
-          "link": 60
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "shape": 7,
-          "link": 61
-        },
-        {
-          "name": "hooks",
-          "type": "HOOKS",
-          "shape": 7,
-          "link": null
-        },
-        {
-          "name": "timesteps",
-          "type": "TIMESTEPS_RANGE",
-          "shape": 7,
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "links": [
-            37
-          ]
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "links": [
-            38
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PairConditioningSetPropertiesAndCombine"
-      },
-      "widgets_values": [
-        1,
-        "default"
-      ]
-    },
-    {
-      "id": 42,
-      "type": "CreateHookLora",
-      "pos": [
-        100,
-        1418
-      ],
-      "size": [
-        315,
-        106
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "prev_hooks",
-          "type": "HOOKS",
-          "shape": 7,
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "HOOKS",
-          "type": "HOOKS",
-          "links": [
-            54
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CreateHookLora"
-      },
-      "widgets_values": [
-        "SD1.5/ral-chrome-sd15.safetensors",
-        1.1,
-        1
-      ]
-    },
-    {
-      "id": 43,
-      "type": "CLIPTextEncode",
-      "pos": [
-        1357.5999755859375,
-        460
-      ],
-      "size": [
-        400,
-        200
-      ],
-      "flags": {},
-      "order": 17,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 62
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            50
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        "golden metallic man made of ral-chrome"
-      ]
-    },
-    {
-      "id": 45,
-      "type": "CLIPTextEncode",
-      "pos": [
-        1357.5999755859375,
-        1120
-      ],
-      "size": [
-        400,
-        200
-      ],
-      "flags": {},
-      "order": 19,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 63
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            59
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        "abstract multicolored man made of ral-polygon"
-      ]
-    },
-    {
-      "id": 47,
-      "type": "LoadImage",
-      "pos": [
-        100,
-        1890
-      ],
-      "size": [
-        315,
-        314
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            64
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "example.png",
-        "image"
-      ]
-    },
-    {
-      "id": 3,
-      "type": "TensorRTLoader",
-      "pos": [
-        100,
-        130
-      ],
-      "size": [
-        315,
-        82
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            33
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "TensorRTLoader"
-      },
-      "widgets_values": [
-        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
-        "SD15"
-      ]
-    },
-    {
-      "id": 4,
-      "type": "CheckpointLoaderSimple",
+      "id": 8,
+      "type": "ControlNetLoader",
       "pos": [
         100,
         342
@@ -916,48 +511,7 @@
         98
       ],
       "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": null
-        },
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            49
-          ]
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
-      },
-      "widgets_values": [
-        "SD1.5/dreamshaper-8.safetensors"
-      ]
-    },
-    {
-      "id": 8,
-      "type": "ControlNetLoader",
-      "pos": [
-        100,
-        570
-      ],
-      "size": [
-        332.7156066894531,
-        90.21019744873047
-      ],
-      "flags": {},
-      "order": 6,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -970,6 +524,8 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
         "Node name for S&R": "ControlNetLoader"
       },
       "widgets_values": [
@@ -988,7 +544,7 @@
         318
       ],
       "flags": {},
-      "order": 7,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1002,7 +558,9 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "LoadImageMask"
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "ControlNetLoader"
       },
       "widgets_values": [
         "example.png",
@@ -1022,7 +580,7 @@
         58
       ],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -1041,6 +599,8 @@
         }
       ],
       "properties": {
+        "cnr_id": "depth-anything-tensorrt",
+        "ver": "ede57bac05059731f955c1b1563af2c1947f999a",
         "Node name for S&R": "DepthAnythingTensorrt"
       },
       "widgets_values": [
@@ -1059,12 +619,252 @@
         106
       ],
       "flags": {},
-      "order": 8,
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            47
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "CLIPText/model.fp16.safetensors",
+        "stable_diffusion",
+        "default"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "CLIPTextEncode",
+      "pos": [
+        942.5999755859375,
+        130
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
-          "name": "prev_hooks",
-          "type": "HOOKS",
+          "name": "clip",
+          "type": "CLIP",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            31,
+            50
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "beautiful pencil sketch, masterpiece "
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        942.5999755859375,
+        460
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            32,
+            51
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 7,
+      "type": "KSampler",
+      "pos": [
+        2890,
+        220
+      ],
+      "size": [
+        315,
+        262
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 27
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 54
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 55
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            37
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        1063187251107697,
+        "randomize",
+        2,
+        1,
+        "lcm",
+        "normal",
+        1
+      ]
+    },
+    {
+      "id": 38,
+      "type": "ConditioningConcat",
+      "pos": [
+        2063.451416015625,
+        212.68675231933594
+      ],
+      "size": [
+        380.4000244140625,
+        46
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning_to",
+          "type": "CONDITIONING",
+          "link": 56
+        },
+        {
+          "name": "conditioning_from",
+          "type": "CONDITIONING",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            54
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "ConditioningConcat"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "ControlNetApplyAdvanced",
+      "pos": [
+        1505.9716796875,
+        142.87603759765625
+      ],
+      "size": [
+        315,
+        186
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 31
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 32
+        },
+        {
+          "name": "control_net",
+          "type": "CONTROL_NET",
+          "link": 33
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 34
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
           "shape": 7,
           "link": null
         }
@@ -1079,12 +879,296 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "CreateHookLora"
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "ControlNetApplyAdvanced"
       },
       "widgets_values": [
         "SD1.5/ral-polygon-sd15.safetensors",
         1.1,
         1
+      ]
+    },
+    {
+      "id": 19,
+      "type": "ControlNetApplyAdvanced",
+      "pos": [
+        1514.3468017578125,
+        425.4062194824219
+      ],
+      "size": [
+        315,
+        186
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 50
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 51
+        },
+        {
+          "name": "control_net",
+          "type": "CONTROL_NET",
+          "link": 43
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 59
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "shape": 7,
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            52
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            53
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "ControlNetApplyAdvanced"
+      },
+      "widgets_values": [
+        0.9,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 37,
+      "type": "ConditioningConcat",
+      "pos": [
+        2075.411376953125,
+        368.5377197265625
+      ],
+      "size": [
+        380.4000244140625,
+        46
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning_to",
+          "type": "CONDITIONING",
+          "link": 57
+        },
+        {
+          "name": "conditioning_from",
+          "type": "CONDITIONING",
+          "link": 53
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            55
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "ConditioningConcat"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 18,
+      "type": "CLIPSetLastLayer",
+      "pos": [
+        495.0350646972656,
+        1554.90380859375
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 47
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            25,
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "CLIPSetLastLayer"
+      },
+      "widgets_values": [
+        -2
+      ]
+    },
+    {
+      "id": 39,
+      "type": "FaceMeshNode",
+      "pos": [
+        516.9473266601562,
+        1139.9932861328125
+      ],
+      "size": [
+        315,
+        270
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 58
+        }
+      ],
+      "outputs": [
+        {
+          "name": "facemesh_data",
+          "type": "FACEMESH_DATA",
+          "links": null
+        },
+        {
+          "name": "annotations",
+          "type": "IMAGE",
+          "links": [
+            59
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "aux_id": "livepeer/ComfyUI-Stream-Pack",
+        "ver": "33d26c480871a69676e2dc60e6c097971f0b828e",
+        "Node name for S&R": "FaceMeshNode"
+      },
+      "widgets_values": [
+        false,
+        1,
+        false,
+        0.35000000000000003,
+        0.35000000000000003,
+        true,
+        true,
+        "green",
+        2
+      ]
+    },
+    {
+      "id": 3,
+      "type": "TensorRTLoader",
+      "pos": [
+        101.22982788085938,
+        129.0006103515625
+      ],
+      "size": [
+        344.6938781738281,
+        87.0430679321289
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "ryanontheinside/ComfyUI_TensorRT",
+        "ver": "cb1e540e5e5e35ec335cce1ba3dee38895217698",
+        "Node name for S&R": "TensorRTLoader"
+      },
+      "widgets_values": [
+        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+        "SD15"
+      ]
+    },
+    {
+      "id": 26,
+      "type": "LoadImage",
+      "pos": [
+        100,
+        1142
+      ],
+      "size": [
+        315,
+        314
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            24,
+            58
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.18",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
       ]
     }
   ],
@@ -1194,12 +1278,20 @@
       "IMAGE"
     ],
     [
-      46,
-      39,
+      43,
+      21,
       0,
-      27,
+      19,
+      2,
+      "CONTROL_NET"
+    ],
+    [
+      45,
+      20,
       0,
-      "CLIP"
+      21,
+      0,
+      "CONTROL_NET"
     ],
     [
       47,
@@ -1317,32 +1409,22 @@
       61,
       29,
       0,
-      40,
-      4,
-      "MASK"
+      "CONDITIONING"
     ],
     [
-      62,
-      38,
+      58,
+      26,
       0,
-      43,
-      0,
-      "CLIP"
-    ],
-    [
-      63,
       39,
       0,
-      45,
-      0,
-      "CLIP"
+      "IMAGE"
     ],
     [
-      64,
-      47,
-      0,
-      48,
-      0,
+      59,
+      39,
+      1,
+      19,
+      3,
       "IMAGE"
     ]
   ],
@@ -1350,10 +1432,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.564473930053779,
+      "scale": 0.35049389948139253,
       "offset": [
-        137.3462492243213,
-        -0.04118822012597434
+        1142.0410253708058,
+        405.4613460138569
       ]
     }
   },

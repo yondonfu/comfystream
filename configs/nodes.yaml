@@ -69,3 +69,9 @@ nodes:
     name: "ComfyUI ControlNet Auxiliary"
     url: "https://github.com/Fannovel16/comfyui_controlnet_aux"
     type: "utility"
+
+  comfyui-stream-pack:
+    name: "ComfyUI Stream Pack"
+    url: "https://github.com/livepeer/ComfyUI-Stream-Pack"
+    branch: "expose_feature_bank_to_comfyui"
+    type: "utility"
