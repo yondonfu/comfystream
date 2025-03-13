@@ -8,6 +8,7 @@ import tarfile
 import tempfile
 import urllib.request
 import toml
+import zipfile
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -50,17 +51,17 @@ def ensure_init_files(workspace: str):
 def download_and_extract_ui_files(version: str):
     """Download and extract UI files to the workspace"""
 
-    output_dir = os.path.join(os.getcwd(), "nodes", "web")
+    output_dir = os.path.join(os.getcwd(), "nodes", "web", "static")
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
-    base_url = urllib.parse.urljoin("https://github.com/yondonfu/comfystream/releases/download/", f"v{version}/static.tar.gz")
-    fallback_url = "https://github.com/yondonfu/comfystream/releases/latest/download/static.tar.gz"
+    base_url = urllib.parse.urljoin("https://github.com/livepeer/comfystream/releases/download/", f"v{version}/comfystream-uikit.zip")
+    fallback_url = "https://github.com/livepeer/comfystream/releases/latest/download/comfystream-uikit.zip"
     
     # Create a temporary directory instead of a temporary file
     with tempfile.TemporaryDirectory() as temp_dir:
         # Define the path for the downloaded file
-        download_path = os.path.join(temp_dir, "static.tar.gz")
+        download_path = os.path.join(temp_dir, "comfystream-uikit.zip")
         
-        # Download tar.gz file
+        # Download zip file
         logger.info(f"Downloading {base_url}")
         try:
             urllib.request.urlretrieve(base_url, download_path)
@@ -79,8 +80,8 @@ def download_and_extract_ui_files(version: str):
         # Extract contents
         try:
             logger.info(f"Extracting files to {output_dir}")
-            with tarfile.open(download_path, 'r:gz') as tar:
-                tar.extractall(path=output_dir)
+            with zipfile.ZipFile(download_path, 'r') as zip_ref:
+                zip_ref.extractall(path=output_dir)
         except Exception as e:
             logger.error(f"Error extracting files: {e}")
             raise
