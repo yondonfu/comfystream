@@ -50,7 +50,7 @@
   },
   "7": {
     "inputs": {
-      "seed": 722042942226989,
+      "seed": 1063187251107697,
       "steps": 2,
       "cfg": 1,
       "sampler_name": "lcm",
@@ -225,8 +225,8 @@
         0
       ],
       "image": [
-        "22",
-        0
+        "39",
+        1
       ]
     },
     "class_type": "ControlNetApplyAdvanced",
@@ -256,21 +256,6 @@
     "class_type": "TorchCompileLoadControlNet",
     "_meta": {
       "title": "TorchCompileLoadControlNet"
-    }
-  },
-  "22": {
-    "inputs": {
-      "max_faces": 1,
-      "min_confidence": 0.5,
-      "resolution": 512,
-      "image": [
-        "26",
-        0
-      ]
-    },
-    "class_type": "MediaPipe-FaceMeshPreprocessor",
-    "_meta": {
-      "title": "MediaPipe Face Mesh"
     }
   },
   "26": {
@@ -324,6 +309,27 @@
     "class_type": "ConditioningConcat",
     "_meta": {
       "title": "Conditioning (Concat)"
+    }
+  },
+  "39": {
+    "inputs": {
+      "static_image_mode": false,
+      "max_num_faces": 1,
+      "refine_landmarks": false,
+      "min_detection_confidence": 0.35000000000000003,
+      "min_tracking_confidence": 0.35000000000000003,
+      "draw_mesh": true,
+      "draw_contours": true,
+      "mesh_color": "green",
+      "mesh_thickness": 2,
+      "image": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "FaceMeshNode",
+    "_meta": {
+      "title": "Face Mesh"
     }
   }
 }
