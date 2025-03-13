@@ -60,7 +60,7 @@ interface AVDevice {
 
 export const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
-    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://213.173.110.30:11651",
+    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://localhost:8889",
   frameRate: 30,
   selectedVideoDeviceId: "none",
   selectedAudioDeviceId: "none",
