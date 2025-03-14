@@ -1,6 +1,6 @@
 {
-  "last_node_id": 40,
-  "last_link_id": 60,
+  "last_node_id": 41,
+  "last_link_id": 62,
   "nodes": [
     {
       "id": 10,
@@ -131,7 +131,7 @@
         46
       ],
       "flags": {},
-      "order": 20,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -173,7 +173,7 @@
         246
       ],
       "flags": {},
-      "order": 21,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
@@ -418,7 +418,7 @@
         200
       ],
       "flags": {},
-      "order": 13,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -459,7 +459,7 @@
         200
       ],
       "flags": {},
-      "order": 14,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -500,13 +500,13 @@
         262
       ],
       "flags": {},
-      "order": 19,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 27
+          "link": 62
         },
         {
           "name": "positive",
@@ -539,7 +539,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        1063187251107697,
+        951969040799634,
         "randomize",
         2,
         1,
@@ -560,7 +560,7 @@
         46
       ],
       "flags": {},
-      "order": 17,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -603,7 +603,7 @@
         186
       ],
       "flags": {},
-      "order": 15,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -674,7 +674,7 @@
         186
       ],
       "flags": {},
-      "order": 16,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -745,7 +745,7 @@
         46
       ],
       "flags": {},
-      "order": 18,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -870,40 +870,6 @@
       ]
     },
     {
-      "id": 3,
-      "type": "TensorRTLoader",
-      "pos": [
-        101.22982788085938,
-        129.0006103515625
-      ],
-      "size": [
-        344.6938781738281,
-        87.0430679321289
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            27
-          ]
-        }
-      ],
-      "properties": {
-        "aux_id": "ryanontheinside/ComfyUI_TensorRT",
-        "ver": "cb1e540e5e5e35ec335cce1ba3dee38895217698",
-        "Node name for S&R": "TensorRTLoader"
-      },
-      "widgets_values": [
-        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
-        "SD15"
-      ]
-    },
-    {
       "id": 26,
       "type": "LoadImage",
       "pos": [
@@ -915,7 +881,7 @@
         314
       ],
       "flags": {},
-      "order": 6,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -943,6 +909,85 @@
         "example.png",
         "image"
       ]
+    },
+    {
+      "id": 3,
+      "type": "TensorRTLoader",
+      "pos": [
+        101.22982788085938,
+        129.0006103515625
+      ],
+      "size": [
+        344.6938781738281,
+        87.0430679321289
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            61
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "aux_id": "ryanontheinside/ComfyUI_TensorRT",
+        "ver": "cb1e540e5e5e35ec335cce1ba3dee38895217698",
+        "Node name for S&R": "TensorRTLoader"
+      },
+      "widgets_values": [
+        "static-dreamshaper8_SD15_$stat-b-1-h-512-w-512_00001_.engine",
+        "SD15"
+      ]
+    },
+    {
+      "id": 41,
+      "type": "FeatureBankAttentionProcessor",
+      "pos": [
+        936.62060546875,
+        -115.82032012939453
+      ],
+      "size": [
+        403.1999816894531,
+        154
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 61
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            62
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "aux_id": "livepeer/ComfyUI-Stream-Pack",
+        "ver": "33d26c480871a69676e2dc60e6c097971f0b828e",
+        "Node name for S&R": "FeatureBankAttentionProcessor"
+      },
+      "widgets_values": [
+        false,
+        0.8,
+        0.98,
+        4,
+        4
+      ]
     }
   ],
   "links": [
@@ -969,14 +1014,6 @@
       6,
       0,
       "CLIP"
-    ],
-    [
-      27,
-      3,
-      0,
-      7,
-      0,
-      "MODEL"
     ],
     [
       30,
@@ -1161,16 +1198,32 @@
       19,
       3,
       "IMAGE"
+    ],
+    [
+      61,
+      3,
+      0,
+      41,
+      0,
+      "MODEL"
+    ],
+    [
+      62,
+      41,
+      0,
+      7,
+      0,
+      "MODEL"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.35049389948139253,
+      "scale": 0.620921323059155,
       "offset": [
-        1142.0410253708058,
-        405.4613460138569
+        -139.27487337697946,
+        413.4304144044469
       ]
     }
   },
