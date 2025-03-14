@@ -170,7 +170,7 @@ export function Webcam({
                 width: { ideal: 512 },
                 height: { ideal: 512 },
                 aspectRatio: { ideal: 1 },
-                frameRate: { ideal: frameRate, max: frameRate },
+                frameRate: { ideal: frameRate },
               },
         audio:
           selectedAudioDeviceId === "none"
