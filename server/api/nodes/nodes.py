@@ -4,7 +4,6 @@ import json
 from git import Repo
 import logging
 import subprocess
-import sys
 import shutil
 
 logger = logging.getLogger(__name__)

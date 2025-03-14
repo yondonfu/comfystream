@@ -6,9 +6,7 @@ from api.models.models import list_models, add_model, delete_model
 from api.settings.settings import set_twilio_account_info
 from pipeline import Pipeline
 
-from comfy.nodes.package_typing import ExportedNodes
 from comfy.nodes.package import _comfy_nodes, import_all_nodes_in_workspace
-from comfy.cmd.execution import nodes
 
 from api.nodes.nodes import force_import_all_nodes_in_workspace
 #use a different node import
@@ -33,8 +31,6 @@ async def reload(request):
     '''
     
     #reset embedded client
-    from comfy.client.embedded_comfy_client import EmbeddedComfyClient
-    from comfy.cli_args_types import Configuration
     await request.app["pipeline"].cleanup()
     
     #reset imports to clear imported nodes
@@ -119,23 +115,6 @@ async def install_nodes(request):
             await install_node(node, workspace_dir)
             installed_nodes.append(node['url'])
         
-        #restart embedded client        
-        #request.app["pipeline"].client.set_prompt(request.app["pipeline"].client.prompt)
-        
-        # reimport nodes to workspace
-        #from comfy.cmd.execution import nodes
-        #from comfy.nodes.package import import_all_nodes_in_workspace
-        #update_nodes = import_all_nodes_in_workspace()
-        #nodes.update(update_nodes)
-
-        #config = request.app["pipeline"].client.comfy_client._configuration
-        #from comfy.client.embedded_comfy_client import EmbeddedComfyClient
-        #request.app["pipeline"].client.comfy_client = EmbeddedComfyClient(config)
-        #await request.app["pipeline"].warm()
-
-        #from pipeline import Pipeline
-        #request.app["pipeline"] = Pipeline(cwd=request.app["workspace"], disable_cuda_malloc=True, gpu_only=True)
-
         return web.json_response({"success": True, "error": None, "installed_nodes": installed_nodes})
     except Exception as e:
         return web.json_response({"success": False, "error": str(e), "installed_nodes": installed_nodes}, status=500)
