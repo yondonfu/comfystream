@@ -1,4 +1,5 @@
 from aiohttp import web
+import asyncio
 
 from api.nodes.nodes import list_nodes, install_node, delete_node
 from api.models.models import list_models, add_model, delete_model
@@ -43,7 +44,13 @@ async def reload(request):
         
     #reload pipeline
     request.app["pipeline"] = Pipeline(cwd=request.app["workspace"], disable_cuda_malloc=True, gpu_only=True)
-        
+    
+    #reset webrtc connections
+    pcs = request.app["pcs"]
+    coros = [pc.close() for pc in pcs]
+    await asyncio.gather(*coros)
+    pcs.clear()
+
     return web.json_response({"success": True, "error": None})
     
 async def nodes(request):
