@@ -50,14 +50,14 @@
   },
   "7": {
     "inputs": {
-      "seed": 1063187251107697,
+      "seed": 951969040799634,
       "steps": 2,
       "cfg": 1,
       "sampler_name": "lcm",
       "scheduler": "normal",
       "denoise": 1,
       "model": [
-        "3",
+        "41",
         0
       ],
       "positive": [
@@ -260,7 +260,7 @@
   },
   "26": {
     "inputs": {
-      "image": "example.png",
+      "image": "harold.png",
       "upload": "image"
     },
     "class_type": "LoadImage",
@@ -330,6 +330,23 @@
     "class_type": "FaceMeshNode",
     "_meta": {
       "title": "Face Mesh"
+    }
+  },
+  "41": {
+    "inputs": {
+      "use_feature_injection": false,
+      "feature_injection_strength": 0.8,
+      "feature_similarity_threshold": 0.98,
+      "feature_cache_interval": 4,
+      "feature_bank_max_frames": 4,
+      "model": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "FeatureBankAttentionProcessor",
+    "_meta": {
+      "title": "Feature Bank Attention Processor"
     }
   }
 }
