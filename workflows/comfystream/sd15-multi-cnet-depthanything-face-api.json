@@ -260,7 +260,7 @@
   },
   "26": {
     "inputs": {
-      "image": "harold.png",
+      "image": "example.png",
       "upload": "image"
     },
     "class_type": "LoadImage",
