@@ -45,7 +45,7 @@ class ComfyStreamClient:
 
     async def cleanup(self):
         async with self.cleanup_lock:
-            tasks_to_cancel = list(self.running_prompts.values()) # Create a list to avoid RuntimeError during iteration
+            tasks_to_cancel = list(self.running_prompts.values())
             for task in tasks_to_cancel:
                 task.cancel()
                 try:
@@ -56,7 +56,7 @@ class ComfyStreamClient:
 
             if self.comfy_client.is_running:
                 try:
-                    await self.comfy_client.__aexit__() # Use the intended cleanup method of EmbeddedComfyClient
+                    await self.comfy_client.__aexit__()
                 except Exception as e:
                     logger.error(f"Error during ComfyClient cleanup: {e}")
 
