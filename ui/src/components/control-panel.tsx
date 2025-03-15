@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePeerContext } from "@/context/peer-context";
 import { usePrompt } from "./settings";
 
-type InputValue = string | number | boolean;
+type InputValue = string | number | boolean | string[];
 
 interface InputInfo {
   value: InputValue;
@@ -12,6 +12,7 @@ interface InputInfo {
   min?: number;
   max?: number;
   widget?: string;
+  options?: string[];
 }
 
 interface NodeInfo {
@@ -45,19 +46,32 @@ const InputControl = ({
   value: string;
   onChange: (value: string) => void;
 }) => {
-  if (input.widget === "combo") {
+  if (input.widget === "combo" || input.type === "combo") {
+    // Get options from either the options field or value field
+    const options = input.options
+      ? input.options
+      : Array.isArray(input.value)
+        ? input.value
+        : typeof input.value === 'string'
+          ? [input.value]
+          : [];
+    
+    // If no value is selected, select the first option by default
+    const currentValue = value || options[0] || '';
+    
     return (
       <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={currentValue}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
         className="p-2 border rounded w-full"
       >
-        {Array.isArray(input.value) &&
-          input.value.map((option: string) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
+        {options.map((option: string) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
       </select>
     );
   }
@@ -100,6 +114,9 @@ const InputControl = ({
           className="p-2 border rounded w-full"
         />
       );
+      // Handle combo in the main combo block above
+      case "combo":
+        return InputControl({ input: { ...input, widget: "combo" }, value, onChange });
     default:
       console.warn(`Unhandled input type: ${input.type}`); // Debug log
       return (
@@ -196,12 +213,33 @@ export const ControlPanel = ({
           ]
         : null;
     if (!currentInput || !currentPrompts) return;
+    
+    // Don't send updates if this is a combo and we haven't selected a value yet
+    if (currentInput.widget === "combo" && !panelState.value) return;
 
     let isValidValue = true;
     let processedValue: InputValue = panelState.value;
 
-    // Validate and process value based on type
-    switch (currentInput.type.toLowerCase()) {
+    // For combo inputs, use the value directly
+    if (currentInput.widget === "combo" || currentInput.type === "combo") {
+      // Get options from either the options field or value field
+      const options = currentInput.options
+        ? currentInput.options
+        : Array.isArray(currentInput.value)
+          ? currentInput.value as string[]
+          : typeof currentInput.value === 'string'
+            ? [currentInput.value as string]
+            : [];
+      
+      // If no value is selected and we have options, use the first option
+      const validValue = panelState.value || options[0] || '';
+      
+      // Validate that the value is in the options list
+      isValidValue = options.includes(validValue);
+      processedValue = validValue;
+    } else {
+      // Validate and process value based on type
+      switch (currentInput.type.toLowerCase()) {
       case "number":
         isValidValue =
           /^-?\d*\.?\d*$/.test(panelState.value) && panelState.value !== "";
@@ -217,13 +255,9 @@ export const ControlPanel = ({
         processedValue = panelState.value;
         break;
       default:
-        if (currentInput.widget === "combo") {
-          isValidValue = panelState.value !== "";
-          processedValue = panelState.value;
-        } else {
-          isValidValue = panelState.value !== "";
-          processedValue = panelState.value;
-        }
+        isValidValue = panelState.value !== "";
+        processedValue = panelState.value;
+      }
     }
 
     const hasRequiredFields =
@@ -261,9 +295,32 @@ export const ControlPanel = ({
               }
               const updatedPrompt = JSON.parse(JSON.stringify(prompt)); // Deep clone
               if (updatedPrompt[panelState.nodeId]?.inputs) {
-                updatedPrompt[panelState.nodeId].inputs[panelState.fieldName] =
-                  processedValue;
-                hasUpdated = true;
+                // Ensure we're not overwriting with an invalid value
+                const currentVal = updatedPrompt[panelState.nodeId].inputs[panelState.fieldName];
+                const input = availableNodes[promptIdxToUpdate][panelState.nodeId]?.inputs[panelState.fieldName];
+                
+                if (input?.widget === 'combo' || input?.type === 'combo') {
+                  // Get options from either the options field or value field
+                  const options = input.options
+                    ? input.options
+                    : Array.isArray(input.value)
+                      ? input.value as string[]
+                      : typeof input.value === 'string'
+                        ? [input.value as string]
+                        : [];
+                  
+                  // If no value is selected and we have options, use the first option
+                  const validValue = (processedValue as string) || options[0] || '';
+                  
+                  // Only update if it's a valid combo value
+                  if (options.includes(validValue)) {
+                    updatedPrompt[panelState.nodeId].inputs[panelState.fieldName] = validValue;
+                    hasUpdated = true;
+                  }
+                } else {
+                  updatedPrompt[panelState.nodeId].inputs[panelState.fieldName] = processedValue;
+                  hasUpdated = true;
+                }
               }
               return updatedPrompt;
             },
@@ -312,8 +369,13 @@ export const ControlPanel = ({
     if (input.type.toLowerCase() === "boolean") {
       return (!!input.value).toString();
     }
-    if (input.widget === "combo" && Array.isArray(input.value)) {
-      return input.value[0]?.toString() || "";
+    if (input.widget === "combo") {
+      const options = Array.isArray(input.value) 
+        ? input.value as string[] 
+        : typeof input.value === 'string'
+          ? [input.value as string]
+          : [];
+      return options[0] || "";
     }
     return input.value?.toString() || "0";
   };
@@ -327,11 +389,19 @@ export const ControlPanel = ({
         selectedField
       ];
     if (input) {
-      const initialValue = getInitialValue(input);
-      onStateChange({
-        fieldName: selectedField,
-        value: initialValue,
-      });
+      // For combo fields, don't set an initial value to prevent auto-update from firing
+      if (input.widget === "combo") {
+        onStateChange({
+          fieldName: selectedField,
+          value: "",
+        });
+      } else {
+        const initialValue = getInitialValue(input);
+        onStateChange({
+          fieldName: selectedField,
+          value: initialValue,
+        });
+      }
     } else {
       onStateChange({ fieldName: selectedField });
     }
@@ -357,7 +427,7 @@ export const ControlPanel = ({
           onStateChange({
             nodeId: e.target.value,
             fieldName: "",
-            value: "0",
+            value: "", // Start with empty value to prevent auto-update from firing
           });
         }}
         className="p-2 border rounded"
@@ -387,16 +457,20 @@ export const ControlPanel = ({
                 typeof info.type === "string"
                   ? info.type.toLowerCase()
                   : String(info.type).toLowerCase();
-              return (
-                ["boolean", "number", "float", "int", "string"].includes(
-                  type,
-                ) || info.widget === "combo"
-              );
+              return [
+                "boolean",
+                "number",
+                "float",
+                "int",
+                "string",
+                "combo",
+              ].includes(
+                type,
+              ) || info.widget === "combo";
             })
             .map(([field, info]) => (
               <option key={field} value={field}>
-                {field} ({info.type}
-                {info.widget ? ` - ${info.widget}` : ""})
+                {field} ({info.type})
               </option>
             ))}
       </select>
