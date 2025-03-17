@@ -469,8 +469,8 @@ if __name__ == "__main__":
         app.router.add_get("/metrics", app["metrics_manager"].metrics_handler)
 
     #add management api routes
-    from api.api import add_routes
-    add_routes(app)
+    from api.api import add_mgmt_api_routes
+    add_mgmt_api_routes(app)
 
     # Add hosted platform route prefix.
     # NOTE: This ensures that the local and hosted experiences have consistent routes.
