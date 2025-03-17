@@ -12,7 +12,7 @@ from api.nodes.nodes import force_import_all_nodes_in_workspace
 #use a different node import
 import_all_nodes_in_workspace = force_import_all_nodes_in_workspace
 
-def add_routes(app):
+def add_mgmt_api_routes(app):
     app.router.add_get("/env/list_nodes", nodes)
     app.router.add_post("/env/install_nodes", install_nodes)
     app.router.add_post("/env/delete_nodes", delete_nodes)
