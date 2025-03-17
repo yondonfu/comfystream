@@ -13,16 +13,16 @@ from api.nodes.nodes import force_import_all_nodes_in_workspace
 import_all_nodes_in_workspace = force_import_all_nodes_in_workspace
 
 def add_mgmt_api_routes(app):
-    app.router.add_get("/env/list_nodes", nodes)
-    app.router.add_post("/env/install_nodes", install_nodes)
-    app.router.add_post("/env/delete_nodes", delete_nodes)
+    app.router.add_get("/settings/nodes/list", nodes)
+    app.router.add_post("/settings/nodes/install", install_nodes)
+    app.router.add_post("/settings/nodes/delete", delete_nodes)
 
-    app.router.add_get("/env/list_models", models)
-    app.router.add_post("/env/add_models", add_models)
-    app.router.add_post("/env/delete_models", delete_models)
+    app.router.add_get("/settings/models/list", models)
+    app.router.add_post("/settings/models/add", add_models)
+    app.router.add_post("/settings/models/delete", delete_models)
 
-    app.router.add_post("/env/reload", reload)
-    app.router.add_post("/env/set_account_info", set_account_info)
+    app.router.add_post("/settings/reload", reload)
+    app.router.add_post("/settings/twilio/set_account_info", set_account_info)
 
 async def reload(request):
     '''
