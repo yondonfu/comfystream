@@ -18,7 +18,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
 
 [project.urls]
 repository = "https://github.com/yondonfu/comfystream"
