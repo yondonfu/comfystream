@@ -64,4 +64,3 @@ def add_prefix_to_app_routes(app: web.Application, prefix: str):
     for route in list(app.router.routes()):
         new_path = prefix + route.resource.canonical
         app.router.add_route(route.method, new_path, route.handler)
-
