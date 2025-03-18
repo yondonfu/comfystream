@@ -106,9 +106,10 @@ async def download_model(url: str, save_path: Path):
                             
                     #remove download in process file
                     os.remove(temp_file)
-                    print(f"Model downloaded and saved to {save_path}")
+                    logger.info(f"Model downloaded and saved to {save_path}")
                 else:
                     raise print(f"Failed to download model. HTTP Status: {response.status}")
     except Exception as e:
         #remove download in process file
+        logger.error(f"error downloading model: {str(e)}")
         os.remove(temp_file)
