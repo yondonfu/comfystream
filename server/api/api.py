@@ -21,7 +21,7 @@ def add_mgmt_api_routes(app):
     app.router.add_post("/settings/models/add", add_models)
     app.router.add_post("/settings/models/delete", delete_models)
 
-    app.router.add_post("/settings/reload", reload)
+    app.router.add_post("/settings/comfystream/reload", reload)
     app.router.add_post("/settings/twilio/set/account", set_account_info)
 
 async def reload(request):
