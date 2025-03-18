@@ -1,21 +1,13 @@
 """General utility functions."""
 
 import asyncio
-import json
 import random
 import types
 import logging
 from aiohttp import web
-import os
-from pathlib import Path
-import subprocess
-import sys
-import requests
 
 from typing import List, Tuple
 from contextlib import asynccontextmanager
-
-from git import Repo
 
 logger = logging.getLogger(__name__)
 
