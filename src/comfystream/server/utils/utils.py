@@ -66,7 +66,6 @@ def add_prefix_to_app_routes(app: web.Application, prefix: str):
         new_path = prefix + route.resource.canonical
         app.router.add_route(route.method, new_path, route.handler)
 
-
 @asynccontextmanager
 async def temporary_log_level(logger_name: str, level: int):
     """Temporarily set the log level of a logger.
