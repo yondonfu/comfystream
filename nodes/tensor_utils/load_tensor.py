@@ -17,4 +17,4 @@ class LoadTensor:
     def execute(self):
         frame = tensor_cache.image_inputs.get(block=True)
         frame.side_data.skipped = False
-        return (frame.side_data.input,)
+        return (frame.side_data.processed_input,)
