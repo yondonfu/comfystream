@@ -3,9 +3,6 @@ import torch
 import numpy as np
 import asyncio
 import logging
-import time
-from PIL import Image
-from io import BytesIO
 
 from typing import Any, Dict, Union, List
 from comfystream.client_api import ComfyStreamClient
@@ -76,62 +73,35 @@ class Pipeline:
         self.client.put_audio_input(frame)
         await self.audio_incoming_frames.put(frame)
 
-    def video_preprocess(self, frame: av.VideoFrame) -> Union[torch.Tensor, np.ndarray]:
-        """Convert input video frame to tensor in consistent BCHW format"""
-        try:
-            frame_np = frame.to_ndarray(format="rgb24")
-            frame_np = frame_np.astype(np.float32) / 255.0
-            tensor = torch.from_numpy(frame_np)
-
-            # TODO: Necessary?
-            if len(tensor.shape) == 3 and tensor.shape[2] == 3:  # HWC format
-                tensor = tensor.permute(2, 0, 1).unsqueeze(0)  # -> BCHW
-            
-            # Ensure values are in range [0,1]
-            if tensor.min() < 0 or tensor.max() > 1:
-                logger.warning(f"Clamping preprocessing tensor: min={tensor.min().item()}, max={tensor.max().item()}")
-                tensor = torch.clamp(tensor, 0, 1)
-
-            return tensor
-            
-        except Exception as e:
-            logger.error(f"Error in video_preprocess: {e}")
-            # Return a default tensor in case of error
-            return torch.zeros(1, 3, frame.height, frame.width)
-    
     def audio_preprocess(self, frame: av.AudioFrame) -> Union[torch.Tensor, np.ndarray]:
         return frame.to_ndarray().ravel().reshape(-1, 2).mean(axis=1).astype(np.int16)
     
+    # Works with ComfyUI Native
+    def video_preprocess(self, frame: av.VideoFrame) -> Union[torch.Tensor, np.ndarray]:
+        frame_np = frame.to_ndarray(format="rgb24").astype(np.float32) / 255.0
+        return torch.from_numpy(frame_np).unsqueeze(0)
+    
+    ''' Converts HWC format (height, width, channels) to VideoFrame.
     def video_postprocess(self, output: Union[torch.Tensor, np.ndarray]) -> av.VideoFrame:
-        """Convert tensor to VideoFrame format"""
-        try:
-            # Ensure output is a tensor
-            if isinstance(output, np.ndarray):
-                output = torch.from_numpy(output)
-            
-            # Convert from BCHW to HWC format for video frame
-            if len(output.shape) == 4:  # BCHW format
-                output = output.squeeze(0)  # Remove batch dimension
-            if output.shape[0] == 3:  # CHW format
-                output = output.permute(1, 2, 0)  # Convert to HWC
-            
-            # Convert to numpy array in correct format for VideoFrame
-            frame_np = (output * 255.0).clamp(0, 255).to(dtype=torch.uint8).cpu().numpy()
-            
-            # Create VideoFrame with RGB format
-            video_frame = av.VideoFrame.from_ndarray(frame_np, format='rgb24')
-            
-            logger.info(f"Created video frame with shape: {frame_np.shape}")
-            return video_frame
-        
-        except Exception as e:
-            logger.error(f"Error in video_postprocess: {str(e)}")
-            # Return a black frame as fallback
-            return av.VideoFrame(width=512, height=512, format='rgb24')
+        return av.VideoFrame.from_ndarray(
+            (output * 255.0).clamp(0, 255).to(dtype=torch.uint8).squeeze(0).cpu().numpy()
+        )
+    '''
+
+    '''Converts BCHW tensor [1,3,H,W] to VideoFrame. Assumes values are in range [0,1].'''
+    def video_postprocess(self, output: Union[torch.Tensor, np.ndarray]) -> av.VideoFrame:
+        return av.VideoFrame.from_ndarray(
+            (output.squeeze(0).permute(1, 2, 0) * 255.0)
+            .clamp(0, 255)
+            .to(dtype=torch.uint8)
+            .cpu()
+            .numpy(),
+            format='rgb24'
+        )
 
     def audio_postprocess(self, output: Union[torch.Tensor, np.ndarray]) -> av.AudioFrame:
         return av.AudioFrame.from_ndarray(np.repeat(output, 2).reshape(1, -1))
-    
+
     async def get_processed_video_frame(self):
         """Get processed video frame from output queue and match it with input frame"""
         try:
