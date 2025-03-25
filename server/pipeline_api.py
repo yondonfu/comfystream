@@ -5,7 +5,7 @@ import asyncio
 import logging
 import time
 import random
-from collections import deque
+from collections import deque, OrderedDict
 
 from typing import Any, Dict, Union, List, Optional, Deque
 from comfystream.client_api import ComfyStreamClient
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class MultiServerPipeline:
-    def __init__(self, config_path: Optional[str] = None, **kwargs):
+    def __init__(self, config_path: Optional[str] = None, max_frame_wait_ms: int = 500, **kwargs):
         # Load server configurations
         self.config = ComfyConfig(config_path)
         self.servers = self.config.get_servers()
@@ -40,8 +40,10 @@ class MultiServerPipeline:
         self.current_client_index = 0
         self.client_frame_mapping = {}  # Maps frame_id -> client_index
         
-        # Buffer to store frames in order of original pts
-        self.frame_output_buffer: Deque = deque()
+        # Frame ordering and timing
+        self.max_frame_wait_ms = max_frame_wait_ms  # Max time to wait for a frame before dropping
+        self.next_expected_frame_id = None  # Track expected frame ID
+        self.ordered_frames = OrderedDict()  # Buffer for ordering frames (frame_id -> (timestamp, tensor))
         
         # Audio processing
         self.processed_audio_buffer = np.array([], dtype=np.int16)
@@ -71,16 +73,17 @@ class MultiServerPipeline:
                                 )
                                 
                                 # Find which original frame this corresponds to
-                                # (using a simple approach here - could be improved)
-                                # In real implementation, need to track which frames went to which client
                                 frame_ids = [frame_id for frame_id, client_idx in 
                                           self.client_frame_mapping.items() if client_idx == i]
                                 
                                 if frame_ids:
                                     # Use the oldest frame ID for this client
                                     frame_id = min(frame_ids)
-                                    # Store the processed tensor along with original frame ID for ordering
-                                    await self.processed_video_frames.put((frame_id, out_tensor))
+                                    
+                                    # Store frame with timestamp for ordering
+                                    timestamp = time.time()
+                                    await self._add_frame_to_ordered_buffer(frame_id, timestamp, out_tensor)
+                                    
                                     # Remove the mapping
                                     self.client_frame_mapping.pop(frame_id, None)
                                     logger.info(f"Collected processed frame from client {i}, frame_id: {frame_id}")
@@ -90,12 +93,79 @@ class MultiServerPipeline:
                     except Exception as e:
                         logger.error(f"Error collecting frame from client {i}: {e}")
                 
+                # Check for frames that have waited too long
+                await self._check_frame_timeouts()
+                
                 # Small sleep to avoid CPU spinning
                 await asyncio.sleep(0.01)
         except asyncio.CancelledError:
             logger.info("Frame collector task cancelled")
         except Exception as e:
             logger.error(f"Unexpected error in frame collector: {e}")
+
+    async def _add_frame_to_ordered_buffer(self, frame_id, timestamp, tensor):
+        """Add a processed frame to the ordered buffer"""
+        self.ordered_frames[frame_id] = (timestamp, tensor)
+        
+        # If this is the first frame, set the next expected frame ID
+        if self.next_expected_frame_id is None:
+            self.next_expected_frame_id = frame_id
+            
+        # Check if we can release any frames now
+        await self._release_ordered_frames()
+
+    async def _release_ordered_frames(self):
+        """Process ordered frames and put them in the output queue"""
+        # If we don't have a next expected frame yet, can't do anything
+        if self.next_expected_frame_id is None:
+            return
+            
+        # Check if the next expected frame is in our buffer
+        while self.ordered_frames and self.next_expected_frame_id in self.ordered_frames:
+            # Get the frame
+            timestamp, tensor = self.ordered_frames.pop(self.next_expected_frame_id)
+            
+            # Put it in the output queue
+            await self.processed_video_frames.put((self.next_expected_frame_id, tensor))
+            logger.info(f"Released frame {self.next_expected_frame_id} to output queue")
+            
+            # Update the next expected frame ID to the next sequential ID if possible
+            # (or the lowest frame ID in our buffer)
+            if self.ordered_frames:
+                self.next_expected_frame_id = min(self.ordered_frames.keys())
+            else:
+                # If no more frames, keep the last ID + 1 as next expected
+                self.next_expected_frame_id += 1
+
+    async def _check_frame_timeouts(self):
+        """Check for frames that have waited too long and handle them"""
+        if not self.ordered_frames or self.next_expected_frame_id is None:
+            return
+            
+        current_time = time.time()
+        
+        # If the next expected frame has timed out, skip it and move on
+        if self.next_expected_frame_id in self.ordered_frames:
+            timestamp, _ = self.ordered_frames[self.next_expected_frame_id]
+            wait_time_ms = (current_time - timestamp) * 1000
+            
+            if wait_time_ms > self.max_frame_wait_ms:
+                logger.warning(f"Frame {self.next_expected_frame_id} exceeded max wait time, releasing anyway")
+                await self._release_ordered_frames()
+                
+        # Check if we're missing the next expected frame and it's been too long
+        elif self.ordered_frames:
+            # The next frame we're expecting isn't in the buffer
+            # Check how long we've been waiting since the oldest frame in the buffer
+            oldest_frame_id = min(self.ordered_frames.keys())
+            oldest_timestamp, _ = self.ordered_frames[oldest_frame_id]
+            wait_time_ms = (current_time - oldest_timestamp) * 1000
+            
+            # If we've waited too long, skip the missing frame(s)
+            if wait_time_ms > self.max_frame_wait_ms:
+                logger.warning(f"Missing frame {self.next_expected_frame_id}, skipping to {oldest_frame_id}")
+                self.next_expected_frame_id = oldest_frame_id
+                await self._release_ordered_frames()
 
     async def warm_video(self):
         """Warm up the video pipeline with dummy frames for each client"""
@@ -176,8 +246,13 @@ class MultiServerPipeline:
             
         self.last_frame_time = current_time
         
-        # Generate a unique frame ID
-        frame_id = int(time.time() * 1000000)  # Microseconds as ID
+        # Generate a unique frame ID - use sequential IDs for better ordering
+        if not hasattr(self, 'next_frame_id'):
+            self.next_frame_id = 1
+        
+        frame_id = self.next_frame_id
+        self.next_frame_id += 1
+
         frame.side_data.frame_id = frame_id
         
         # Preprocess the frame
@@ -195,7 +270,7 @@ class MultiServerPipeline:
         self.clients[client_index].put_video_input(frame)
         
         # Also add to the incoming queue for reference
-        await self.video_incoming_frames.put(frame)
+        await self.video_incoming_frames.put((frame_id, frame))
         
         logger.info(f"Sent frame {frame_id} to client {client_index}")
 
@@ -239,18 +314,21 @@ class MultiServerPipeline:
 
     async def get_processed_video_frame(self):
         try:
-            # Get the frame from the incoming queue first to maintain timing
-            frame = await self.video_incoming_frames.get()
+            # Get the original frame from the incoming queue first to maintain timing
+            frame_id, frame = await self.video_incoming_frames.get()
             
             # Skip frames if we're falling behind
             while not self.video_incoming_frames.empty():
                 # Get newer frame and mark old one as skipped
                 frame.side_data.skipped = True
-                frame = await self.video_incoming_frames.get()
-                logger.info("Skipped older frame to catch up")
+                frame_id, frame = await self.video_incoming_frames.get()
+                logger.info(f"Skipped older frame {frame_id} to catch up")
             
             # Get the processed frame from our output queue
-            frame_id, out_tensor = await self.processed_video_frames.get()
+            processed_frame_id, out_tensor = await self.processed_video_frames.get()
+            
+            if processed_frame_id != frame_id:
+                logger.warning(f"Frame ID mismatch: expected {frame_id}, got {processed_frame_id}")
             
             # Process the frame
             processed_frame = self.video_postprocess(out_tensor)

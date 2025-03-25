@@ -1,0 +1,13 @@
+# Configuration for multiple ComfyUI servers
+
+[[servers]]
+host = "127.0.0.1"
+port = 8188
+client_id = "client1"
+
+# Adding more servers:
+
+# [[servers]]
+# host = "127.0.0.1" 
+# port = 8189
+# client_id = "client2"

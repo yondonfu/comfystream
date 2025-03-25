@@ -84,7 +84,6 @@ class ComfyStreamClient:
         
         # Always set execution complete at start to allow first frame to be processed
         self.execution_complete_event.set()
-        logger.info("Setting execution_complete_event to TRUE at start")
         
         try:
             while True:
@@ -97,16 +96,15 @@ class ComfyStreamClient:
                 if self.execution_complete_event.is_set():
                     # Reset execution state for next frame
                     self.execution_complete_event.clear()
-                    logger.info("Setting execution_complete_event to FALSE before executing prompt")
                     
                     # Queue the prompt with the current frame
                     await self._execute_prompt(prompt_index)
                     
                     # Wait for execution completion with timeout
                     try:
-                        logger.info("Waiting for execution to complete (max 10 seconds)...")
+                        # logger.info("Waiting for execution to complete (max 10 seconds)...")
                         await asyncio.wait_for(self.execution_complete_event.wait(), timeout=10.0)
-                        logger.info("Execution complete, ready for next frame")
+                        # logger.info("Execution complete, ready for next frame")
                     except asyncio.TimeoutError:
                         logger.error("Timeout waiting for execution, forcing continuation")
                         self.execution_complete_event.set()
@@ -379,7 +377,7 @@ class ComfyStreamClient:
             
             # Check if we have a frame waiting to be processed
             if not tensor_cache.image_inputs.empty():
-                logger.info("Found tensor in input queue, preparing for API")
+                # logger.info("Found tensor in input queue, preparing for API")
                 # Get the most recent frame only
                 frame_or_tensor = None
                 while not tensor_cache.image_inputs.empty():
@@ -514,15 +512,16 @@ class ComfyStreamClient:
             # Check tensor dimensions and log detailed info
             logger.info(f"Original tensor for WS: shape={tensor.shape}, min={tensor.min().item():.4f}, max={tensor.max().item():.4f}")
             
-            # CRITICAL FIX: The issue is with the shape - no need to resize if dimensions are fine
-            if tensor.shape[1] < 64 or tensor.shape[2] < 64:
-                logger.warning(f"Tensor dimensions too small: {tensor.shape}. Resizing to 512x512")
+            # Always ensure consistent 512x512 dimensions
+            '''
+            if tensor.shape[1] != 512 or tensor.shape[2] != 512:
+                logger.info(f"Resizing tensor from {tensor.shape} to standard 512x512")
                 import torch.nn.functional as F
                 tensor = tensor.unsqueeze(0)  # Add batch dimension for interpolate
                 tensor = F.interpolate(tensor, size=(512, 512), mode='bilinear', align_corners=False)
                 tensor = tensor.squeeze(0)  # Remove batch dimension after resize
-                logger.info(f"Resized tensor to: {tensor.shape}")
-            
+            '''
+
             # Check for NaN or Inf values
             if torch.isnan(tensor).any() or torch.isinf(tensor).any():
                 logger.warning("Tensor contains NaN or Inf values! Replacing with zeros.")
@@ -648,9 +647,9 @@ class ComfyStreamClient:
         
     async def get_video_output(self):
         """Get processed video frame from tensor cache"""
-        logger.info("Waiting for processed tensor from output queue")
+        # logger.info("Waiting for processed tensor from output queue")
         result = await tensor_cache.image_outputs.get()
-        logger.info(f"Got processed tensor from output queue: shape={result.shape if hasattr(result, 'shape') else 'unknown'}")
+        # logger.info(f"Got processed tensor from output queue: shape={result.shape if hasattr(result, 'shape') else 'unknown'}")
         return result
     
     async def get_audio_output(self):

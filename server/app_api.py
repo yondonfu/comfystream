@@ -345,6 +345,7 @@ async def on_startup(app: web.Application):
 
     app["pipeline"] = Pipeline(
         config_path=app["config_file"],
+        max_frame_wait_ms=app["max_frame_wait"],
         cwd=app["workspace"], 
         disable_cuda_malloc=True, 
         gpu_only=True, 
@@ -352,6 +353,8 @@ async def on_startup(app: web.Application):
     )
     app["pcs"] = set()
     app["video_tracks"] = {}
+
+    app["max_frame_wait"] = args.max_frame_wait
 
 
 async def on_shutdown(app: web.Application):
@@ -395,6 +398,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Include stream ID as a label in Prometheus metrics.",
     )
+    parser.add_argument(
+        "--max-frame-wait",
+        type=int,
+        default=500,
+        help="Maximum time to wait for a frame in milliseconds before dropping it"
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -407,6 +416,7 @@ if __name__ == "__main__":
     app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
     app["workspace"] = args.workspace
     app["config_file"] = args.config_file
+    app["max_frame_wait"] = args.max_frame_wait
 
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
