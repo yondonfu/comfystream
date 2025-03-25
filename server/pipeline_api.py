@@ -3,10 +3,10 @@ import torch
 import numpy as np
 import asyncio
 import logging
+import time
 
 from typing import Any, Dict, Union, List
 from comfystream.client_api import ComfyStreamClient
-from comfystream import tensor_cache
 
 WARMUP_RUNS = 5
 logger = logging.getLogger(__name__)
@@ -19,6 +19,10 @@ class Pipeline:
         self.audio_incoming_frames = asyncio.Queue()
 
         self.processed_audio_buffer = np.array([], dtype=np.int16)
+        self.last_frame_time = 0
+
+        # TODO: Not sure if this is needed - should match to UI selected FPS
+        self.min_frame_interval = 1/30  # Limit to 30 FPS
 
     async def warm_video(self):
         """Warm up the video pipeline with dummy frames"""
@@ -62,6 +66,11 @@ class Pipeline:
             await self.client.update_prompts([prompts])
 
     async def put_video_frame(self, frame: av.VideoFrame):
+        current_time = time.time()
+        if current_time - self.last_frame_time < self.min_frame_interval:
+            return  # Skip frame if too soon
+            
+        self.last_frame_time = current_time
         frame.side_data.input = self.video_preprocess(frame)
         frame.side_data.skipped = False # Different from LoadTensor, we don't skip frames here
         self.client.put_video_input(frame)
@@ -78,8 +87,16 @@ class Pipeline:
     
     # Works with ComfyUI Native
     def video_preprocess(self, frame: av.VideoFrame) -> Union[torch.Tensor, np.ndarray]:
-        frame_np = frame.to_ndarray(format="rgb24").astype(np.float32) / 255.0
-        return torch.from_numpy(frame_np).unsqueeze(0)
+        # Convert directly to tensor, avoiding intermediate numpy array when possible
+        if hasattr(frame, 'to_tensor'):
+            tensor = frame.to_tensor()
+        else:
+            # If direct tensor conversion not available, use numpy
+            frame_np = frame.to_ndarray(format="rgb24")
+            tensor = torch.from_numpy(frame_np)
+        
+        # Normalize to [0,1] range and add batch dimension
+        return tensor.float().div(255.0).unsqueeze(0)
     
     ''' Converts HWC format (height, width, channels) to VideoFrame.
     def video_postprocess(self, output: Union[torch.Tensor, np.ndarray]) -> av.VideoFrame:
@@ -103,31 +120,21 @@ class Pipeline:
         return av.AudioFrame.from_ndarray(np.repeat(output, 2).reshape(1, -1))
 
     async def get_processed_video_frame(self):
-        """Get processed video frame from output queue and match it with input frame"""
         try:
             # Get the frame from the incoming queue first
             frame = await self.video_incoming_frames.get()
             
-            while frame.side_data.skipped:
+            # Skip frames if we're falling behind
+            while not self.video_incoming_frames.empty():
+                # Get newer frame and mark old one as skipped
+                frame.side_data.skipped = True
                 frame = await self.video_incoming_frames.get()
+                logger.info("Skipped older frame to catch up")
 
             # Get the processed frame from the output queue
-            logger.info("Getting video output")
             out_tensor = await self.client.get_video_output()
             
-            # If there are more frames in the output queue, drain them to get the most recent
-            # This helps with synchronization when processing is faster than display
-            while not tensor_cache.image_outputs.empty():
-                try:
-                    newer_tensor = await asyncio.wait_for(self.client.get_video_output(), 0.01)
-                    out_tensor = newer_tensor  # Use the most recent frame
-                    logger.info("Using more recent frame from output queue")
-                except asyncio.TimeoutError:
-                    break
-                
-            logger.info(f"Received output tensor with shape: {out_tensor.shape if hasattr(out_tensor, 'shape') else 'unknown'}")
-            
-            # Process the output tensor
+            # Process only the most recent frame
             processed_frame = self.video_postprocess(out_tensor)
             processed_frame.pts = frame.pts
             processed_frame.time_base = frame.time_base

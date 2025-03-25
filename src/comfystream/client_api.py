@@ -255,11 +255,11 @@ class ComfyStreamClient:
                         self._prompt_id = data["data"]["prompt_id"]
                     if "node" in data["data"]:
                         node_id = data["data"]["node"]
-                        # ogger.info(f"Executing node: {node_id}")
+                        # logger.info(f"Executing node: {node_id}")
             
             elif message_type in ["execution_cached", "execution_error", "execution_complete", "execution_interrupted"]:
                 # logger.info(f"{message_type} message received for prompt {self._prompt_id}")
-                #self.execution_started = False
+                # self.execution_started = False
                 
                 # Always signal completion for these terminal states
                 # self.execution_complete_event.set()
@@ -335,214 +335,90 @@ class ComfyStreamClient:
     async def _handle_binary_message(self, binary_data):
         """Process binary messages from the WebSocket"""
         try:
-            # Log binary message information
-            # logger.info(f"Received binary message of size: {len(binary_data)} bytes")
-
-            # Signal execution is complete, queue next frame
-            self.execution_complete_event.set()
-            
-            # Binary messages in ComfyUI start with a header
-            # First 8 bytes are used for header information
+            # Early return if message is too short
             if len(binary_data) <= 8:
-                logger.warning(f"Binary message too short: {len(binary_data)} bytes")
+                self.execution_complete_event.set()
                 return
             
-            # Extract header data based on the actual format observed in logs
-            # Header bytes (hex): 0000000100000001 - this appears to be the format in use
+            # Extract header data only when needed
             event_type = int.from_bytes(binary_data[:4], byteorder='little')
             format_type = int.from_bytes(binary_data[4:8], byteorder='little')
             data = binary_data[8:]
             
-            # Log header details
-            logger.info(f"Binary message header: event_type={event_type}, format_type={format_type}, data_size={len(data)} bytes")
-            #logger.info(f"Header bytes (hex): {binary_data[:8].hex()}")
+            # Quick check for image format
+            is_image = data[:2] in [b'\xff\xd8', b'\x89\x50']
+            if not is_image:
+                self.execution_complete_event.set()
+                return
             
-            # Check if this is an image (JPEG starts with 0xFF, 0xD8, PNG starts with 0x89, 0x50)
-            is_jpeg = data[:2] == b'\xff\xd8'
-            is_png = data[:4] == b'\x89\x50\x4e\x47'
-            
-            if is_jpeg or is_png:
-                image_format = "JPEG" if is_jpeg else "PNG"
-                logger.info(f"Detected {image_format} image based on magic bytes")
+            # Process image data directly
+            try:
+                img = Image.open(BytesIO(data))
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
+                    
+                with torch.no_grad():
+                    tensor = torch.from_numpy(np.array(img)).float().permute(2, 0, 1).unsqueeze(0) / 255.0
                 
-                # Create a NEW binary message with the expected header format for the JavaScript client
-                # The JavaScript expects: [0:4]=1 (PREVIEW_IMAGE), [4:8]=1 (JPEG format) or [4:8]=2 (PNG format)
-                # This matches exactly what the JS code is looking for:
-                # const event = dataView.getUint32(0);  // event type (1 = PREVIEW_IMAGE)
-                # const format = dataView.getUint32(4); // format (1 = JPEG, 2 = PNG)
-                js_event_type = (1).to_bytes(4, byteorder='little')  # PREVIEW_IMAGE = 1
-                js_format_type = (1 if is_jpeg else 2).to_bytes(4, byteorder='little')
-                transformed_data = js_event_type + js_format_type + data
+                # Add to output queue without waiting
+                tensor_cache.image_outputs.put_nowait(tensor)
+                self.execution_complete_event.set()
                 
-                # Forward to WebSocket client if connected
-                # if self.ws:
-                #    await self.ws.send(transformed_data)
-                #    logger.info(f"Sent transformed {image_format} image data to WebSocket with correct JS header format")
-                #else:
-                #    logger.error("WebSocket not connected, cannot forward image to JS client")
+            except Exception as img_error:
+                logger.error(f"Error processing image: {img_error}")
+                self.execution_complete_event.set()
                 
-                # Process the image for our pipeline
-                try:
-                    # Decode the image
-                    img = Image.open(BytesIO(data))
-                    logger.info(f"Successfully decoded image: size={img.size}, mode={img.mode}, format={img.format}")
-                    
-                    # Convert to RGB if not already
-                    if img.mode != "RGB":
-                        img = img.convert("RGB")
-                        logger.info(f"Converted image to RGB mode")
-
-                    # Save image to temp folder as a file
-                    # TESTING
-                    '''
-                    import os
-                    import tempfile
-                    temp_folder = os.path.join(tempfile.gettempdir(), "comfyui_images")
-                    os.makedirs(temp_folder, exist_ok=True)
-                    img_path = os.path.join(temp_folder, f"comfyui_image_{time.time()}.png")
-                    img.save(img_path)
-                    logger.info(f"Saved image to {img_path}")
-                    '''
-
-                    # Convert to tensor (normalize to [0,1] range for consistency)
-                    img_np = np.array(img).astype(np.float32) / 255.0
-                    tensor = torch.from_numpy(img_np)
-                    
-                    # CRITICAL: Ensure dimensions are correctly understood
-                    # The tensor should be in HWC format initially from PIL/numpy
-                    logger.info(f"Initial tensor shape from image: {tensor.shape}")
-                    
-                    # Convert from HWC to BCHW format for consistency with model expectations
-                    if len(tensor.shape) == 3 and tensor.shape[2] == 3:  # HWC format (H,W,3)
-                        tensor = tensor.permute(2, 0, 1).unsqueeze(0)  # -> BCHW (1,3,H,W)
-                        logger.info(f"Converted to BCHW tensor with shape: {tensor.shape}")
-
-                    # Check for NaN or Inf values
-                    if torch.isnan(tensor).any() or torch.isinf(tensor).any():
-                        logger.warning("Tensor contains NaN or Inf values! Replacing with zeros")
-                        tensor = torch.nan_to_num(tensor, nan=0.0, posinf=1.0, neginf=0.0)
-                    
-                    # Log detailed tensor info for debugging
-                    logger.info(f"Final tensor with shape: {tensor.shape}, "
-                               f"min={tensor.min().item()}, max={tensor.max().item()}, "
-                               f"mean={tensor.mean().item()}")
-                    
-                    # Add to output queue without waiting
-                    tensor_cache.image_outputs.put_nowait(tensor)
-                    logger.info(f"Added tensor to output queue, queue size: {tensor_cache.image_outputs.qsize()}")
-                    return
-                
-                except Exception as img_error:
-                    logger.error(f"Error processing image: {img_error}", exc_info=True)
-                    
-            # If we get here, we couldn't process the image
-            logger.warning("Failed to process image, creating default tensor")
-            default_tensor = torch.zeros(1, 3, 512, 512)
-            tensor_cache.image_outputs.put_nowait(default_tensor)
-            self.execution_complete_event.set()
-            
         except Exception as e:
-            logger.error(f"Error handling binary message: {e}", exc_info=True)
-            # Set execution complete event to avoid hanging
+            logger.error(f"Error handling binary message: {e}")
             self.execution_complete_event.set()
     
     async def _execute_prompt(self, prompt_index: int):
-        """Execute a prompt via the ComfyUI API"""
         try:
             # Get the prompt to execute
             prompt = self.current_prompts[prompt_index]
             
-            # Ensure all seed values are randomized for every execution
-            # This forces ComfyUI to not use cached results
-            for node_id, node in prompt.items():
-                if isinstance(node, dict) and "inputs" in node:
-                    if "seed" in node["inputs"]:
-                        # Generate a truly random seed each time
-                        random_seed = random.randint(0, 18446744073709551615)
-                        node["inputs"]["seed"] = random_seed
-                        logger.info(f"Randomized seed to {random_seed} for node {node_id}")
-                        
-                    # Also randomize noise_seed if present
-                    if "noise_seed" in node["inputs"]:
-                        noise_seed = random.randint(0, 18446744073709551615)
-                        node["inputs"]["noise_seed"] = noise_seed
-                        logger.info(f"Randomized noise_seed to {noise_seed} for node {node_id}")
-            
-            # Add a timestamp parameter to each node to prevent caching
-            # This is a "hidden" trick to force ComfyUI to consider each execution unique
-            timestamp = int(time.time() * 1000)  # millisecond timestamp
-            for node_id, node in prompt.items():
-                if isinstance(node, dict) and "inputs" in node:
-                    # Add a timestamp parameter to ETN_LoadImageBase64 nodes
-                    if node.get("class_type") in ["ETN_LoadImageBase64", "LoadImageBase64"]:
-                        # Add a unique cache-busting parameter
-                        node["inputs"]["_timestamp"] = timestamp
-                        logger.info(f"Added timestamp {timestamp} to node {node_id}")
-            
             # Check if we have a frame waiting to be processed
             if not tensor_cache.image_inputs.empty():
                 logger.info("Found tensor in input queue, preparing for API")
-                # Get the frame from the cache - make sure to get the most recent frame
+                # Get the most recent frame only
+                frame_or_tensor = None
                 while not tensor_cache.image_inputs.empty():
                     frame_or_tensor = tensor_cache.image_inputs.get_nowait()
                 
-                # Find ETN_LoadImageBase64 nodes
+                # Find ETN_LoadImageBase64 nodes first
                 load_image_nodes = []
                 for node_id, node in prompt.items():
-                    if isinstance(node, dict) and node.get("class_type") == "ETN_LoadImageBase64":
+                    if isinstance(node, dict) and node.get("class_type") in ["ETN_LoadImageBase64", "LoadImageBase64"]:
                         load_image_nodes.append(node_id)
                 
                 if not load_image_nodes:
-                    # Also check for regular LoadImageBase64 nodes as fallback
-                    for node_id, node in prompt.items():
-                        if isinstance(node, dict) and node.get("class_type") == "LoadImageBase64":
-                            load_image_nodes.append(node_id)
-                        
-                if not load_image_nodes:
-                    logger.warning("No ETN_LoadImageBase64 or LoadImageBase64 nodes found in the prompt")
-                    self.execution_complete_event.set()  # Signal completion
+                    logger.warning("No LoadImageBase64 nodes found in the prompt")
+                    self.execution_complete_event.set()
                     return
-                else:
-                    # Convert the frame/tensor to base64 and include directly in the prompt
-                    try:
-                        # Get the actual tensor data - handle different input types
-                        tensor = None
-                        
-                        # Check if it's a PyAV VideoFrame with preprocessed tensor in side_data
-                        if hasattr(frame_or_tensor, 'side_data') and hasattr(frame_or_tensor.side_data, 'input'):
-                            tensor = frame_or_tensor.side_data.input
-                            logger.info(f"Using preprocessed tensor from frame.side_data.input with shape {tensor.shape}")
-                        # Check if it's a PyTorch tensor
-                        elif isinstance(frame_or_tensor, torch.Tensor):
-                            tensor = frame_or_tensor
-                            logger.info(f"Using tensor directly with shape {tensor.shape}")
-                        # Check if it's a numpy array
-                        elif isinstance(frame_or_tensor, np.ndarray):
-                            tensor = torch.from_numpy(frame_or_tensor).float()
-                            logger.info(f"Converted numpy array to tensor with shape {tensor.shape}")
-                        else:
-                            # If it's a PyAV frame without preprocessed data, convert it
-                            try:
-                                if hasattr(frame_or_tensor, 'to_ndarray'):
-                                    frame_np = frame_or_tensor.to_ndarray(format="rgb24").astype(np.float32) / 255.0
-                                    tensor = torch.from_numpy(frame_np).unsqueeze(0)
-                                    logger.info(f"Converted PyAV frame to tensor with shape {tensor.shape}")
-                                else:
-                                    logger.error(f"Unsupported frame type: {type(frame_or_tensor)}")
-                                    self.execution_complete_event.set()
-                                    return
-                            except Exception as e:
-                                logger.error(f"Error converting frame to tensor: {e}")
-                                self.execution_complete_event.set()
-                                return
-                        
-                        if tensor is None:
-                            logger.error("Failed to get valid tensor data from input")
-                            self.execution_complete_event.set()
-                            return
-                        
-                        # Now process the tensor (which should be a proper PyTorch tensor)
-                        # Ensure it's a tensor on CPU and detached
+                
+                # Process the tensor ONLY if we have nodes to send it to
+                try:
+                    # Get the actual tensor data - handle different input types
+                    tensor = None
+                    
+                    # Handle different input types efficiently
+                    if hasattr(frame_or_tensor, 'side_data') and hasattr(frame_or_tensor.side_data, 'input'):
+                        tensor = frame_or_tensor.side_data.input
+                    elif isinstance(frame_or_tensor, torch.Tensor):
+                        tensor = frame_or_tensor
+                    elif isinstance(frame_or_tensor, np.ndarray):
+                        tensor = torch.from_numpy(frame_or_tensor).float()
+                    elif hasattr(frame_or_tensor, 'to_ndarray'):
+                        frame_np = frame_or_tensor.to_ndarray(format="rgb24").astype(np.float32) / 255.0
+                        tensor = torch.from_numpy(frame_np).unsqueeze(0)
+                    
+                    if tensor is None:
+                        logger.error("Failed to get valid tensor data from input")
+                        self.execution_complete_event.set()
+                        return
+                    
+                    # Process tensor format only once
+                    with torch.no_grad():
                         tensor = tensor.detach().cpu().float()
                         
                         # Handle different formats
@@ -553,65 +429,52 @@ class ComfyStreamClient:
                         if len(tensor.shape) == 3 and tensor.shape[2] == 3:  # HWC format
                             tensor = tensor.permute(2, 0, 1)  # Convert to CHW
                         
-                        # Convert to PIL image for saving
+                        # Convert to PIL image for base64 ONLY ONCE
                         tensor_np = (tensor.permute(1, 2, 0) * 255).clamp(0, 255).numpy().astype(np.uint8)
                         img = Image.fromarray(tensor_np)
                         
-                        # Save as PNG to BytesIO and convert to base64 string
+                        # Convert to base64 ONCE for all nodes
                         buffer = BytesIO()
                         img.save(buffer, format="PNG")
                         buffer.seek(0)
-                        
-                        # Encode as base64 - for ETN_LoadImageBase64, we need the raw base64 string
                         img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-                        logger.info(f"Created base64 string of length: {len(img_base64)}")
-                        
-                        # Update all ETN_LoadImageBase64 nodes with the base64 data
-                        for node_id in load_image_nodes:
-                            prompt[node_id]["inputs"]["image"] = img_base64
-                            # Add a small random suffix to image data to prevent caching
-                            rand_suffix = str(random.randint(1, 1000000))
-                            prompt[node_id]["inputs"]["_cache_buster"] = rand_suffix
-                            logger.info(f"Updated node {node_id} with base64 string and cache buster {rand_suffix}")
                     
-                    except Exception as e:
-                        logger.error(f"Error converting tensor to base64: {e}")
-                        # Signal execution complete in case of error
-                        self.execution_complete_event.set()
-                        return
+                    # Update all nodes with the SAME base64 string
+                    timestamp = int(time.time() * 1000)
+                    for node_id in load_image_nodes:
+                        prompt[node_id]["inputs"]["image"] = img_base64
+                        prompt[node_id]["inputs"]["_timestamp"] = timestamp
+                        # Use timestamp as cache buster instead of random number
+                        prompt[node_id]["inputs"]["_cache_buster"] = str(timestamp)
+                
+                except Exception as e:
+                    logger.error(f"Error converting tensor to base64: {e}")
+                    self.execution_complete_event.set()
+                    return
+                
+                # Execute the prompt via API
+                async with aiohttp.ClientSession() as session:
+                    api_url = f"{self.api_base_url}/prompt"
+                    payload = {
+                        "prompt": prompt,
+                        "client_id": self.client_id
+                    }
+                    
+                    async with session.post(api_url, json=payload) as response:
+                        if response.status == 200:
+                            result = await response.json()
+                            self._prompt_id = result.get("prompt_id")
+                            self.execution_started = True
+                        else:
+                            error_text = await response.text()
+                            logger.error(f"Error queueing prompt: {response.status} - {error_text}")
+                            self.execution_complete_event.set()
             else:
                 logger.info("No tensor in input queue, skipping prompt execution")
-                self.execution_complete_event.set()  # Signal completion
-                return
-            
-            # Execute the prompt via API
-            async with aiohttp.ClientSession() as session:
-                api_url = f"{self.api_base_url}/prompt"
-                payload = {
-                    "prompt": prompt,
-                    "client_id": self.client_id
-                }
+                self.execution_complete_event.set()
                 
-                # Send the request
-                logger.info(f"Sending prompt to {api_url}")
-                async with session.post(api_url, json=payload) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        self._prompt_id = result.get("prompt_id")
-                        logger.info(f"Prompt queued with ID: {self._prompt_id}")
-                        self.execution_started = True
-                    else:
-                        error_text = await response.text()
-                        logger.error(f"Error queueing prompt: {response.status} - {error_text}")
-                        # Signal execution complete in case of error
-                        self.execution_complete_event.set()
-                
-        except aiohttp.ClientError as e:
-            logger.error(f"Client error queueing prompt: {e}")
-            self.execution_complete_event.set()
         except Exception as e:
             logger.error(f"Error executing prompt: {e}")
-            # Signal execution complete in case of error
             self.execution_complete_event.set()
     
     async def _send_tensor_via_websocket(self, tensor):
