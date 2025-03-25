@@ -26,7 +26,6 @@ from pipeline_api import Pipeline # TODO: Better integration (Are we replacing p
 from twilio.rest import Client
 from utils import patch_loop_datagram, add_prefix_to_app_routes, FPSMeter
 from metrics import MetricsManager, StreamStatsManager
-import time
 
 logger = logging.getLogger(__name__)
 logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
@@ -345,7 +344,11 @@ async def on_startup(app: web.Application):
         patch_loop_datagram(app["media_ports"])
 
     app["pipeline"] = Pipeline(
-        cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True, preview_method='none'
+        config_path=app["config_file"],
+        cwd=app["workspace"], 
+        disable_cuda_malloc=True, 
+        gpu_only=True, 
+        preview_method='none'
     )
     app["pcs"] = set()
     app["video_tracks"] = {}
@@ -375,6 +378,12 @@ if __name__ == "__main__":
         help="Set the logging level",
     )
     parser.add_argument(
+        "--config-file",
+        type=str,
+        default=None,
+        help="Path to TOML configuration file for Comfy servers"
+    )
+    parser.add_argument(
         "--monitor",
         default=False,
         action="store_true",
@@ -397,6 +406,7 @@ if __name__ == "__main__":
     app = web.Application()
     app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
     app["workspace"] = args.workspace
+    app["config_file"] = args.config_file
 
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
