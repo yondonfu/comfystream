@@ -15,6 +15,15 @@ def create_load_tensor_node():
         "_meta": {"title": "Load Tensor (API)"},
     }
 
+def create_load_image_node():
+    return {
+        "inputs": {
+            "image": ""  # Should be "image" not "image_data" to match LoadImageBase64
+        },
+        "class_type": "LoadImageBase64",
+        "_meta": {"title": "Load Image Base64 (ComfyStream)"},
+    }
+
 def create_save_tensor_node(inputs: Dict[Any, Any]):
     """Create a SaveTensorAPI node with proper input formatting"""
     # Make sure images input is properly formatted [node_id, output_index]
@@ -35,9 +44,37 @@ def create_save_tensor_node(inputs: Dict[Any, Any]):
         "_meta": {"title": "Save Tensor (API)"},
     }
 
-def convert_prompt(prompt):
+def create_save_image_node(inputs: Dict[Any, Any]):
+    # Get the correct image input reference
+    images_input = inputs.get("images", inputs.get("image"))
+    
+    # If not properly formatted, use default
+    if not images_input:
+        images_input = ["", 0]  # Default empty value
+    
+    return {
+        "inputs": {
+            "images": images_input,
+            "format": "PNG"  # Default format
+        },
+        "class_type": "SendImageWebsocket",    
+        "_meta": {"title": "Send Image Websocket (ComfyStream)"},
+    }
 
+def convert_prompt(prompt):
     logging.info("Converting prompt: %s", prompt)
+
+    # Initialize counters
+    num_primary_inputs = 0
+    num_inputs = 0
+    num_outputs = 0
+
+    keys = {
+        "PrimaryInputLoadImage": [],
+        "LoadImage": [],
+        "PreviewImage": [],
+        "SaveImage": [],
+    }
 
     # Set random seeds for any seed nodes
     for key, node in prompt.items():
@@ -50,20 +87,52 @@ def convert_prompt(prompt):
             random_seed = random.randint(0, 18446744073709551615)
             node["inputs"]["seed"] = random_seed
             print(f"Set random seed {random_seed} for node {key}")
-
-
-    # Replace LoadImage with LoadImageBase64
+    
     for key, node in prompt.items():
-        if node.get("class_type") == "LoadImage":
-            node["class_type"] = "LoadImageBase64"
+        class_type = node.get("class_type")
 
-    # Replace SaveImage/PreviewImage with SendImageWebsocket
-    for key, node in prompt.items():
-        if node.get("class_type") in ["SaveImage", "PreviewImage"]:
-            node["class_type"] = "SendImageWebsocket"
-            # Ensure format is set
-            if "format" not in node["inputs"]:
-                node["inputs"]["format"] = "PNG"  # Set default format
+        # Collect keys for nodes that might need to be replaced
+        if class_type in keys:
+            keys[class_type].append(key)
+
+        # Count inputs and outputs
+        if class_type == "PrimaryInputLoadImage":
+            num_primary_inputs += 1
+        elif class_type in ["LoadImage", "LoadImageBase64"]:
+            num_inputs += 1
+        elif class_type in ["PreviewImage", "SaveImage", "SendImageWebsocket"]:
+            num_outputs += 1
+
+    # Only handle single primary input
+    if num_primary_inputs > 1:
+        raise Exception("too many primary inputs in prompt")
+
+    # If there are no primary inputs, only handle single input
+    if num_primary_inputs == 0 and num_inputs > 1:
+        raise Exception("too many inputs in prompt")
+
+    # Only handle single output for now
+    if num_outputs > 1:
+        raise Exception("too many outputs in prompt")
+
+    if num_primary_inputs + num_inputs == 0:
+        raise Exception("missing input")
+
+    if num_outputs == 0:
+        raise Exception("missing output")
+
+    # Replace nodes with proper implementations
+    for key in keys["PrimaryInputLoadImage"]:
+        prompt[key] = create_load_image_node()
+
+    if num_primary_inputs == 0 and len(keys["LoadImage"]) == 1:
+        prompt[keys["LoadImage"][0]] = create_load_image_node()
+
+    for key in keys["PreviewImage"] + keys["SaveImage"]:
+        node = prompt[key]
+        prompt[key] = create_save_image_node(node["inputs"])
+
+    # TODO: Validate the processed prompt input
             
     return prompt
 
