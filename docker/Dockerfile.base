@@ -62,4 +62,7 @@ RUN conda run -n comfystream --no-capture-output pip install --upgrade tensorrt-
 RUN conda config --set auto_activate_base false && \
     conda init bash
 
+# Set comfystream environment as default
+RUN echo "conda activate comfystream" >> ~/.bashrc
+
 WORKDIR /workspace/comfystream
