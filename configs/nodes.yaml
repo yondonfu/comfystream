@@ -75,3 +75,8 @@ nodes:
     url: "https://github.com/livepeer/ComfyUI-Stream-Pack"
     branch: "main"
     type: "utility"
+
+  comfyui-super-resolution:
+    name: "ComfyUI Super Resolution"
+    url: "https://github.com/ryanontheinside/ComfyUI_SuperResolution.git"
+    type: "utility"
