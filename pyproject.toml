@@ -15,6 +15,7 @@ dependencies = [
     "toml",
     "twilio",
     "prometheus_client",
+    "librosa"
 ]
 
 [project.optional-dependencies]
