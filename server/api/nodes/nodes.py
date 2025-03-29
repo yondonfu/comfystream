@@ -125,6 +125,61 @@ async def delete_node(node, workspace_dir):
         logger.error(f"error deleting node {node['name']}")
         raise Exception(f"error deleting node: {e}")
 
+async def enable_node(node, workspace_dir):
+    custom_nodes_path = Path(os.path.join(workspace_dir, "custom_nodes"))
+    custom_nodes_path.mkdir(parents=True, exist_ok=True)
+    os.chdir(custom_nodes_path)
+    if "name" not in node: 
+        raise ValueError("name is required")
+    
+    node_path = custom_nodes_path / node["name"]
+    #check if enabled node exists
+    if not node_path.exists():
+        #try with .disabled
+        node_path = custom_nodes_path / node["name"]+".disabled"
+        if not node_path.exists():
+            #node does not exist as enabled or disabled
+            raise ValueError(f"node {node['name']} does not exist")
+        else:
+            #enable the disabled node
+            try:
+                #rename the folder to remove .disabled
+                logger.info(f"enabling node {node['name']}")
+                node_path.rename(custom_nodes_path / node["name"])
+            except Exception as e:
+                logger.error(f"error enabling node {node['name']}")
+                raise Exception(f"error enabling node: {e}")
+    else:
+        #node is already enabled, nothing to do
+        return
+
+async def disable_node(node, workspace_dir):
+    custom_nodes_path = Path(os.path.join(workspace_dir, "custom_nodes"))
+    custom_nodes_path.mkdir(parents=True, exist_ok=True)
+    os.chdir(custom_nodes_path)
+    if "name" not in node: 
+        raise ValueError("name is required")
+    
+    node_path = custom_nodes_path / node["name"]
+    if not node_path.exists():
+        #try with .disabled
+        node_path = custom_nodes_path / node["name"]+".disabled"
+        if not node_path.exists():
+            #node does not exist as enabled or disabled
+            raise ValueError(f"node {node['name']} does not exist")
+        else:
+            #node is already disabled, nothing to do
+            return
+    else:
+        #rename the folder to add .disabled
+        try:
+            #delete the folder and all its contents.  ignore_errors allows readonly files to be deleted
+            logger.info(f"enabling node {node['name']}")
+            node_path.rename(custom_nodes_path / node["name"]+".disabled")
+        except Exception as e:
+            logger.error(f"error enabling node {node['name']}")
+            raise Exception(f"error enabling node: {e}")
+
 
 from comfy.nodes.package import ExportedNodes
 from comfy.nodes.package import _comfy_nodes, _import_and_enumerate_nodes_in_module
