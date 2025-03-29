@@ -47,6 +47,7 @@ export interface StreamConfig {
   prompts?: Prompt[] | null;
   selectedVideoDeviceId: string;
   selectedAudioDeviceId: string;
+  streamType: "webcam" | "screen";
 }
 
 interface AVDevice {
@@ -60,6 +61,7 @@ const DEFAULT_CONFIG: StreamConfig = {
   frameRate: 30,
   selectedVideoDeviceId: "",
   selectedAudioDeviceId: "",
+  streamType: "webcam",
 };
 
 interface StreamSettingsProps {
@@ -99,6 +101,7 @@ function StreamSettingsInner({
       searchParams.get("frameRate") || `${DEFAULT_CONFIG.frameRate}`,
       10,
     ),
+    streamType: (searchParams.get("streamType") as "webcam" | "screen") || DEFAULT_CONFIG.streamType,
   };
   const [config, setConfig] = useState<StreamConfig>(initialConfig);
 
@@ -174,6 +177,9 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<
     string | undefined
   >(config.selectedAudioDeviceId);
+  const [streamType, setStreamType] = useState<"webcam" | "screen">(
+    config.streamType || "webcam"
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -262,12 +268,10 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     onSubmit({
       ...values,
-      streamUrl: values.streamUrl
-        ? values.streamUrl.replace(/\/+$/, "")
-        : values.streamUrl,
-      prompts: prompts,
       selectedVideoDeviceId: selectedVideoDevice || "none",
       selectedAudioDeviceId: selectedAudioDevice || "none",
+      prompts: prompts.length ? prompts : null,
+      streamType,
     });
   };
 
@@ -316,115 +320,111 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} autoComplete="off">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="streamUrl"
           render={({ field }) => (
-            <FormItem className="mt-4">
+            <FormItem>
               <FormLabel>Stream URL</FormLabel>
               <FormControl>
-                <Input placeholder="Stream URL" {...field} />
+                <Input placeholder="http://..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="frameRate"
-          render={({ field }) => (
-            <FormItem className="mt-4">
-              <FormLabel>Frame Rate</FormLabel>
-              <FormControl>
-                <Input placeholder="Frame Rate" {...field} type="number" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="mt-4 mb-4">
-          <Label>Camera</Label>
-          {/* TODO: Temporary fix to Warn if no camera or mic; improve later */}
-          <Select
-            required={selectedAudioDevice == "none" && selectedVideoDevice == "none" ? true : false}
-            value={selectedVideoDevice == "none" ? "" : selectedVideoDevice}
-            onValueChange={handleCameraSelect}
-          >
-            <Select.Trigger className="w-full mt-2">
-              {selectedVideoDevice
-                ? videoDevices.find((d) => d.deviceId === selectedVideoDevice)
-                  ?.label || "None"
-                : "None"}
-            </Select.Trigger>
-            <Select.Content>
-              {videoDevices.length === 0 ? (
-                <Select.Option disabled value="no-devices">
-                  No camera devices found
-                </Select.Option>
-              ) : (
-                videoDevices.map((device) => (
-                  <Select.Option key={device.deviceId} value={device.deviceId}>
-                    {device.label}
-                  </Select.Option>
-                ))
-              )}
-            </Select.Content>
-          </Select>
+        <div className="space-y-2">
+          <Label>Stream Type</Label>
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              variant={streamType === "webcam" ? "default" : "outline"}
+              onClick={() => setStreamType("webcam")}
+              className="flex-1"
+            >
+              Camera
+            </Button>
+            <Button
+              type="button"
+              variant={streamType === "screen" ? "default" : "outline"}
+              onClick={() => setStreamType("screen")}
+              className="flex-1"
+            >
+              Screen Share
+            </Button>
+          </div>
         </div>
 
-        <div className="mt-4 mb-4">
+        {streamType === "webcam" && (
+          <div className="space-y-2">
+            <Label>Camera</Label>
+            <Select
+              value={selectedVideoDevice}
+              onValueChange={handleCameraSelect}
+            >
+              {videoDevices.map((device) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
+
+        <div className="space-y-2">
           <Label>Microphone</Label>
           <Select
             value={selectedAudioDevice}
             onValueChange={handleMicrophoneSelect}
           >
-            <Select.Trigger className="w-full mt-2">
-              {selectedAudioDevice
-                ? audioDevices.find((d) => d.deviceId === selectedAudioDevice)
-                  ?.label || "None"
-                : "None"}
-            </Select.Trigger>
-            <Select.Content>
-              {audioDevices.length === 0 ? (
-                <Select.Option disabled value="no-devices">
-                  No audio devices found
-                </Select.Option>
-              ) : (
-                audioDevices
-                  .filter(
-                    (device) =>
-                      device.deviceId !== undefined && device.deviceId != "",
-                  )
-                  .map((device) => (
-                    <Select.Option
-                      key={device.deviceId}
-                      value={device.deviceId}
-                    >
-                      {device.label}
-                    </Select.Option>
-                  ))
-              )}
-            </Select.Content>
+            {audioDevices.map((device) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.label}
+              </option>
+            ))}
           </Select>
         </div>
 
-        <div className="mt-4 mb-4 grid max-w-sm items-center gap-3">
-          <Label>Comfy Workflows</Label>
+        <FormField
+          control={form.control}
+          name="frameRate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Frame Rate</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={1}
+                  max={60}
+                  step={1}
+                  {...field}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (val >= 1 && val <= 60) {
+                      field.onChange(val);
+                    }
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="space-y-2">
+          <Label htmlFor="prompts">Prompts (JSON File)</Label>
           <Input
-            id="workflow"
+            id="prompts"
             type="file"
             accept=".json"
-            multiple
             onChange={handlePromptsChange}
-            required={true}
           />
         </div>
 
-        <Button type="submit" className="w-full mt-4 mb-4">
-          Start Stream
+        <Button type="submit" className="w-full">
+          Save
         </Button>
       </form>
     </Form>
