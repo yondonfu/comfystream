@@ -8,6 +8,7 @@ import logging
 import aiohttp
 from ..server_manager import LocalComfyStreamServer
 from .. import settings_storage
+import subprocess
 
 routes = None
 server_manager = None
@@ -215,3 +216,7 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
             logging.error(f"Error managing configuration: {str(e)}")
             return web.json_response({"error": str(e)}, status=500)
 
+    @routes.post('/comfyui/restart')
+    async def manage_configuration(request):
+        subprocess.run(["supervisorctl", "restart", "comfyui"])
+        return web.json_response({"success": True}, status=200)
