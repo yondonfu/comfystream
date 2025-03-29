@@ -73,5 +73,5 @@ nodes:
   comfyui-stream-pack:
     name: "ComfyUI Stream Pack"
     url: "https://github.com/livepeer/ComfyUI-Stream-Pack"
-    branch: "expose_feature_bank_to_comfyui"
+    branch: "main"
     type: "utility"
