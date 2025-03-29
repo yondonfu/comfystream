@@ -39,11 +39,11 @@ nodes:
     url: "https://github.com/ad-astra-video/ComfyUI-Florence2-Vision.git"
     type: "vision"
    
-  # comfyui-sam2-realtime:
-  #   name: "ComfyUI SAM2 Realtime"
-  #   branch: "main"
-  #   url: "https://github.com/pschroedl/ComfyUI-SAM2-Realtime.git"
-  #   type: "vision"
+  comfyui-sam2-realtime:
+    name: "ComfyUI SAM2 Realtime"
+    branch: "main"
+    url: "https://github.com/pschroedl/ComfyUI-SAM2-Realtime.git"
+    type: "vision"
 
   comfyui-load-image-url:
     name: "ComfyUI Load Image from URL"
