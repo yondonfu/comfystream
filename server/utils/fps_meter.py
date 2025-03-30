@@ -4,16 +4,34 @@ import asyncio
 import logging
 import time
 from collections import deque
-from metrics import MetricsManager
+from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class FPSMeter:
-    """Class to calculate and store the framerate of a stream by counting frames."""
+    """Class to calculate and store the framerate of a stream by counting frames.
 
-    def __init__(self, metrics_manager: MetricsManager, track_id: str):
-        """Initializes the FPSMeter class."""
+    Attributes:
+        track_id: The ID of the track.
+    """
+
+    def __init__(
+        self,
+        track_id: str,
+        track_kind: str,
+        update_metrics_callback: Optional[Callable[[float, str], None]] = None,
+    ):
+        """Initializes the FPSMeter class.
+
+        Args:
+            track_id: The ID of the track.
+            track_kind: The kind of the track (e.g., "video" or "audio").
+            update_metrics_callback: An optional callback function to update Prometheus
+                metrics with FPS data.
+        """
+        self.track_id = track_id
+        self.track_kind = track_kind
         self._lock = asyncio.Lock()
         self._fps_interval_frame_count = 0
         self._last_fps_calculation_time = None
@@ -21,8 +39,7 @@ class FPSMeter:
         self._fps = 0.0
         self._fps_measurements = deque(maxlen=60)
         self._running_event = asyncio.Event()
-        self._metrics_manager = metrics_manager
-        self.track_id = track_id
+        self._update_metrics_callback = update_metrics_callback
 
         asyncio.create_task(self._calculate_fps_loop())
 
@@ -51,8 +68,9 @@ class FPSMeter:
                 self._last_fps_calculation_time = current_time
                 self._fps_interval_frame_count = 0
 
-            # Update Prometheus metrics if enabled.
-            self._metrics_manager.update_fps_metrics(self._fps, self.track_id)
+            # Update Prometheus metrics using the callback if provided.
+            if self._update_metrics_callback:
+                self._update_metrics_callback(self._fps, self.track_id, self.track_kind)
 
             await asyncio.sleep(1)  # Calculate FPS every second.
 
@@ -63,8 +81,7 @@ class FPSMeter:
             if not self._running_event.is_set():
                 self._running_event.set()
 
-    @property
-    async def fps(self) -> float:
+    async def get_fps(self) -> float:
         """Get the current output frames per second (FPS).
 
         Returns:
@@ -73,8 +90,7 @@ class FPSMeter:
         async with self._lock:
             return self._fps
 
-    @property
-    async def fps_measurements(self) -> list:
+    async def get_fps_measurements(self) -> list:
         """Get the array of FPS measurements for the last minute.
 
         Returns:
@@ -83,8 +99,7 @@ class FPSMeter:
         async with self._lock:
             return list(self._fps_measurements)
 
-    @property
-    async def average_fps(self) -> float:
+    async def get_average_fps(self) -> float:
         """Calculate the average FPS from the measurements taken in the last minute.
 
         Returns:
@@ -98,8 +113,7 @@ class FPSMeter:
                 else self._fps
             )
 
-    @property
-    async def last_fps_calculation_time(self) -> float:
+    async def get_last_fps_calculation_time(self) -> float:
         """Get the elapsed time since the last FPS calculation.
 
         Returns:
