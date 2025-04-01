@@ -345,7 +345,11 @@ async def on_startup(app: web.Application):
         patch_loop_datagram(app["media_ports"])
 
     app["pipeline"] = Pipeline(
-        cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True, preview_method='none'
+        cwd=app["workspace"], 
+        disable_cuda_malloc=True, 
+        gpu_only=True, 
+        preview_method='none',
+        comfyui_inference_log_level=app.get("comfui_inference_log_level", None),
     )
     app["pcs"] = set()
     app["video_tracks"] = {}
@@ -385,6 +389,18 @@ if __name__ == "__main__":
         default=False,
         action="store_true",
         help="Include stream ID as a label in Prometheus metrics.",
+    )
+    parser.add_argument(
+        "--comfyui-log-level",
+        default=None,
+        choices=logging._nameToLevel.keys(),
+        help="Set the global logging level for ComfyUI",
+    )
+    parser.add_argument(
+        "--comfyui-inference-log-level",
+        default=None,
+        choices=logging._nameToLevel.keys(),
+        help="Set the logging level for ComfyUI inference",
     )
     args = parser.parse_args()
 
@@ -434,5 +450,12 @@ if __name__ == "__main__":
     def force_print(*args, **kwargs):
         print(*args, **kwargs, flush=True)
         sys.stdout.flush()
+
+    # Allow overriding of ComyfUI log levels.
+    if args.comfyui_log_level:
+        log_level = logging._nameToLevel.get(args.comfyui_log_level.upper())
+        logging.getLogger("comfy").setLevel(log_level)
+    if args.comfyui_inference_log_level:
+        app["comfui_inference_log_level"] = args.comfyui_inference_log_level
 
     web.run_app(app, host=args.host, port=int(args.port), print=force_print)
