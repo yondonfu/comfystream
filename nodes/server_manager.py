@@ -112,7 +112,7 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
         while port < self.max_port:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind(('', port))
+                    s.bind((self.host, port))
                     logging.info(f"Found available port: {port}")
                     return port
             except OSError:
