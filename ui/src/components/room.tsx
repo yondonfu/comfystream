@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ControlPanelsContainer } from "@/components/control-panels-container";
+import { StreamControl } from "@/components/stream-control";
 
 interface MediaStreamPlayerProps {
   stream: MediaStream;
@@ -145,6 +146,8 @@ function Stage({ connected, onStreamReady }: StageProps) {
           </TooltipProvider>
         </div>
       )}
+      {/* Add StreamControlIcon at the bottom right corner of the video box */}
+      <StreamControl />
     </div>
   );
 }

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyStream - OBS Capture</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+    </style>
+    <script>
+        // Set the correct stream URL based on environment
+        window.onload = function() {
+            // Check if we're in a hosted environment by looking at the current URL
+            const isHosted = window.location.pathname.includes('/live');
+            const pathPrefix = isHosted ? '/live' : '';
+            
+            // Update the image source with the correct path
+            document.getElementById('stream').src = `${pathPrefix}/api/stream`;
+        }
+    </script>
+</head>
+<body>
+    <img id="stream" alt="Video Stream">
+</body>
+</html>

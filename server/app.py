@@ -12,7 +12,7 @@ if torch.cuda.is_available():
     torch.cuda.init()
 
 
-from aiohttp import web
+from aiohttp import web, MultipartWriter
 from aiortc import (
     MediaStreamTrack,
     RTCConfiguration,
@@ -26,6 +26,7 @@ from pipeline import Pipeline
 from twilio.rest import Client
 from utils import patch_loop_datagram, add_prefix_to_app_routes, FPSMeter
 from metrics import MetricsManager, StreamStatsManager
+from frame_buffer import FrameBuffer
 import time
 
 logger = logging.getLogger(__name__)
@@ -335,6 +336,40 @@ async def set_prompt(request):
 
     return web.Response(content_type="application/json", text="OK")
 
+async def stream_mjpeg(request):
+    """Serve an MJPEG stream"""
+    frame_buffer = FrameBuffer.get_instance()
+    
+    # Use a fixed frame delay for 30 FPS
+    frame_delay = 1.0 / 30
+    
+    response = web.StreamResponse(
+        status=200,
+        reason='OK',
+        headers={
+            'Content-Type': 'multipart/x-mixed-replace; boundary=frame',
+            'Cache-Control': 'no-cache',
+            'Connection': 'close',
+        }
+    )
+    await response.prepare(request)
+    
+    try:
+        while True:
+            jpeg_frame = frame_buffer.get_current_frame()
+            if jpeg_frame is not None:
+                await response.write(
+                    b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + jpeg_frame + b'\r\n'
+                )
+            await asyncio.sleep(frame_delay)
+    except (ConnectionResetError, asyncio.CancelledError):
+        logger.info("MJPEG stream connection closed")
+    except Exception as e:
+        logger.error(f"Error in MJPEG stream: {e}")
+    finally:
+        return response
+
 
 def health(_):
     return web.Response(content_type="application/json", text="OK")
@@ -407,6 +442,12 @@ if __name__ == "__main__":
     # WebRTC signalling and control routes.
     app.router.add_post("/offer", offer)
     app.router.add_post("/prompt", set_prompt)
+    
+    # HTTP streaming routes
+    app.router.add_get("/api/stream", stream_mjpeg)
+    
+    # Serve static files from the public directory
+    app.router.add_static("/", path=os.path.join(os.path.dirname(__file__), "public"), name="static")
 
     # Add routes for getting stream statistics.
     stream_stats_manager = StreamStatsManager(app)

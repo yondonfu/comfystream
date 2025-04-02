@@ -84,6 +84,15 @@ class Pipeline:
         processed_frame.pts = frame.pts
         processed_frame.time_base = frame.time_base
         
+        # Update the frame buffer with the processed frame
+        try:
+            from frame_buffer import FrameBuffer
+            frame_buffer = FrameBuffer.get_instance()
+            frame_buffer.update_frame(processed_frame)
+        except Exception as e:
+            # Don't let frame buffer errors affect the main pipeline
+            print(f"Error updating frame buffer: {e}")
+        
         return processed_frame
 
     async def get_processed_audio_frame(self):
