@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
 logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
 
+
 MAX_BITRATE = 2000000
 MIN_BITRATE = 2000000
 
@@ -339,6 +340,7 @@ async def set_prompt(request):
     await pipeline.set_prompts(prompt)
 
     return web.Response(content_type="application/json", text="OK")
+    
 
 def health(_):
     return web.Response(content_type="application/json", text="OK")
