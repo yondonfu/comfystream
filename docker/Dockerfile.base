@@ -63,9 +63,6 @@ RUN conda config --set auto_activate_base false && \
     conda init bash
 
 # Set comfystream environment as default
-#TODO if this dockerfile will support other pipelines, we need to not always activate comfystream
-RUN echo "source /workspace/miniconda3/etc/profile.d/conda.sh && conda activate comfystream" >> /conda_activate.sh && \
-    chmod +x /conda_activate.sh
-ENV BASH_ENV=/conda_activate.sh
+RUN echo "conda activate comfystream" >> ~/.bashrc
 
 WORKDIR /workspace/comfystream
