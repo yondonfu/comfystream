@@ -1,7 +1,7 @@
 """
 HTTP streaming routes for ComfyStream.
 
-This module contains the routes for HTTP streaming and token management.
+This module contains the routes for HTTP streaming.
 """
 import asyncio
 import logging
@@ -22,10 +22,6 @@ async def stream_mjpeg(request):
     is_valid, error_message = validate_token(stream_id)
     if not is_valid:
         return web.Response(status=403, text=error_message)
-    
-    # If this is a HEAD request (used for token validation), return success
-    if request.method == 'HEAD':
-        return web.Response(status=200)
     
     frame_buffer = FrameBuffer.get_instance()
     

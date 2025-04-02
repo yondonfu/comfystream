@@ -27,11 +27,6 @@ export function StreamControl({ className = "" }: StreamControlProps) {
       });
       
       if (!response.ok) {
-        if (response.status === 429) {
-          // Handle the "Too Many Requests" error specifically
-          throw new Error("Maximum number of streaming sessions reached. Please close any existing stream windows and try again.");
-        }
-        
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `Failed to get stream token: ${response.status}`);
       }
