@@ -12,6 +12,7 @@
             height: 100%;
             overflow: hidden;
             background-color: #000;
+            font-family: Arial, sans-serif;
         }
         
         img {
@@ -20,17 +21,37 @@
             object-fit: contain;
             display: block;
         }
+        
+        .error-message {
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
     </style>
     <script>
-        // Set the correct stream URL based on environment
+        // Initialize the stream by getting the token from the URL
         window.onload = function() {
-            // Check if we're in a hosted environment by looking at the current URL
-            const isHosted = window.location.pathname.includes('/live');
-            const pathPrefix = isHosted ? '/live' : '';
-            
-            // Update the image source with the correct path
-            document.getElementById('stream').src = `${pathPrefix}/api/stream`;
-        }
+            try {
+                // Get the token from the URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const token = urlParams.get('token');
+                
+                if (!token) {
+                    document.body.innerHTML = '<div class="error-message">Error: Missing stream token.</div>';
+                    return;
+                }
+                
+                // Set up the stream with the token
+                const isHosted = window.location.pathname.includes('/live');
+                const pathPrefix = isHosted ? '/live' : '';
+                document.getElementById('stream').src = `${pathPrefix}/api/stream?token=${token}`;
+                
+            } catch (error) {
+                console.error('Failed to initialize stream:', error);
+                document.body.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            }
+        };
     </script>
 </head>
 <body>

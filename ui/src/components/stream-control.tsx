@@ -1,32 +1,80 @@
 import * as React from "react";
+import { useState, useEffect } from "react";
 
 interface StreamControlProps {
   className?: string;
 }
 
 export function StreamControl({ className = "" }: StreamControlProps) {
-  // Generate the stream URL when the component mounts
-  const getStreamUrl = () => {
-    const hostname = window.location.hostname;
-    const port = "8889"; // Server port for the HTTP stream
-    
-    // Check if we're in a hosted environment by looking at the current URL
-    const isHosted = window.location.pathname.includes('/live');
-    const pathPrefix = isHosted ? '/live' : '';
-    
-    return `http://${hostname}:${port}${pathPrefix}/stream.html`;
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Generate the stream URL with a unique streamID from the server
+  const getStreamUrl = async (): Promise<string | null> => {
+    try {
+      const hostname = window.location.hostname;
+      const port = "8889"; // Server port for the HTTP stream
+      
+      // Check if we're in a hosted environment by looking at the current URL
+      const isHosted = window.location.pathname.includes('/live');
+      const pathPrefix = isHosted ? '/live' : '';
+      
+      // Request a unique streamID from the server
+      const response = await fetch(`http://${hostname}:${port}${pathPrefix}/api/stream-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Handle the "Too Many Requests" error specifically
+          throw new Error("Maximum number of streaming sessions reached. Please close any existing stream windows and try again.");
+        }
+        
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to get stream token: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const streamId = data.stream_id;
+      
+      // Return the URL with the unique streamID
+      return `http://${hostname}:${port}${pathPrefix}/stream.html?token=${streamId}`;
+    } catch (error) {
+      console.error('Error getting stream URL:', error);
+      return null;
+    }
   };
   
   // Open the stream in a new window
-  const openStreamWindow = () => {
-    const streamUrl = getStreamUrl();
-    window.open(streamUrl, 'ComfyStream OBS Capture', 'width=1280,height=720');
+  const openStreamWindow = async () => {
+    try {
+      setIsLoading(true);
+      const streamUrl = await getStreamUrl();
+      
+      if (!streamUrl) {
+        throw new Error('Failed to get stream URL');
+      }
+      
+      const newWindow = window.open(streamUrl, 'ComfyStream OBS Capture', 'width=1024,height=1024');
+      
+      if (!newWindow) {
+        throw new Error('Failed to open stream window. Please check your popup blocker settings.');
+      }
+    } catch (error) {
+      console.error('Error opening stream window:', error);
+      alert(error instanceof Error ? error.message : 'Failed to open stream window. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <button 
-      onClick={openStreamWindow} 
-      className={`absolute bottom-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors ${className}`}
+      onClick={openStreamWindow}
+      disabled={isLoading}
+      className={`absolute bottom-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors ${className} ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
       title="Open stream for OBS capture"
       aria-label="Cast to external display"
     >
@@ -37,7 +85,9 @@ export function StreamControl({ className = "" }: StreamControlProps) {
         <path d="M8 10l5 3-5 3z"/>
       </svg>
       <span className="sr-only">Cast to external display</span>
-      <span className="absolute bottom-full right-0 mb-1 hidden hover:block text-xs whitespace-nowrap bg-black/75 px-2 py-1 rounded">Cast to OBS</span>
+      <span className="absolute bottom-full right-0 mb-1 hidden hover:block text-xs whitespace-nowrap bg-black/75 px-2 py-1 rounded">
+        Cast to OBS
+      </span>
     </button>
   );
 }

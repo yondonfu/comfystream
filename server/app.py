@@ -4,6 +4,8 @@ import json
 import logging
 import os
 import sys
+import time
+import secrets
 
 import torch
 
@@ -13,6 +15,7 @@ if torch.cuda.is_available():
 
 
 from aiohttp import web, MultipartWriter
+from aiohttp_cors import setup as setup_cors, ResourceOptions
 from aiortc import (
     MediaStreamTrack,
     RTCConfiguration,
@@ -20,6 +23,8 @@ from aiortc import (
     RTCPeerConnection,
     RTCSessionDescription,
 )
+# Import HTTP streaming modules
+from http_streaming.routes import setup_routes
 from aiortc.codecs import h264
 from aiortc.rtcrtpsender import RTCRtpSender
 from pipeline import Pipeline
@@ -32,7 +37,6 @@ import time
 logger = logging.getLogger(__name__)
 logging.getLogger("aiortc.rtcrtpsender").setLevel(logging.WARNING)
 logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
-
 
 MAX_BITRATE = 2000000
 MIN_BITRATE = 2000000
@@ -336,41 +340,6 @@ async def set_prompt(request):
 
     return web.Response(content_type="application/json", text="OK")
 
-async def stream_mjpeg(request):
-    """Serve an MJPEG stream"""
-    frame_buffer = FrameBuffer.get_instance()
-    
-    # Use a fixed frame delay for 30 FPS
-    frame_delay = 1.0 / 30
-    
-    response = web.StreamResponse(
-        status=200,
-        reason='OK',
-        headers={
-            'Content-Type': 'multipart/x-mixed-replace; boundary=frame',
-            'Cache-Control': 'no-cache',
-            'Connection': 'close',
-        }
-    )
-    await response.prepare(request)
-    
-    try:
-        while True:
-            jpeg_frame = frame_buffer.get_current_frame()
-            if jpeg_frame is not None:
-                await response.write(
-                    b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + jpeg_frame + b'\r\n'
-                )
-            await asyncio.sleep(frame_delay)
-    except (ConnectionResetError, asyncio.CancelledError):
-        logger.info("MJPEG stream connection closed")
-    except Exception as e:
-        logger.error(f"Error in MJPEG stream: {e}")
-    finally:
-        return response
-
-
 def health(_):
     return web.Response(content_type="application/json", text="OK")
 
@@ -432,6 +401,16 @@ if __name__ == "__main__":
     app = web.Application()
     app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
     app["workspace"] = args.workspace
+    
+    # Setup CORS
+    cors = setup_cors(app, defaults={
+        "*": ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*",
+            allow_methods=["GET", "POST", "OPTIONS"]
+        )
+    })
 
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
@@ -443,8 +422,8 @@ if __name__ == "__main__":
     app.router.add_post("/offer", offer)
     app.router.add_post("/prompt", set_prompt)
     
-    # HTTP streaming routes
-    app.router.add_get("/api/stream", stream_mjpeg)
+    # Setup HTTP streaming routes
+    setup_routes(app, cors)
     
     # Serve static files from the public directory
     app.router.add_static("/", path=os.path.join(os.path.dirname(__file__), "public"), name="static")
