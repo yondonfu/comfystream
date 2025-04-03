@@ -79,10 +79,6 @@ export function StreamControl({ className = "" }: StreamControlProps) {
         <path d="M5 14v2h3v-2H5zm4.5 0v2h3v-2h-3zm4.5 0v2h5v-2h-5z"/>
         <path d="M8 10l5 3-5 3z"/>
       </svg>
-      <span className="sr-only">Cast to external display</span>
-      <span className="absolute bottom-full right-0 mb-1 hidden hover:block text-xs whitespace-nowrap bg-black/75 px-2 py-1 rounded">
-        Cast to OBS
-      </span>
     </button>
   );
 }
