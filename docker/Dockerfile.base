@@ -58,6 +58,9 @@ RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream py
 # Install additional dependencies
 RUN conda run -n comfystream --no-capture-output pip install --upgrade tensorrt-cu12-bindings tensorrt-cu12-libs --root-user-action=ignore
 
+# Setup opencv with CUDA support
+RUN conda run -n comfystream --no-capture-output bash /workspace/comfystream/docker/entrypoint.sh --opencv-cuda
+
 # Configure no environment activation by default
 RUN conda config --set auto_activate_base false && \
     conda init bash

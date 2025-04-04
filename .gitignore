@@ -22,3 +22,6 @@ launch.json
 nodes/web/static/*
 .cursor/
 !nodes/web/static/.gitkeep
+
+# opencv files
+opencv
