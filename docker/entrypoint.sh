@@ -49,7 +49,7 @@ if [ "$1" = "--build-engines" ]; then
   # Build Static Engine for Dreamshaper
   python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/output/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-512-w-512_00001_.engine
 
-  # Build Engine for DepthAnything2
+  # Build Engine for Depth Anything V2
   if [ ! -f "$DEPTH_ANYTHING_DIR/depth_anything_vitl14-fp16.engine" ]; then
     if [ ! -d "$DEPTH_ANYTHING_DIR" ]; then
       mkdir -p "$DEPTH_ANYTHING_DIR"
@@ -58,6 +58,14 @@ if [ "$1" = "--build-engines" ]; then
     python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
   else
     echo "Engine for DepthAnything2 already exists, skipping..."
+  fi
+
+  # Build Engine for Depth Anything2 (large)
+  if [ ! -f "$DEPTH_ANYTHING_DIR/depth_anything_v2_vitl-fp16.engine" ]; then
+    cd "$DEPTH_ANYTHING_DIR"
+    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py --trt-path "${DEPTH_ANYTHING_DIR}/depth_anything_v2_vitl-fp16.engine" --onnx-path "${DEPTH_ANYTHING_DIR}/depth_anything_v2_vitl.onnx"
+  else
+    echo "Engine for DepthAnything2 (large) already exists, skipping..."
   fi
   shift
 fi
