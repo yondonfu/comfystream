@@ -14,33 +14,54 @@ async def list_models(workspace_dir):
     model_types = ["checkpoints", "controlnet", "unet", "vae", "onnx", "tensorrt"]
     
     models = {}
-    for model_type in model_types:
-        models[model_type] = []
-        model_path = models_path / model_type
-        if not model_path.exists():
-            continue
-        for model in model_path.iterdir():
-            if model.is_dir():
-                for submodel in model.iterdir():
-                    if submodel.is_file():
-                        model_info = {
-                            "name": submodel.name,
-                            "path": f"{model.name}/{submodel.name}",
-                            "type": model_type,
-                            "downloading": os.path.exists(f"{model_type}/{model.name}/{submodel.name}.downloading")
-                        }
-                        models[model_type].append(model_info)
+    try:
+        for model_type in models_path.iterdir():
+            model_name = ""
+            model_subfolder = ""
+            model_type_name = model_type.name
+            if model_type.is_dir():
+                models[model_type_name] = []
+                for model in model_type.iterdir():
+                    if model.is_dir():
+                        #models in subfolders (e.g. checkpoints/sd1.5/model.safetensors)
+                        for submodel in model.iterdir():
+                            if submodel.is_file():
+                                model_name = submodel.name
+                                model_subfolder = model.name
+                    else:
+                        #models not in subfolders (e.g. checkpoints/model.safetensors)
+                        logger.info(f"model: {model.name}")
+                        model_name = model.name
+                        model_subfolder = ""
 
-            if model.is_file():
-                model_info = {
-                            "name": model.name,
-                            "path": f"{model.name}",
-                            "type": model_type,
-                            "downloading": os.path.exists(f"{model_type}/{model.name}.downloading")
-                        }
-                models[model_type].append(model_info)
+                    #add model to list
+                    model_info = await create_model_info(model_name, model_subfolder, model_type_name)
+                    models[model_type_name].append(model_info)
+            else:
+                if not model_type.name in model_types:
+                    models["none"] = []
 
+                model_name = model_type_name
+                model_subfolder = ""
+
+                #add model to list
+                model_info = await create_model_info(model_name, model_subfolder, model_type_name)
+                models[model_type_name].append(model_info)
+    except Exception as e:
+        logger.error(f"error listing models: {e}")
+        raise Exception(f"error listing models: {e}")
     return models
+
+async def create_model_info(model, model_subfolder, model_type):
+    model_path = f"{model_subfolder}/{model}" if model_subfolder else model
+    logger.info(f"adding info for model: {model_type}/{model_path}")
+    model_info = {
+        "name": model,
+        "path": model_path,
+        "type": model_type,
+        "downloading": os.path.exists(f"{model_path}.downloading")
+    }
+    return model_info
 
 async def add_model(model, workspace_dir):
     if not 'url' in model:
@@ -51,6 +72,7 @@ async def add_model(model, workspace_dir):
     try:
         model_name = model['url'].split("/")[-1]
         model_path = Path(os.path.join(workspace_dir, "models", model['type'], model_name))
+        #if specified, use the model path from the model dict (e.g. sd1.5/model.safetensors will put model.safetensors in models/checkpoints/sd1.5)
         if 'path' in model:
             model_path = Path(os.path.join(workspace_dir, "models", model['type'], model['path']))
             logger.info(f"model path: {model_path}")

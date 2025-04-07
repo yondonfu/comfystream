@@ -27,7 +27,11 @@ async def list_nodes(workspace_dir):
                 "branch": "unknown",
                 "commit": "unknown",
                 "update_available": "unknown",
+                "disabled": False,
             }
+            if node.name.endswith(".disabled"):
+                node_info["disabled"] = True
+                node_info["name"] = node.name[:-9]
 
             #include VERSION if set in file
             version_file = os.path.join(custom_nodes_path, node.name, "VERSION")
@@ -82,14 +86,16 @@ async def install_node(node, workspace_dir):
             # Clone and install the repository if it doesn't already exist
             logger.info(f"installing {dir_name}...")
             repo = Repo.clone_from(node["url"], node_path, depth=1)
-            if "branch" in node:
+            if "branch" in node and node["branch"] != "":
                 repo.git.checkout(node['branch'])
         else:
             # Update the repository if it already exists
             logger.info(f"updating node {dir_name}")
             repo = Repo(node_path)
             repo.remotes.origin.fetch()
-            branch = node.get("branch",  repo.remotes.origin.refs[0].remote_head)
+            branch = node.get("branch", "")
+            if branch == "":
+                branch = repo.remotes.origin.refs[0].remote_head
 
             repo.remotes.origin.pull(branch)
         
@@ -99,7 +105,7 @@ async def install_node(node, workspace_dir):
             subprocess.run(["conda", "run", "-n", "comfystream", "pip", "install", "-r", str(requirements_file)], check=True)
 
         # Install additional dependencies if specified
-        if "dependencies" in node:
+        if "dependencies" in node and node["dependencies"] != "":
             for dep in node["dependencies"].split(','):
                 subprocess.run(["conda", "run", "-n", "comfystream", "pip", "install", dep.strip()], check=True)
 
@@ -125,61 +131,47 @@ async def delete_node(node, workspace_dir):
         logger.error(f"error deleting node {node['name']}")
         raise Exception(f"error deleting node: {e}")
 
-async def enable_node(node, workspace_dir):
+async def toggle_node(node, workspace_dir):
     custom_nodes_path = Path(os.path.join(workspace_dir, "custom_nodes"))
     custom_nodes_path.mkdir(parents=True, exist_ok=True)
     os.chdir(custom_nodes_path)
-    if "name" not in node: 
+    if "name" not in node:
+        logger.error("name is required") 
         raise ValueError("name is required")
     
     node_path = custom_nodes_path / node["name"]
-    #check if enabled node exists
+    is_disabled = False
+    #confirm if enabled node exists
+    logger.info(f"toggling node { node['name'] }")
     if not node_path.exists():
         #try with .disabled
-        node_path = custom_nodes_path / node["name"]+".disabled"
+        node_path = custom_nodes_path / str(node['name']+".disabled")
+        logger.info(f"checking if node { node['name'] } is disabled")
         if not node_path.exists():
             #node does not exist as enabled or disabled
-            raise ValueError(f"node {node['name']} does not exist")
+            logger.info(f"node { node['name'] }.disabled does not exist")
+            raise ValueError(f"node { node['name'] } does not exist")
         else:
-            #enable the disabled node
-            try:
-                #rename the folder to remove .disabled
-                logger.info(f"enabling node {node['name']}")
-                node_path.rename(custom_nodes_path / node["name"])
-            except Exception as e:
-                logger.error(f"error enabling node {node['name']}")
-                raise Exception(f"error enabling node: {e}")
+            #node is disabled, so we need to enable it
+            logger.error(f"node { node['name'] } is disabled")
+            is_disabled = True
     else:
-        #node is already enabled, nothing to do
-        return
+        logger.info(f"node { node['name'] } is enabled")
 
-async def disable_node(node, workspace_dir):
-    custom_nodes_path = Path(os.path.join(workspace_dir, "custom_nodes"))
-    custom_nodes_path.mkdir(parents=True, exist_ok=True)
-    os.chdir(custom_nodes_path)
-    if "name" not in node: 
-        raise ValueError("name is required")
-    
-    node_path = custom_nodes_path / node["name"]
-    if not node_path.exists():
-        #try with .disabled
-        node_path = custom_nodes_path / node["name"]+".disabled"
-        if not node_path.exists():
-            #node does not exist as enabled or disabled
-            raise ValueError(f"node {node['name']} does not exist")
-        else:
-            #node is already disabled, nothing to do
-            return
-    else:
-        #rename the folder to add .disabled
-        try:
-            #delete the folder and all its contents.  ignore_errors allows readonly files to be deleted
+    try:
+        if is_disabled:
+            #rename the folder to remove .disabled
             logger.info(f"enabling node {node['name']}")
-            node_path.rename(custom_nodes_path / node["name"]+".disabled")
-        except Exception as e:
-            logger.error(f"error enabling node {node['name']}")
-            raise Exception(f"error enabling node: {e}")
-
+            new_name = node_path.with_name(node["name"])
+            shutil.move(str(node_path), str(new_name))
+        else:
+            #rename the folder to add .disabled
+            logger.info(f"disbling node {node['name']}")
+            new_name = node_path.with_name(node["name"]+".disabled")
+            shutil.move(str(node_path), str(new_name))
+    except Exception as e:
+        logger.error(f"error {action} node {node['name']}: {e}")
+        raise Exception(f"error {action} node: {e}")
 
 from comfy.nodes.package import ExportedNodes
 from comfy.nodes.package import _comfy_nodes, _import_and_enumerate_nodes_in_module
@@ -193,8 +185,6 @@ def force_import_all_nodes_in_workspace(vanilla_custom_nodes=True, raise_on_fail
     from comfy.cli_args import args
     from comfy.nodes import base_nodes
     from comfy.nodes.vanilla_node_importing import mitigated_import_of_vanilla_custom_nodes
-
-    # only load these nodes once
 
     base_and_extra = reduce(lambda x, y: x.update(y),
                             map(lambda module_inner: _import_and_enumerate_nodes_in_module(module_inner, raise_on_failure=raise_on_failure), [
