@@ -17,7 +17,7 @@
 				"python.defaultInterpreterPath": "/workspace/miniconda3/envs/comfystream/bin/python",
 				"python.venvPath": "/workspace/miniconda3/envs",
 				"python.terminal.activateEnvInCurrentTerminal": false,
-				"python.terminal.activateEnvironment": true,
+				"python.terminal.activateEnvironment": false,
 				"terminal.integrated.shellIntegration.enabled": true
 			},
 			"extensions": [
