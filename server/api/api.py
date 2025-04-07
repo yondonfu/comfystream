@@ -1,7 +1,7 @@
 from aiohttp import web
 import asyncio
 
-from api.nodes.nodes import list_nodes, install_node, delete_node, enable_node, disable_node
+from api.nodes.nodes import list_nodes, install_node, delete_node, toggle_node
 from api.models.models import list_models, add_model, delete_model
 from api.settings.settings import set_twilio_account_info, restart_comfyui
 from pipeline import Pipeline
@@ -14,12 +14,13 @@ import_all_nodes_in_workspace = force_import_all_nodes_in_workspace
 
 def add_mgmt_api_routes(app):
     app.router.add_get("/settings/nodes/list", nodes)
+    app.router.add_post("/settings/nodes/list", nodes)
     app.router.add_post("/settings/nodes/install", install_nodes)
     app.router.add_post("/settings/nodes/delete", delete_nodes)
-    app.router.add_post("/settings/nodes/enable", enable_nodes)
-    app.router.add_post("/settings/nodes/disable", disable_nodes)
+    app.router.add_post("/settings/nodes/toggle", toggle_nodes)
 
     app.router.add_get("/settings/models/list", models)
+    app.router.add_post("/settings/models/list", models)
     app.router.add_post("/settings/models/add", add_models)
     app.router.add_post("/settings/models/delete", delete_models)
 
@@ -83,9 +84,9 @@ async def nodes(request):
     workspace_dir = request.app["workspace"]
     try:
         nodes = await list_nodes(workspace_dir)
-        return web.json_response({"error": None, "nodes": nodes})
+        return web.json_response({"success": True, "error": None, "nodes": nodes})
     except Exception as e:
-        return web.json_response({"error": str(e), "nodes": nodes}, status=500)
+        return web.json_response({"success": False, "error": str(e), "nodes": nodes}, status=500)
 
 async def install_nodes(request):
     '''
@@ -151,9 +152,9 @@ async def delete_nodes(request):
     except Exception as e:
         return web.json_response({"success": False, "error": str(e), "deleted_nodes": deleted_nodes}, status=500)
 
-async def enable_nodes(request):
+async def toggle_nodes(request):
     '''
-    Enable ComfyUI custom node
+    Enable/Disable ComfyUI custom node
 
     # Parameters:
       name: name of the node (e.g. ComfyUI-Custom-Node)
@@ -171,41 +172,13 @@ async def enable_nodes(request):
     workspace_dir = request.app["workspace"]
     try:
         nodes = await request.json()
-        enabled_nodes = []
+        toggled_nodes = []
         for node in nodes:
-            await enable_node(node, workspace_dir)
-            enabled_nodes.append(node['name'])
-        return web.json_response({"success": True, "error": None, "enabled_nodes": enabled_nodes})
+            await toggle_node(node, workspace_dir)
+            toggled_nodes.append(node['name'])
+        return web.json_response({"success": True, "error": None, "toggled_nodes": toggled_nodes})
     except Exception as e:
-        return web.json_response({"success": False, "error": str(e), "enabled_nodes": enabled_nodes}, status=500)
-
-async def disable_nodes(request):
-    '''
-    Disable ComfyUI custom node
-
-    # Parameters:
-      name: name of the node (e.g. ComfyUI-Custom-Node)
-
-    # Example request:
-    [
-        {
-            "name": "ComfyUI-Custom-Node"
-        },
-        {
-            ...
-        }
-    ]
-    '''
-    workspace_dir = request.app["workspace"]
-    try:
-        nodes = await request.json()
-        disabled_nodes = []
-        for node in nodes:
-            await disable_node(node, workspace_dir)
-            disabled_nodes.append(node['name'])
-        return web.json_response({"success": True, "error": None, "disabled_nodes": disabled_nodes})
-    except Exception as e:
-        return web.json_response({"success": False, "error": str(e), "disabled_nodes": disabled_nodes}, status=500)
+        return web.json_response({"success": False, "error": str(e), "toggled_nodes": toggled_nodes}, status=500)
     
 async def models(request):
     '''
@@ -265,7 +238,7 @@ async def models(request):
         models = await list_models(workspace_dir)
         return web.json_response({"error": None, "models": models})
     except Exception as e:
-        return web.json_response({"error": str(e), "models": models}, status=500)
+        return web.json_response({"error": str(e), "models": {}}, status=500)
 
 async def add_models(request):
     '''

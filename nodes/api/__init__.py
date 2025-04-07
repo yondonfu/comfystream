@@ -216,7 +216,44 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
             logging.error(f"Error managing configuration: {str(e)}")
             return web.json_response({"error": str(e)}, status=500)
 
+    @routes.post('/comfystream/settings/manage')
+    async def manage_comfystream(request):
+        """Manage ComfyStream server settings"""
+        #check if server is running
+        server_status = server_manager.get_status()
+        if not server_status["running"]:
+            return web.json_response({"error": "ComfyStream Server is not running"}, status=503)
+
+        try:
+            data = await request.json()
+            action_type = data.get("action_type")
+            action = data.get("action")
+            payload = data.get("payload")
+            url_host = server_status.get("host", "localhost")
+            url_port = server_status.get("port", "8889")
+            mgmt_url = f"http://{url_host}:{url_port}/settings/{action_type}/{action}"
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    mgmt_url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"}
+                ) as response:
+                    if not response.ok:
+                        return web.json_response(
+                            {"error": f"Server error: {response.status}"}, 
+                            status=response.status
+                        )
+                    return web.json_response(await response.json())
+        except Exception as e:
+            logging.error(f"Error managing ComfyStream: {str(e)}")
+            return web.json_response({"error": str(e)}, status=500)
+
     @routes.post('/comfyui/restart')
     async def manage_configuration(request):
+        server_status = server_manager.get_status()
+        if server_status["running"]:
+            await server_manager.stop()
+
         subprocess.run(["supervisorctl", "restart", "comfyui"])
         return web.json_response({"success": True}, status=200)

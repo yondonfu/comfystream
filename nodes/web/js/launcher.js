@@ -341,7 +341,7 @@ const extension = {
             comfyStreamMenu.addSeparator();
             comfyStreamMenu.addItem("Server Settings", openSettings, { icon: "pi pi-cog" });
             comfyStreamMenu.addSeparator();
-            comfyStreamMenu.addItem("Restart Server", () => restartComfyUI(), { icon: "pi pi-refresh" });
+            comfyStreamMenu.addItem("Restart ComfyUI", () => restartComfyUI(), { icon: "pi pi-refresh" });
         }
         // New menu system is handled automatically by the menuCommands registration
         
