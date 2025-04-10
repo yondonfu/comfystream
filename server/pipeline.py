@@ -2,6 +2,7 @@ import av
 import torch
 import numpy as np
 import asyncio
+import logging
 
 from typing import Any, Dict, Union, List
 from comfystream.client import ComfyStreamClient
@@ -9,9 +10,11 @@ from utils import temporary_log_level
 
 WARMUP_RUNS = 5
 
+logger = logging.getLogger(__name__)
+
 
 class Pipeline:
-    def __init__(self, comfyui_inference_log_level: int = None, **kwargs):
+    def __init__(self, width=512, height=512, comfyui_inference_log_level: int = None, **kwargs):
         """Initialize the pipeline with the given configuration.
         Args:
             comfyui_inference_log_level: The logging level for ComfyUI inference.
@@ -19,6 +22,9 @@ class Pipeline:
             **kwargs: Additional arguments to pass to the ComfyStreamClient
         """
         self.client = ComfyStreamClient(**kwargs)
+        self.width = kwargs.get("width", 512)
+        self.height = kwargs.get("height", 512)
+
         self.video_incoming_frames = asyncio.Queue()
         self.audio_incoming_frames = asyncio.Queue()
 
@@ -27,8 +33,11 @@ class Pipeline:
         self._comfyui_inference_log_level = comfyui_inference_log_level
 
     async def warm_video(self):
+        # Create dummy frame with the CURRENT resolution settings (which might have been updated via control channel)
         dummy_frame = av.VideoFrame()
-        dummy_frame.side_data.input = torch.randn(1, 512, 512, 3)
+        dummy_frame.side_data.input = torch.randn(1, self.height, self.width, 3)
+        
+        logger.info(f"Warming video pipeline with resolution {self.width}x{self.height}")
 
         for _ in range(WARMUP_RUNS):
             self.client.put_video_input(dummy_frame)

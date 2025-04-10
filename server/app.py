@@ -222,6 +222,9 @@ async def offer(request):
     pcs.add(pc)
 
     tracks = {"video": None, "audio": None}
+    
+    # Flag to track if we've received resolution update
+    resolution_received = {"value": False}
 
     # Only add video transceiver if video is present in the offer
     if "m=video" in offer.sdp:
@@ -257,6 +260,27 @@ async def offer(request):
                             return
                         await pipeline.update_prompts(params["prompts"])
                         response = {"type": "prompts_updated", "success": True}
+                        channel.send(json.dumps(response))
+                    elif params.get("type") == "update_resolution":
+                        if "width" not in params or "height" not in params:
+                            logger.warning("[Control] Missing width or height in update_resolution message")
+                            return
+                        # Update pipeline resolution for future frames
+                        pipeline.width = params["width"]
+                        pipeline.height = params["height"]
+                        logger.info(f"[Control] Updated resolution to {params['width']}x{params['height']}")
+                        
+                        # Mark that we've received resolution
+                        resolution_received["value"] = True
+                        
+                        # Warm the video pipeline with the new resolution
+                        if "m=video" in pc.remoteDescription.sdp:
+                            await pipeline.warm_video()
+                            
+                        response = {
+                            "type": "resolution_updated",
+                            "success": True
+                        }
                         channel.send(json.dumps(response))
                     else:
                         logger.warning(
@@ -303,10 +327,11 @@ async def offer(request):
 
     await pc.setRemoteDescription(offer)
 
+    # Only warm audio here, video warming happens after resolution update
     if "m=audio" in pc.remoteDescription.sdp:
         await pipeline.warm_audio()
-    if "m=video" in pc.remoteDescription.sdp:
-        await pipeline.warm_video()
+    
+    # We no longer warm video here - it will be warmed after receiving resolution
 
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
@@ -345,6 +370,8 @@ async def on_startup(app: web.Application):
         patch_loop_datagram(app["media_ports"])
 
     app["pipeline"] = Pipeline(
+        width=512,
+        height=512,
         cwd=app["workspace"], 
         disable_cuda_malloc=True, 
         gpu_only=True, 
