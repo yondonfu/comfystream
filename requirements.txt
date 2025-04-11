@@ -5,3 +5,4 @@ aiohttp
 toml
 twilio
 prometheus_client
+GitPython
