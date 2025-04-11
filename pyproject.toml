@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "comfystream"
 description = "Build Live AI Video with ComfyUI"
-version = "0.0.5"
+version = "0.0.6"
 license = { file = "LICENSE" }
 dependencies = [
     "asyncio",
