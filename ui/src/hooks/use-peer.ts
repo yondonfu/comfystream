@@ -104,6 +104,21 @@ export function usePeer(props: PeerProps): Peer {
           channel.readyState,
         );
         setControlChannel(channel);
+        
+        // Send resolution configuration to server if available
+        if (props.resolution) {
+          // Add a small delay to ensure the channel is fully established
+          setTimeout(() => {
+            const resolution = props.resolution!;
+            const resolutionMessage = {
+              type: "update_resolution",
+              width: resolution.width,
+              height: resolution.height
+            };
+            channel.send(JSON.stringify(resolutionMessage));
+            console.log("[usePeer] Sent resolution configuration:", resolutionMessage);
+          }, 200);
+        }
       };
 
       channel.onclose = () => {
@@ -164,7 +179,22 @@ export function usePeer(props: PeerProps): Peer {
     sendOffer,
     url,
     handleConnectionStateChange,
+    props.resolution,
   ]);
+
+  // Update resolution when it changes
+  useEffect(() => {
+    if (controlChannel && controlChannel.readyState === 'open' && props.resolution) {
+      const resolution = props.resolution;
+      const resolutionMessage = {
+        type: "update_resolution",
+        width: resolution.width,
+        height: resolution.height
+      };
+      controlChannel.send(JSON.stringify(resolutionMessage));
+      console.log("[usePeer] Updated resolution configuration:", resolutionMessage);
+    }
+  }, [controlChannel, props.resolution]);
 
   return {
     peerConnection,
