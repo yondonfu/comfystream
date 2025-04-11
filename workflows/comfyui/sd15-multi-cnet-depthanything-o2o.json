@@ -218,24 +218,24 @@
       "id": 9,
       "type": "ControlNetApplyAdvanced",
       "pos": [
-        2194.300048828125,
-        35.87420654296875
+        1442.5999755859375,
+        130
       ],
       "size": [
-        380.4000244140625,
-        46
+        315,
+        186
       ],
       "flags": {},
       "order": 16,
       "mode": 0,
       "inputs": [
         {
-          "name": "conditioning_to",
+          "name": "positive",
           "type": "CONDITIONING",
           "link": 34
         },
         {
-          "name": "conditioning_from",
+          "name": "negative",
           "type": "CONDITIONING",
           "link": 35
         },
@@ -258,7 +258,7 @@
       ],
       "outputs": [
         {
-          "name": "CONDITIONING",
+          "name": "positive",
           "type": "CONDITIONING",
           "links": [
             49
@@ -284,11 +284,11 @@
       ]
     },
     {
-      "id": 30,
-      "type": "ConditioningConcat",
+      "id": 10,
+      "type": "TorchCompileLoadControlNet",
       "pos": [
-        2174.00830078125,
-        362.9764099121094
+        515,
+        130
       ],
       "size": [
         327.5999755859375,
@@ -428,8 +428,8 @@
       ],
       "outputs": [
         {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
+          "name": "IMAGE",
+          "type": "IMAGE",
           "links": [
             42
           ]

@@ -111,8 +111,23 @@ app.registerExtension({
                     });
                 });
                 
+                // Update iframe size
+                this.updateIframeSize();
                 
                 return result;
+            };
+            
+            // Override the resize method to allow both expanding and shrinking
+            nodeType.prototype.onResize = function(size) {
+                // Update the size
+                this.size[0] = size[0];
+                this.size[1] = size[1];
+                
+                // Update the iframe size
+                this.updateIframeSize();
+                
+                // Force canvas update
+                this.setDirtyCanvas(true, true);
             };
             
             // Add a helper method to update iframe size

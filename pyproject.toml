@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "comfystream"
 description = "Build Live AI Video with ComfyUI"
-version = "0.0.6"
+version = "0.0.4"
 license = { file = "LICENSE" }
 dependencies = [
     "asyncio",
@@ -15,11 +15,10 @@ dependencies = [
     "toml",
     "twilio",
     "prometheus_client",
-    "librosa"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov"]
+dev = ["pytest"]
 
 [project.urls]
 repository = "https://github.com/yondonfu/comfystream"
@@ -27,7 +26,7 @@ repository = "https://github.com/yondonfu/comfystream"
 [tool.comfy]
 PublisherId = "livepeer-comfystream"
 DisplayName = "ComfyStream"
-Icon = "https://raw.githubusercontent.com/livepeer/comfystream-docs/main/logo/icon-light-120px.svg" # SVG, PNG, JPG or GIF (MAX. 800x400px)
+Icon = "https://avatars.githubusercontent.com/u/25355022?s=48&v=4" # SVG, PNG, JPG or GIF (MAX. 800x400px)
 
 [tool.setuptools]
 package-dir = {"" = "src"}

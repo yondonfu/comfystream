@@ -47,10 +47,6 @@ export interface StreamConfig {
   prompts?: Prompt[] | null;
   selectedVideoDeviceId: string;
   selectedAudioDeviceId: string;
-  resolution: {
-    width: number;
-    height: number;
-  };
 }
 
 interface AVDevice {
@@ -58,16 +54,12 @@ interface AVDevice {
   label: string;
 }
 
-export const DEFAULT_CONFIG: StreamConfig = {
+const DEFAULT_CONFIG: StreamConfig = {
   streamUrl:
-    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://localhost:8889",
+    process.env.NEXT_PUBLIC_DEFAULT_STREAM_URL || "http://127.0.0.1:8889",
   frameRate: 30,
   selectedVideoDeviceId: "",
   selectedAudioDeviceId: "",
-  resolution: {
-    width: 512,
-    height: 512
-  },
 };
 
 interface StreamSettingsProps {
@@ -148,14 +140,6 @@ function StreamSettingsInner({
 const formSchema = z.object({
   streamUrl: z.string().url(),
   frameRate: z.coerce.number(),
-  resolution: z.object({
-    width: z.coerce.number().refine(val => val % 64 === 0 && val >= 64 && val <= 2048, {
-      message: "Width must be a multiple of 64 (between 64 and 2048)"
-    }),
-    height: z.coerce.number().refine(val => val % 64 === 0 && val >= 64 && val <= 2048, {
-      message: "Height must be a multiple of 64 (between 64 and 2048)"
-    })
-  })
 });
 
 interface ConfigFormProps {
@@ -284,7 +268,6 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
       prompts: prompts,
       selectedVideoDeviceId: selectedVideoDevice || "none",
       selectedAudioDeviceId: selectedAudioDevice || "none",
-      resolution: values.resolution || DEFAULT_CONFIG.resolution,
     });
   };
 
@@ -361,56 +344,6 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             </FormItem>
           )}
         />
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="resolution.width"
-            render={({ field }) => (
-              <FormItem className="mt-4">
-                <FormLabel>Width</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="64"
-                    max="2048"
-                    step="64"
-                    {...field}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      field.onChange(value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="resolution.height"
-            render={({ field }) => (
-              <FormItem className="mt-4">
-                <FormLabel>Height</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="64"
-                    max="2048"
-                    step="64"
-                    {...field}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      field.onChange(value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
 
         <div className="mt-4 mb-4">
           <Label>Camera</Label>

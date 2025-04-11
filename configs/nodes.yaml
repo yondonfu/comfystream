@@ -11,8 +11,7 @@ nodes:
 
   comfyui-depthanything-tensorrt:
     name: "ComfyUI DepthAnything TensorRT"
-    url: "https://github.com/rickstaa/ComfyUI-Depth-Anything-Tensorrt"
-    branch: "feature/add-export-trt-args"
+    url: "https://github.com/yuvraj108c/ComfyUI-Depth-Anything-Tensorrt"
     type: "tensorrt"
 
   # Ryan's nodes
@@ -74,5 +73,5 @@ nodes:
   comfyui-stream-pack:
     name: "ComfyUI Stream Pack"
     url: "https://github.com/livepeer/ComfyUI-Stream-Pack"
-    branch: "main"
+    branch: "expose_feature_bank_to_comfyui"
     type: "utility"

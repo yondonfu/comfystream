@@ -50,7 +50,7 @@ from ComfyUI.custom_nodes.ComfyUI_TensorRT.tensorrt_diffusion_model import TRTDi
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Build a TensorRT engine from a ComfyUI model."
+        description="Build a static TensorRT engine from a ComfyUI model."
     )
     parser.add_argument(
         "--model",
@@ -74,21 +74,14 @@ def parse_args():
         "--width",
         type=int,
         default=512,
-        help="Width in pixels for the exported model (default 512)",
+        help="Width in pixels for the exported model (default 1024)",
     )
     parser.add_argument(
         "--height",
         type=int,
         default=512,
-        help="Height in pixels for the exported model (default 512)",
+        help="Height in pixels for the exported model (default 1024)",
     )
-
-    # Dynamic Engine Optional Args
-    parser.add_argument("--min-width", type=int, default=None, help="Minimum width for dynamic shape (optional)")
-    parser.add_argument("--min-height", type=int, default=None, help="Minimum height for dynamic shape (optional)")
-    parser.add_argument("--max-width", type=int, default=None, help="Maximum width for dynamic shape (optional)")
-    parser.add_argument("--max-height", type=int, default=None, help="Maximum height for dynamic shape (optional)")
-
     parser.add_argument(
         "--context",
         type=int,
@@ -108,16 +101,12 @@ def parse_args():
     )
     return parser.parse_args()
 
-def build_trt_engine(
+def build_static_trt_engine(
     model_path: str,
     engine_out_path: str,
     batch_size_opt: int = 1,
     width_opt: int = 512,
     height_opt: int = 512,
-    min_width: int = None,
-    min_height: int = None,
-    max_width: int = None,
-    max_height: int = None,
     context_opt: int = 1,
     num_video_frames: int = 14,
     fp8: bool = False,
@@ -125,8 +114,8 @@ def build_trt_engine(
 ):
     """
     1) Load the model from ComfyUI by path or name
-    2) Export to ONNX
-    3) Build a TensorRT .engine file
+    2) Export to ONNX (static shape)
+    3) Build a static TensorRT .engine file
     """
 
     # Check if the engine file already exists
@@ -182,32 +171,22 @@ def build_trt_engine(
         fp8                = fp8,
     )
 
-    # 3) Build the TRT engine
+    # 3) Build the static TRT engine
     model_version = detect_version_from_model(loaded_model)
     model_helper  = get_helper_from_model(loaded_model)
 
     trt_model = TRTDiffusionBackbone(model_helper)
 
-    # Dynamic engine support: only if min/max width/height provided
-    is_dynamic = all(v is not None for v in [min_width, max_width, min_height, max_height])
+    # We'll define min/opt/max config all the same (i.e. 'static')
+    # TODO: make this configurable
     min_config = {
-        "batch_size": batch_size_opt,
-        "height":     min_height if is_dynamic else height_opt,
-        "width":      min_width if is_dynamic else width_opt,
-        "context_len": context_opt * model_helper.context_len,
-    }
-    opt_config = {
         "batch_size": batch_size_opt,
         "height":     height_opt,
         "width":      width_opt,
         "context_len": context_opt * model_helper.context_len,
     }
-    max_config = {
-        "batch_size": batch_size_opt,
-        "height":     max_height if is_dynamic else height_opt,
-        "width":      max_width if is_dynamic else width_opt,
-        "context_len": context_opt * model_helper.context_len,
-    }
+    opt_config = dict(min_config)
+    max_config = dict(min_config)
 
     # The tensorrt_diffusion_model build() signature is typically:
     #   build(onnx_path, engine_path, timing_cache_path, opt_config, min_config, max_config)
@@ -244,16 +223,12 @@ def build_trt_engine(
 
 def main():
     args = parse_args()
-    build_trt_engine(
+    build_static_trt_engine(
         model_path       = args.model,
         engine_out_path  = args.out_engine,
         batch_size_opt   = args.batch_size,
         height_opt       = args.height,
         width_opt        = args.width,
-        min_width        = args.min_width,
-        min_height       = args.min_height,
-        max_width        = args.max_width,
-        max_height       = args.max_height,
         context_opt      = args.context,
         fp8              = args.fp8,
         verbose          = args.verbose
