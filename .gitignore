@@ -2,8 +2,8 @@ __pycache__
 *.egg-info
 build
 .DS_STORE
-./comfyui/
-./ComfyUI/
+comfyui/
+ComfyUI/
 cuda_temp
 
 # VS Code settings
@@ -22,6 +22,3 @@ launch.json
 nodes/web/static/*
 .cursor/
 !nodes/web/static/.gitkeep
-
-# opencv files
-opencv

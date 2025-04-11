@@ -222,9 +222,6 @@ async def offer(request):
     pcs.add(pc)
 
     tracks = {"video": None, "audio": None}
-    
-    # Flag to track if we've received resolution update
-    resolution_received = {"value": False}
 
     # Only add video transceiver if video is present in the offer
     if "m=video" in offer.sdp:
@@ -260,27 +257,6 @@ async def offer(request):
                             return
                         await pipeline.update_prompts(params["prompts"])
                         response = {"type": "prompts_updated", "success": True}
-                        channel.send(json.dumps(response))
-                    elif params.get("type") == "update_resolution":
-                        if "width" not in params or "height" not in params:
-                            logger.warning("[Control] Missing width or height in update_resolution message")
-                            return
-                        # Update pipeline resolution for future frames
-                        pipeline.width = params["width"]
-                        pipeline.height = params["height"]
-                        logger.info(f"[Control] Updated resolution to {params['width']}x{params['height']}")
-                        
-                        # Mark that we've received resolution
-                        resolution_received["value"] = True
-                        
-                        # Warm the video pipeline with the new resolution
-                        if "m=video" in pc.remoteDescription.sdp:
-                            await pipeline.warm_video()
-                            
-                        response = {
-                            "type": "resolution_updated",
-                            "success": True
-                        }
                         channel.send(json.dumps(response))
                     else:
                         logger.warning(
@@ -327,11 +303,10 @@ async def offer(request):
 
     await pc.setRemoteDescription(offer)
 
-    # Only warm audio here, video warming happens after resolution update
     if "m=audio" in pc.remoteDescription.sdp:
         await pipeline.warm_audio()
-    
-    # We no longer warm video here - it will be warmed after receiving resolution
+    if "m=video" in pc.remoteDescription.sdp:
+        await pipeline.warm_video()
 
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
@@ -370,13 +345,7 @@ async def on_startup(app: web.Application):
         patch_loop_datagram(app["media_ports"])
 
     app["pipeline"] = Pipeline(
-        width=512,
-        height=512,
-        cwd=app["workspace"], 
-        disable_cuda_malloc=True, 
-        gpu_only=True, 
-        preview_method='none',
-        comfyui_inference_log_level=app.get("comfui_inference_log_level", None),
+        cwd=app["workspace"], disable_cuda_malloc=True, gpu_only=True, preview_method='none'
     )
     app["pcs"] = set()
     app["video_tracks"] = {}
@@ -416,18 +385,6 @@ if __name__ == "__main__":
         default=False,
         action="store_true",
         help="Include stream ID as a label in Prometheus metrics.",
-    )
-    parser.add_argument(
-        "--comfyui-log-level",
-        default=None,
-        choices=logging._nameToLevel.keys(),
-        help="Set the global logging level for ComfyUI",
-    )
-    parser.add_argument(
-        "--comfyui-inference-log-level",
-        default=None,
-        choices=logging._nameToLevel.keys(),
-        help="Set the logging level for ComfyUI inference",
     )
     args = parser.parse_args()
 
@@ -477,12 +434,5 @@ if __name__ == "__main__":
     def force_print(*args, **kwargs):
         print(*args, **kwargs, flush=True)
         sys.stdout.flush()
-
-    # Allow overriding of ComyfUI log levels.
-    if args.comfyui_log_level:
-        log_level = logging._nameToLevel.get(args.comfyui_log_level.upper())
-        logging.getLogger("comfy").setLevel(log_level)
-    if args.comfyui_inference_log_level:
-        app["comfui_inference_log_level"] = args.comfyui_inference_log_level
 
     web.run_app(app, host=args.host, port=int(args.port), print=force_print)

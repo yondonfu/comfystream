@@ -2,13 +2,19 @@ name: Build and push comfyui-base docker image
 
 on:
   pull_request:
-    paths-ignore:
-      - "ui/*"
+    paths:
+      - docker/Dockerfile.base
+      - src/comfystream/scripts/
+      - configs/
+      - .github/workflows/comfyui-base.yaml
     branches:
       - main
   push:
-    paths-ignore:
-      - "ui/*"
+    paths:
+      - docker/Dockerfile.base
+      - src/comfystream/scripts/
+      - configs/
+      - .github/workflows/comfyui-base.yaml
     branches:
       - main
     tags:

@@ -6,7 +6,6 @@ import types
 import logging
 from aiohttp import web
 from typing import List, Tuple
-from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -64,22 +63,3 @@ def add_prefix_to_app_routes(app: web.Application, prefix: str):
     for route in list(app.router.routes()):
         new_path = prefix + route.resource.canonical
         app.router.add_route(route.method, new_path, route.handler)
-
-
-@asynccontextmanager
-async def temporary_log_level(logger_name: str, level: int):
-    """Temporarily set the log level of a logger.
-
-    Args:
-        logger_name: The name of the logger to set the level for.
-        level: The log level to set.
-    """
-    if level is not None:
-        logger = logging.getLogger(logger_name)
-        original_level = logger.level
-        logger.setLevel(level)
-    try:
-        yield
-    finally:
-        if level is not None:
-            logger.setLevel(original_level)

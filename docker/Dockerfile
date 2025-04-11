@@ -23,6 +23,7 @@ RUN	bash -c "source $NVM_DIR/nvm.sh && \
 ENV	NODE_PATH="$NVM_DIR/v$NODE_VERSION/lib/node_modules" \
 	PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
 
+RUN	conda init bash
 
 # Create the supervisor configuration file for ComfyUI and ComfyStream
 COPY	docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
