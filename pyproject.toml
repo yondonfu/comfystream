@@ -27,7 +27,7 @@ repository = "https://github.com/yondonfu/comfystream"
 [tool.comfy]
 PublisherId = "livepeer-comfystream"
 DisplayName = "ComfyStream"
-Icon = "https://avatars.githubusercontent.com/u/25355022?s=48&v=4" # SVG, PNG, JPG or GIF (MAX. 800x400px)
+Icon = "https://raw.githubusercontent.com/livepeer/comfystream-docs/main/logo/icon-light-120px.svg" # SVG, PNG, JPG or GIF (MAX. 800x400px)
 
 [tool.setuptools]
 package-dir = {"" = "src"}
