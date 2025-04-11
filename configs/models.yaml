@@ -16,11 +16,15 @@ models:
       - url: "https://huggingface.co/aaronb/dreamshaper-8-dmd-1kstep/raw/main/config.json"
         path: "unet/dreamshaper-8-dmd-1kstep.json"
 
-  # Depth Anything ONNX model
+  # Depth Anything V2 ONNX models
   depthanything-onnx:
     name: "DepthAnything ONNX"
     url: "https://huggingface.co/yuvraj108c/Depth-Anything-2-Onnx/resolve/main/depth_anything_v2_vitb.onnx?download=true"
     path: "tensorrt/depth-anything/depth_anything_vitl14.onnx"
+  depth-anything-v2-large-onnx:
+    name: "DepthAnything V2 Large ONNX"
+    url: "https://huggingface.co/yuvraj108c/Depth-Anything-2-Onnx/resolve/main/depth_anything_v2_vitl.onnx?download=true"
+    path: "tensorrt/depth-anything/depth_anything_v2_vitl.onnx"
 
   # TAESD models
   taesd:

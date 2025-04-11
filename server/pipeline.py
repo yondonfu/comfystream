@@ -2,24 +2,42 @@ import av
 import torch
 import numpy as np
 import asyncio
+import logging
 
 from typing import Any, Dict, Union, List
 from comfystream.client import ComfyStreamClient
+from utils import temporary_log_level
 
 WARMUP_RUNS = 5
 
+logger = logging.getLogger(__name__)
+
 
 class Pipeline:
-    def __init__(self, **kwargs):
+    def __init__(self, width=512, height=512, comfyui_inference_log_level: int = None, **kwargs):
+        """Initialize the pipeline with the given configuration.
+        Args:
+            comfyui_inference_log_level: The logging level for ComfyUI inference.
+                Defaults to None, using the global ComfyUI log level.
+            **kwargs: Additional arguments to pass to the ComfyStreamClient
+        """
         self.client = ComfyStreamClient(**kwargs)
+        self.width = kwargs.get("width", 512)
+        self.height = kwargs.get("height", 512)
+
         self.video_incoming_frames = asyncio.Queue()
         self.audio_incoming_frames = asyncio.Queue()
 
         self.processed_audio_buffer = np.array([], dtype=np.int16)
 
+        self._comfyui_inference_log_level = comfyui_inference_log_level
+
     async def warm_video(self):
+        # Create dummy frame with the CURRENT resolution settings (which might have been updated via control channel)
         dummy_frame = av.VideoFrame()
-        dummy_frame.side_data.input = torch.randn(1, 512, 512, 3)
+        dummy_frame.side_data.input = torch.randn(1, self.height, self.width, 3)
+        
+        logger.info(f"Warming video pipeline with resolution {self.width}x{self.height}")
 
         for _ in range(WARMUP_RUNS):
             self.client.put_video_input(dummy_frame)
@@ -75,7 +93,8 @@ class Pipeline:
     
     async def get_processed_video_frame(self):
         # TODO: make it generic to support purely generative video cases
-        out_tensor = await self.client.get_video_output()
+        async with temporary_log_level("comfy", self._comfyui_inference_log_level):
+            out_tensor = await self.client.get_video_output()
         frame = await self.video_incoming_frames.get()
         while frame.side_data.skipped:
             frame = await self.video_incoming_frames.get()
@@ -90,7 +109,8 @@ class Pipeline:
         # TODO: make it generic to support purely generative audio cases and also add frame skipping
         frame = await self.audio_incoming_frames.get()
         if frame.samples > len(self.processed_audio_buffer):
-            out_tensor = await self.client.get_audio_output()
+            async with temporary_log_level("comfy", self._comfyui_inference_log_level):
+                out_tensor = await self.client.get_audio_output()
             self.processed_audio_buffer = np.concatenate([self.processed_audio_buffer, out_tensor])
         out_data = self.processed_audio_buffer[:frame.samples]
         self.processed_audio_buffer = self.processed_audio_buffer[frame.samples:]

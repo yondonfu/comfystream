@@ -10,6 +10,10 @@ export interface PeerProps extends React.HTMLAttributes<HTMLDivElement> {
   onConnected: () => void;
   onDisconnected: () => void;
   localStream: MediaStream | null;
+  resolution?: {
+    width: number;
+    height: number;
+  };
 }
 
 export const PeerConnector = (props: PeerProps) => {
