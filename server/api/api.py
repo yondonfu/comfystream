@@ -26,7 +26,7 @@ def add_mgmt_api_routes(app):
 
     app.router.add_post("/settings/comfystream/reload", reload)
     app.router.add_post("/settings/comfyui/restart", restart_comfyui_process)
-    app.router.add_post("/settings/twilio/set/account", set_account_info)
+    app.router.add_post("/settings/turn/server/set/account", set_account_info)
 
 
 async def reload(request):
