@@ -745,6 +745,27 @@ async function showSettingsModal() {
     modelsGroup.appendChild(deleteModelButton);
     modelsGroup.appendChild(loadingModels);
 
+    // turn server creds group
+    const turnServerCredsGroup = document.createElement("div");
+    turnServerCredsGroup.className = "cs-input-group";
+
+    const turnServerCredsLabel = document.createElement("label");
+    turnServerCredsLabel.textContent = "TURN Creds:";
+    turnServerCredsLabel.className = "cs-label";
+
+    const setButton = document.createElement("button");
+    setButton.textContent = "Set";
+    setButton.className = "cs-button";
+    
+    const turnServerCredsLoading = document.createElement("span");
+    turnServerCredsLoading.id = "comfystream-loading-turn-server-creds-spinner";
+    turnServerCredsLoading.className = "loader";
+    turnServerCredsLoading.style.display = "none"; // Initially hidden
+
+    turnServerCredsGroup.appendChild(turnServerCredsLabel);
+    turnServerCredsGroup.appendChild(setButton);
+    turnServerCredsGroup.appendChild(turnServerCredsLoading);
+
     // Configurations section
     const configsSection = document.createElement("div");
     configsSection.className = "cs-section";
@@ -831,6 +852,7 @@ async function showSettingsModal() {
     form.appendChild(portGroup);
     form.appendChild(nodesGroup);
     form.appendChild(modelsGroup);
+    form.appendChild(turnServerCredsGroup);
     form.appendChild(configsSection);
     
     modalContent.appendChild(closeButton);
@@ -885,6 +907,27 @@ async function showSettingsModal() {
             app.ui.dialog.show('Error', `Failed to manage models: ${error.message}`);
         }
     }
+    async function manageTurnServerCredentials(action) {
+        //show the spinner to provide feedback
+        const loadingSpinner = document.getElementById("comfystream-loading-turn-server-creds-spinner");
+        loadingSpinner.style.display = "inline-block";
+
+        try {
+            if (action === "set") {
+                await showSetTurnServerCredsModal();
+            } else if (action === "clear") {
+                await showClearTurnServerCredsModal();
+            }
+            // Hide the spinner after action
+            loadingSpinner.style.display = "none"; 
+        } catch (error) {
+            console.error("[ComfyStream] Error managing TURN server credentials:", error);
+            app.ui.dialog.show('Error', `Failed to manage TURN server credentials: ${error.message}`);
+        }
+
+        // Hide the spinner after action
+        loadingSpinner.style.display = "none"; 
+    }
     // Add event listeners for nodes management buttons
     installNodeButton.addEventListener("click", () => {
         manageNodes("install");
@@ -904,6 +947,9 @@ async function showSettingsModal() {
     });
     deleteModelButton.addEventListener("click", () => {
         manageModels("delete");
+    });
+    setButton.addEventListener("click", async () => {
+        await showSetTurnServerCredsModal();
     });
     // Update configurations list
     async function updateConfigsList() {
@@ -1075,6 +1121,225 @@ async function showSettingsModal() {
     
     // Focus the host input
     hostInput.focus();
+}
+
+async function showSetTurnServerCredsModal() {
+    // Check if modal already exists and remove it
+    const existingModal = document.getElementById("comfystream-settings-set-turn-creds-modal");
+    if (existingModal) {
+        existingModal.remove();
+    }    
+
+    // Create nodes mgmt modal container
+    const modal = document.createElement("div");
+    modal.id = "comfystream-settings-set-turn-creds-modal";
+    modal.className = "comfystream-settings-modal";
+    
+    // Create close button
+    const closeButton = document.createElement("button");
+    closeButton.textContent = "×";
+    closeButton.className = "cs-close-button";
+    closeButton.onclick = () => {
+        modal.remove();
+    };
+
+    // Create modal content
+    const modalContent = document.createElement("div");
+    modalContent.className = "cs-modal-content";
+    
+    // Create title
+    const title = document.createElement("h3");
+    title.textContent = "Set TURN Server Credentials";
+    title.className = "cs-title";
+    
+    // Create settings form
+    const form = document.createElement("div");
+
+    // account type
+    const accountTypeGroup = document.createElement("div");
+    accountTypeGroup.className = "cs-input-group";
+    
+    const accountTypeLabel = document.createElement("label");
+    accountTypeLabel.textContent = "Account Type:";
+    accountTypeLabel.className = "cs-label";
+    
+    const accountTypeSelect = document.createElement("select");
+    const accountItem = document.createElement("option");
+    accountItem.value = "twilio";
+    accountItem.textContent = "Twilio";
+    accountTypeSelect.appendChild(accountItem);
+    accountTypeSelect.id = "comfystream-selected-turn-server-account-type";
+    
+    const accountTypeHelpIcon = document.createElement("span");
+    accountTypeHelpIcon.innerHTML = "&#x1F6C8;"; // Unicode for a help icon (ℹ️)
+    accountTypeHelpIcon.style.cursor = "pointer";
+    accountTypeHelpIcon.style.marginLeft = "5px";
+    accountTypeHelpIcon.title = "Click for help";
+    
+    const accountTypeHelp = document.createElement("div");
+    accountTypeHelp.textContent = "Specify the account type to use";
+    accountTypeHelp.className = "cs-help-text";
+    accountTypeHelp.style.display = "none";
+
+    accountTypeHelpIcon.addEventListener("click", () => {
+        if (accountTypeHelp.style.display == "none") {
+            accountTypeHelp.style.display = "block";
+        } else {
+            accountTypeHelp.style.display = "none";
+        }
+    });
+
+    accountTypeGroup.appendChild(accountTypeLabel);
+    accountTypeGroup.appendChild(accountTypeSelect);
+    accountTypeGroup.appendChild(accountTypeHelpIcon);
+
+    // account id
+    const accountIdGroup = document.createElement("div");
+    accountIdGroup.className = "cs-input-group";
+    
+    const accountIdLabel = document.createElement("label");
+    accountIdLabel.textContent = "Account ID:";
+    accountIdLabel.className = "cs-label";
+        
+    const accountIdInput = document.createElement("input");
+    accountIdInput.id = "turn-server-creds-account-id";
+    accountIdInput.className = "cs-input";
+    
+    
+    const accountIdHelpIcon = document.createElement("span");
+    accountIdHelpIcon.innerHTML = "&#x1F6C8;"; // Unicode for a help icon (ℹ️)
+    accountIdHelpIcon.style.cursor = "pointer";
+    accountIdHelpIcon.style.marginLeft = "5px";
+    accountIdHelpIcon.title = "Click for help";
+    
+    const accountIdHelp = document.createElement("div");
+    accountIdHelp.textContent = "Specify the account id for Twilio TURN server credentials";
+    accountIdHelp.className = "cs-help-text";
+    accountIdHelp.style.display = "none";
+
+    accountIdHelpIcon.addEventListener("click", () => {
+        if (accountIdHelp.style.display == "none") {
+            accountIdHelp.style.display = "block";
+        } else {
+            accountIdHelp.style.display = "none";
+        }
+    });
+
+    accountIdGroup.appendChild(accountIdLabel);
+    accountIdGroup.appendChild(accountIdInput);
+    accountIdGroup.appendChild(accountIdHelpIcon);
+    
+    // auth token
+    const accountAuthTokenGroup = document.createElement("div");
+    accountAuthTokenGroup.className = "cs-input-group";
+    
+    const accountAuthTokenLabel = document.createElement("label");
+    accountAuthTokenLabel.textContent = "Auth Token:";
+    accountAuthTokenLabel.className = "cs-label";
+    
+    const accountAuthTokenInput = document.createElement("input");
+    accountAuthTokenInput.id = "turn-server-creds-auth-token";
+    accountAuthTokenInput.className = "cs-input";
+    
+    const accountAuthTokenHelpIcon = document.createElement("span");
+    accountAuthTokenHelpIcon.innerHTML = "&#x1F6C8;"; // Unicode for a help icon (ℹ️)
+    accountAuthTokenHelpIcon.style.cursor = "pointer";
+    accountAuthTokenHelpIcon.style.marginLeft = "5px";
+    accountAuthTokenHelpIcon.title = "Click for help";
+    accountAuthTokenHelpIcon.style.position = "relative";
+
+    const accountAuthTokenHelp = document.createElement("div");
+    accountAuthTokenHelp.textContent = "Specify the auth token provided by Twilio for TURN server credentials";
+    accountAuthTokenHelp.className = "cs-help-text";
+    accountAuthTokenHelp.style.display = "none";
+    
+    accountAuthTokenHelpIcon.addEventListener("click", () => {
+        if (accountAuthTokenHelp.style.display == "none") {
+            accountAuthTokenHelp.style.display = "block";
+        } else {
+            accountAuthTokenHelp.style.display = "none";
+        }
+    });
+
+    accountAuthTokenGroup.appendChild(accountAuthTokenLabel);
+    accountAuthTokenGroup.appendChild(accountAuthTokenInput);
+    accountAuthTokenGroup.appendChild(accountAuthTokenHelpIcon);    
+    
+    // Footer with buttons
+    const footer = document.createElement("div");
+    footer.className = "cs-footer";
+    
+    const msgTxt = document.createElement("div");
+    msgTxt.id = "comfystream-manage-turn-server-creds-msg-txt";
+    msgTxt.style.fontSize = "0.75em";
+    msgTxt.style.fontStyle = "italic";
+    msgTxt.style.overflowWrap = "break-word";
+
+    const cancelButton = document.createElement("button");
+    cancelButton.textContent = "Cancel";
+    cancelButton.className = "cs-button";
+    cancelButton.onclick = () => {
+        modal.remove();
+    };
+    const clearButton = document.createElement("button");
+    clearButton.textContent = "Clear";
+    clearButton.className = "cs-button";
+    clearButton.onclick = () => {
+        const accountType = accountTypeSelect.options[accountTypeSelect.selectedIndex].value;
+        msgTxt.textContent = setTurnSeverCreds(accountType, "", "");
+    };
+
+    const setButton = document.createElement("button");
+    setButton.textContent = "Set";
+    setButton.className = "cs-button primary";
+    setButton.onclick = async () => {
+        const accountId = accountIdInput.value;
+        const authToken = accountAuthTokenInput.value;
+        const accountType = accountTypeSelect.options[accountTypeSelect.selectedIndex].value;
+        msgTxt.textContent = setTurnSeverCreds(accountType, accountId, authToken);        
+    };
+
+    footer.appendChild(msgTxt);
+    footer.appendChild(cancelButton);
+    footer.appendChild(setButton);
+    
+    // Assemble the modal
+    form.appendChild(accountTypeGroup);
+    form.appendChild(accountTypeHelp);
+    form.appendChild(accountIdGroup);
+    form.appendChild(accountIdHelp);
+    form.appendChild(accountAuthTokenGroup);
+    form.appendChild(accountAuthTokenHelp);
+
+    modalContent.appendChild(closeButton);
+    modalContent.appendChild(title);
+    modalContent.appendChild(form);
+    modalContent.appendChild(footer);
+    
+    modal.appendChild(modalContent);
+    
+    // Add to document
+    document.body.appendChild(modal);
+}
+
+async function setTurnSeverCreds(accountType, accountId, authToken) {
+    try {
+        const payload = {
+            type: accountType,
+            account_id: accountId,
+            auth_token: authToken
+        }
+
+        await settingsManager.manageComfystream( 
+            "turn/server", 
+            "set/account",
+            [payload]
+        );
+        return "TURN server credentials updated successfully";
+    } catch (error) {
+        console.error("[ComfyStream] Error adding model:", error);
+        msgTxt.textContent = error;
+    }
 }
 
 async function showAddModelsModal() {
@@ -1253,7 +1518,7 @@ async function showAddModelsModal() {
                 "add",
                 [payload]
             );
-            msgTxt.textContent = "Model added successfully!";
+            msgTxt.textContent = "Model added successfully";
         } catch (error) {
             console.error("[ComfyStream] Error adding model:", error);
             msgTxt.textContent = error;
@@ -1965,7 +2230,7 @@ async function showInstallNodesModal() {
     document.body.appendChild(modal);
 }
 // Export for use in other modules
-export { settingsManager, showSettingsModal, showInstallNodesModal, showUpdateNodesModal, showDeleteNodesModal, showToggleNodesModal, showAddModelsModal, showDeleteModelsModal };
+export { settingsManager, showSettingsModal, showInstallNodesModal, showUpdateNodesModal, showDeleteNodesModal, showToggleNodesModal, showAddModelsModal, showDeleteModelsModal, showSetTurnServerCredsModal };
 
 // Also keep the global for backward compatibility
 window.comfyStreamSettings = {
@@ -1976,5 +2241,6 @@ window.comfyStreamSettings = {
     showDeleteNodesModal,
     showToggleNodesModal,
     showAddModelsModal,
-    showDeleteModelsModal
+    showDeleteModelsModal,
+    showSetTurnServerCredsModal
 }; 
