@@ -5,13 +5,6 @@ import logging
 import os
 import sys
 
-import torch
-
-# Initialize CUDA before any other imports to prevent core dump.
-if torch.cuda.is_available():
-    torch.cuda.init()
-
-
 from aiohttp import web
 from aiortc import (
     MediaStreamTrack,
@@ -22,10 +15,10 @@ from aiortc import (
 )
 from aiortc.codecs import h264
 from aiortc.rtcrtpsender import RTCRtpSender
-from pipeline import Pipeline
+from comfystream.pipeline import Pipeline
 from twilio.rest import Client
-from utils import patch_loop_datagram, add_prefix_to_app_routes, FPSMeter
-from metrics import MetricsManager, StreamStatsManager
+from comfystream.server.utils import patch_loop_datagram, add_prefix_to_app_routes, FPSMeter
+from comfystream.server.metrics import MetricsManager, StreamStatsManager
 import time
 
 logger = logging.getLogger(__name__)
