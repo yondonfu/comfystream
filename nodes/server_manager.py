@@ -148,7 +148,7 @@ class LocalComfyStreamServer(ComfyStreamServerBase):
                 self.host = host
             
             # Get the path to the ComfyStream server directory and script
-            server_dir = Path(__file__).parent.parent / "src" / "comfystream" / "server"
+            server_dir = Path(__file__).parent.parent / "server"
             server_script = server_dir / "app.py"
             logging.info(f"Server script: {server_script}")
             
