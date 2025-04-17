@@ -1,7 +1,7 @@
 "use client";
 
 import { PeerConnector } from "@/components/peer";
-import { StreamConfig, StreamSettings } from "@/components/settings";
+import { StreamConfig, StreamSettings, DEFAULT_CONFIG } from "@/components/settings";
 import { Webcam } from "@/components/webcam";
 import { usePeerContext } from "@/context/peer-context";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -15,13 +15,50 @@ import {
 import { ControlPanelsContainer } from "@/components/control-panels-container";
 import { StreamControl } from "@/components/stream-control";
 
-interface MediaStreamPlayerProps {
-  stream: MediaStream;
+// Custom hook for managing toast lifecycle
+function useToast() {
+  const toastIdRef = useRef<string | number | undefined>(undefined);
+  
+  const showToast = useCallback((message: string, type: 'loading' | 'success' | 'error' = 'loading') => {
+    // Always dismiss previous toast first
+    if (toastIdRef.current) {
+      toast.dismiss(toastIdRef.current);
+    }
+    
+    // Create new toast based on type
+    let id;
+    if (type === 'loading') {
+      id = toast.loading(message);
+    } else if (type === 'success') {
+      id = toast.success(message);
+    } else if (type === 'error') {
+      id = toast.error(message);
+    }
+    
+    toastIdRef.current = id;
+    return id;
+  }, []);
+  
+  const dismissToast = useCallback(() => {
+    if (toastIdRef.current) {
+      toast.dismiss(toastIdRef.current);
+      toastIdRef.current = undefined;
+    }
+  }, []);
+  
+  return { showToast, dismissToast, toastId: toastIdRef };
 }
 
-function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
+interface MediaStreamPlayerProps {
+  stream: MediaStream;
+  resolution: { width: number; height: number };
+}
+
+function MediaStreamPlayer({ stream, resolution, onFrame }: MediaStreamPlayerProps & { onFrame?: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [needsPlayButton, setNeedsPlayButton] = useState(false);
+  const frameCheckRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (!videoRef.current || !stream) return;
@@ -29,6 +66,29 @@ function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
     const video = videoRef.current;
     video.srcObject = stream;
     setNeedsPlayButton(false);
+
+    // Add frame detection if needed
+    if (onFrame) {
+      // Use requestAnimationFrame for more frequent checks
+      const checkFrame = (time: number) => {
+        // If the video's currentTime has changed, we have a new frame
+        if (video.currentTime !== lastTimeRef.current) {
+          lastTimeRef.current = video.currentTime;
+          onFrame();
+        }
+        
+        frameCheckRef.current = requestAnimationFrame(checkFrame);
+      };
+      
+      frameCheckRef.current = requestAnimationFrame(checkFrame);
+      
+      return () => {
+        if (frameCheckRef.current !== null) {
+          cancelAnimationFrame(frameCheckRef.current);
+          frameCheckRef.current = null;
+        }
+      };
+    }
 
     // Handle autoplay
     const playStream = async () => {
@@ -51,8 +111,13 @@ function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
         video.srcObject = null;
         video.pause();
       }
+      
+      if (frameCheckRef.current !== null) {
+        cancelAnimationFrame(frameCheckRef.current);
+        frameCheckRef.current = null;
+      }
     };
-  }, [stream]);
+  }, [stream, onFrame]);
 
   const handlePlayClick = async () => {
     try {
@@ -66,12 +131,15 @@ function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
   };
 
   return (
-    <div className="relative w-full h-full">
+    <div 
+      className="relative w-full h-full" 
+      style={{ aspectRatio: `${resolution.width}/${resolution.height}` }}
+    >
       <video
         ref={videoRef}
         autoPlay
         playsInline
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
       />
       {needsPlayButton && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -90,18 +158,51 @@ function MediaStreamPlayer({ stream }: MediaStreamPlayerProps) {
 interface StageProps {
   connected: boolean;
   onStreamReady: () => void;
+  resolution: { width: number; height: number };
+  onComfyUIReady: () => void;
   backendUrl: string;
 }
 
-function Stage({ connected, onStreamReady, backendUrl }: StageProps) {
+function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUrl}: StageProps) {
   const { remoteStream, peerConnection } = usePeerContext();
   const [frameRate, setFrameRate] = useState<number>(0);
+  // Add state and refs for tracking frames
+  const [isComfyUIReady, setIsComfyUIReady] = useState<boolean>(false);
+  const frameCountRef = useRef<number>(0);
+  const frameReadyReported = useRef<boolean>(false);
+  
+  // The number of frames to wait before considering ComfyUI ready
+  // WARMUP_RUNS is 5, we add a small buffer
+  const READY_FRAME_THRESHOLD = 6;
+
+  // Handle frame counting
+  const handleFrame = useCallback(() => {
+    if (isComfyUIReady || frameReadyReported.current) return;
+    
+    frameCountRef.current += 1;
+    console.log(`[Stage] Frame ${frameCountRef.current} received`);
+    
+    // Check if we've passed the dummy frames threshold
+    if (frameCountRef.current >= READY_FRAME_THRESHOLD && !frameReadyReported.current) {
+      console.log(`[Stage] Received ${frameCountRef.current} frames, considering ComfyUI ready`);
+      frameReadyReported.current = true;
+      setIsComfyUIReady(true);
+      onComfyUIReady(); // Notify parent when ComfyUI is ready
+    }
+  }, [isComfyUIReady, onComfyUIReady]);
 
   useEffect(() => {
-    if (!connected || !remoteStream) return;
+    if (!connected || !remoteStream) {
+      // Reset counters when disconnected
+      frameCountRef.current = 0;
+      frameReadyReported.current = false;
+      setIsComfyUIReady(false);
+      return;
+    }
 
     onStreamReady();
 
+    // Track frame rate with getStats API
     const interval = setInterval(() => {
       if (peerConnection) {
         peerConnection.getStats().then((stats) => {
@@ -123,7 +224,13 @@ function Stage({ connected, onStreamReady, backendUrl }: StageProps) {
   if (!connected || !remoteStream) {
     return (
       <>
-        <video className="w-full h-full object-cover" autoPlay loop playsInline>
+        <video 
+          className="w-full h-full object-cover" 
+          autoPlay 
+          loop 
+          playsInline
+          style={{ aspectRatio: `${resolution.width}/${resolution.height}` }}
+        >
           <source src="/loading.mp4" type="video/mp4" />
         </video>
       </>
@@ -133,8 +240,26 @@ function Stage({ connected, onStreamReady, backendUrl }: StageProps) {
   const hasVideo = remoteStream.getVideoTracks().length > 0;
 
   return (
-    <div className="relative w-full h-full">
-      <MediaStreamPlayer stream={remoteStream} />
+    <div 
+      className="relative w-full h-full"
+      style={{ aspectRatio: `${resolution.width}/${resolution.height}` }}
+    >
+      <MediaStreamPlayer 
+        stream={remoteStream} 
+        resolution={resolution} 
+        onFrame={handleFrame}
+      />
+      
+      {/* Show warm-up overlay when we have a stream but ComfyUI isn't ready yet */}
+      {hasVideo && !isComfyUIReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+          <div className="flex flex-col items-center space-y-3 bg-black/50 p-4 rounded-lg">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
+            <p className="text-white text-center">ComfyUI is warming up...<br/>This may take a few minutes</p>
+          </div>
+        </div>
+      )}
+      
       {hasVideo && (
         <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
           <TooltipProvider>
@@ -163,11 +288,15 @@ export const Room = () => {
   const [isStreamSettingsOpen, setIsStreamSettingsOpen] =
     useState<boolean>(true);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [loadingToastId, setLoadingToastId] = useState<
-    string | number | undefined
-  >(undefined);
+  
+  // Use the custom toast hook
+  const { showToast, dismissToast, toastId } = useToast();
+  
+  // Add state to track if ComfyUI is ready
+  const [isComfyUIReady, setIsComfyUIReady] = useState<boolean>(false);
 
   const [config, setConfig] = useState<StreamConfig>({
+    ...DEFAULT_CONFIG,
     streamUrl: "",
     frameRate: 0,
     selectedVideoDeviceId: "",
@@ -182,28 +311,45 @@ export const Room = () => {
   }, []);
 
   const onRemoteStreamReady = useCallback(() => {
-    toast.success("Started stream!", { id: loadingToastId });
-    setLoadingToastId(undefined);
-  }, [loadingToastId]);
+    // Update toast to indicate waiting for ComfyUI to initialize
+    showToast("Stream connected, waiting for ComfyUI to initialize...", "loading");
+  }, [showToast]);
+
+  // Add a handler for when ComfyUI is ready (will be passed to Stage component)
+  const onComfyUIReady = useCallback(() => {
+    // Update toast to indicate ComfyUI is ready
+    showToast("ComfyUI is ready!", "success");
+    setIsComfyUIReady(true);
+  }, [showToast]);
 
   const onStreamConfigSave = useCallback((config: StreamConfig) => {
     setConfig(config);
-  }, []);
+    
+    // If resolution changed, we need to restart the stream
+    if (localStream && 
+        (config.resolution.width !== DEFAULT_CONFIG.resolution.width || 
+         config.resolution.height !== DEFAULT_CONFIG.resolution.height)) {
+      console.log(`[Room] Resolution changed to ${config.resolution.width}x${config.resolution.height}, restarting stream`);
+    }
+  }, [localStream]);
 
   useEffect(() => {
     if (connectingRef.current) return;
 
     if (!config.streamUrl) {
       setConnect(false);
+      // Reset ComfyUI ready state when disconnecting
+      setIsComfyUIReady(false);
+      // Dismiss any existing toast
+      dismissToast();
     } else {
       setConnect(true);
 
-      const id = toast.loading("Starting stream...");
-      setLoadingToastId(id);
+      showToast("Starting stream...", "loading");
     }
 
     connectingRef.current = false;
-  }, [config.streamUrl]);
+  }, [config.streamUrl, showToast, dismissToast]);
 
   const handleConnected = useCallback(() => {
     setIsConnected(true);
@@ -212,7 +358,9 @@ export const Room = () => {
 
   const handleDisconnected = useCallback(() => {
     setIsConnected(false);
-  }, []);
+    setIsComfyUIReady(false);
+    showToast("Stream disconnected", "error");
+  }, [showToast]);
 
   return (
     <main className="fixed inset-0 overflow-hidden overscroll-none">
@@ -228,38 +376,53 @@ export const Room = () => {
           onConnected={handleConnected}
           onDisconnected={handleDisconnected}
           localStream={localStream}
+          resolution={config.resolution}
         >
           <div className="min-h-[100dvh] flex flex-col items-center justify-center md:justify-start">
             <div className="w-full max-h-[100dvh] flex flex-col md:flex-row landscape:flex-row justify-center items-center lg:space-x-4 md:pt-[10vh]">
               {/* Output stream */}
-              <div className="relative w-full max-w-[100vw] h-auto aspect-square sm:max-w-[640px] sm:max-h-[640px] md:max-w-[512px] md:max-h-[512px] flex justify-center items-center bg-slate-900 sm:border-[2px] md:border-0 lg:border-2 rounded-md">
+              <div 
+                className="relative w-full max-w-[100vw] sm:max-w-[640px] md:max-w-[512px] flex justify-center items-center bg-slate-900 sm:border-[2px] md:border-0 lg:border-2 rounded-md overflow-hidden"
+                style={{
+                  aspectRatio: `${config.resolution.width}/${config.resolution.height}`,
+                }}
+              >
                 <Stage
                   connected={isConnected}
                   onStreamReady={onRemoteStreamReady}
+                  onComfyUIReady={onComfyUIReady}
+                  resolution={config.resolution}
                   backendUrl={config.streamUrl || ""}
                 />
                 {/* Thumbnail (mobile) */}
-                <div className="absolute bottom-[8px] right-[8px] w-[70px] h-[70px] sm:w-[90px] sm:h-[90px] bg-slate-800 block md:hidden">
+                <div className="absolute bottom-[8px] right-[8px] w-[70px] h-[70px] sm:w-[90px] sm:h-[90px] bg-slate-800 block md:hidden overflow-hidden">
                   <Webcam
                     onStreamReady={onStreamReady}
                     deviceId={config.selectedVideoDeviceId}
                     frameRate={config.frameRate}
                     selectedAudioDeviceId={config.selectedAudioDeviceId}
+                    resolution={config.resolution}
                   />
                 </div>
               </div>
               {/* Input stream (desktop) */}
-              <div className="hidden md:flex w-full sm:w-full md:w-full h-[50dvh] sm:h-auto md:h-auto max-w-[512px] max-h-[512px] aspect-square justify-center items-center lg:border-2 lg:rounded-md bg-slate-800">
+              <div 
+                className="hidden md:flex w-full sm:w-full md:w-full max-w-[512px] flex justify-center items-center lg:border-2 lg:rounded-md bg-slate-800 overflow-hidden"
+                style={{
+                  aspectRatio: `${config.resolution.width}/${config.resolution.height}`,
+                }}
+              >
                 <Webcam
                   onStreamReady={onStreamReady}
                   deviceId={config.selectedVideoDeviceId}
                   frameRate={config.frameRate}
                   selectedAudioDeviceId={config.selectedAudioDeviceId}
+                  resolution={config.resolution}
                 />
               </div>
             </div>
 
-            {isConnected && <ControlPanelsContainer />}
+            {isConnected && isComfyUIReady && <ControlPanelsContainer />}
 
             <StreamSettings
               open={isStreamSettingsOpen}
