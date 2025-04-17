@@ -73,3 +73,80 @@ models:
     url: "https://huggingface.co/Lykon/dreamshaper-8/resolve/main/text_encoder/model.fp16.safetensors"
     path: "text_encoders/CLIPText/model.fp16.safetensors"
     type: "text_encoder"
+
+  # FasterLivePortrait Models
+
+models:
+  # LivePortrait ONNX models
+  warping_spade:
+    name: "WarpingSpadeModel"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/warping_spade-fix.onnx"
+    path: "checkpoints/liveportrait_onnx/warping_spade-fix.onnx"
+    type: "onnx"
+
+  motion_extractor:
+    name: "MotionExtractorModel"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/motion_extractor.onnx"
+    path: "checkpoints/liveportrait_onnx/motion_extractor.onnx"
+    type: "onnx"
+
+  landmark:
+    name: "LandmarkModel"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/landmark.onnx"
+    path: "checkpoints/liveportrait_onnx/landmark.onnx"
+    type: "onnx"
+
+  face_analysis_retinaface:
+    name: "FaceAnalysisModel - RetinaFace"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/retinaface_det_static.onnx"
+    path: "checkpoints/liveportrait_onnx/retinaface_det_static.onnx"
+    type: "onnx"
+
+  face_analysis_2dpose:
+    name: "FaceAnalysisModel - 2DPose"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/face_2dpose_106_static.onnx"
+    path: "checkpoints/liveportrait_onnx/face_2dpose_106_static.onnx"
+    type: "onnx"
+
+  appearance_feature_extractor:
+    name: "AppearanceFeatureExtractorModel"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/appearance_feature_extractor.onnx"
+    path: "checkpoints/liveportrait_onnx/appearance_feature_extractor.onnx"
+    type: "onnx"
+
+  stitching:
+    name: "StitchingModel"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/stitching.onnx"
+    path: "checkpoints/liveportrait_onnx/stitching.onnx"
+    type: "onnx"
+
+  stitching_eye_retarget:
+    name: "StitchingModel (Eye Retargeting)"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/stitching_eye.onnx"
+    path: "checkpoints/liveportrait_onnx/stitching_eye.onnx"
+    type: "onnx"
+
+  stitching_lip_retarget:
+    name: "StitchingModel (Lip Retargeting)"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/liveportrait_onnx/stitching_lip.onnx"
+    path: "checkpoints/liveportrait_onnx/stitching_lip.onnx"
+    type: "onnx"
+
+  # JoyVASA models
+  joyvasa_motion_generator:
+    name: "JoyVASA Motion Generator"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/joyvasa_models/motion_generator_hubert_chinese.pt"
+    path: "checkpoints/joyvasa_models/motion_generator_hubert_chinese.pt"
+    type: "torch"
+
+  joyvasa_audio_model:
+    name: "JoyVASA Hubert Chinese"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/joyvasa_models/chinese-hubert-base.zip"
+    path: "checkpoints/joyvasa_models/chinese-hubert-base.zip"
+    type: "archive"
+
+  joyvasa_motion_template:
+    name: "JoyVASA Motion Template"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/joyvasa_models/motion_template.pkl"
+    path: "checkpoints/joyvasa_models/motion_template.pkl"
+    type: "pickle"
