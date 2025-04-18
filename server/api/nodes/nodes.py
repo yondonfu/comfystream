@@ -97,7 +97,7 @@ async def install_node(node, workspace_dir):
             if branch == "":
                 branch = repo.remotes.origin.refs[0].remote_head
 
-            repo.remotes.origin.pull(branch)
+            repo.git.checkout(branch)
         
         # Install requirements if present
         requirements_file = node_path / "requirements.txt"
