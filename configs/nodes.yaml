@@ -15,6 +15,12 @@ nodes:
     branch: "feature/add-export-trt-args"
     type: "tensorrt"
 
+  comfyui-fasterliveportrait:
+    name: "ComfyUI FasterLivePortrait"
+    url: "https://github.com/pschroedl/ComfyUI-FasterLivePortrait.git"
+    branch: "dockerfile_build_tensorrt"
+    type: "tensorrt"
+
   # Ryan's nodes
   comfyui-ryanontheinside:
     name: "ComfyUI RyanOnTheInside"
