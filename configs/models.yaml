@@ -73,3 +73,22 @@ models:
     url: "https://huggingface.co/Lykon/dreamshaper-8/resolve/main/text_encoder/model.fp16.safetensors"
     path: "text_encoders/CLIPText/model.fp16.safetensors"
     type: "text_encoder"
+
+  # JoyVASA models for ComfyUI-FasterLivePortrait
+  joyvasa_motion_generator:
+    name: "JoyVASA Motion Generator"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/joyvasa_models/motion_generator_hubert_chinese.pt"
+    path: "checkpoints/joyvasa_models/motion_generator_hubert_chinese.pt"
+    type: "torch"
+
+  joyvasa_audio_model:
+    name: "JoyVASA Hubert Chinese"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/joyvasa_models/chinese-hubert-base.zip"
+    path: "checkpoints/joyvasa_models/chinese-hubert-base.zip"
+    type: "archive"
+
+  joyvasa_motion_template:
+    name: "JoyVASA Motion Template"
+    url: "https://huggingface.co/KwaiVGI/LivePortrait/resolve/main/joyvasa_models/motion_template.pkl"
+    path: "checkpoints/joyvasa_models/motion_template.pkl"
+    type: "pickle"
