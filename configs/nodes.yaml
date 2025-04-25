@@ -18,7 +18,7 @@ nodes:
   comfyui-fasterliveportrait:
     name: "ComfyUI FasterLivePortrait"
     url: "https://github.com/pschroedl/ComfyUI-FasterLivePortrait.git"
-    branch: "main"
+    branch: "master"
     type: "tensorrt"
 
   # Ryan's nodes
