@@ -254,6 +254,7 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
         server_status = server_manager.get_status()
         if server_status["running"]:
             await server_manager.stop()
-
+        logging.info("Restarting ComfyUI...")
         subprocess.run(["supervisorctl", "restart", "comfyui"])
+        logging.info("Restarting ComfyUI...in process")
         return web.json_response({"success": True}, status=200)
