@@ -13,14 +13,20 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHON_VERSION="${PYTHON_VERSION}"
 
 # System dependencies
-RUN apt update && apt install -yqq \
+RUN apt update && apt install -yqq --no-install-recommends \
     git \
     wget \
     nano \
     socat \
     libsndfile1 \
-    build-essential llvm tk-dev && \
-    rm -rf /var/lib/apt/lists/*
+    build-essential \
+    llvm \
+    tk-dev \
+    cmake \
+    swig \
+    libprotobuf-dev \
+    protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
 
 # Conda setup
 RUN mkdir -p /workspace/comfystream && \
