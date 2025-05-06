@@ -15,8 +15,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: docker builds
+  base:
+    name: Build comfyui-base docker image
+    if: ${{ github.repository == 'livepeer/comfystream' }}
+    outputs:
+      repository: ${{ steps.repo.outputs.repository }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    permissions:
+      packages: write
+      contents: read
+    runs-on: [self-hosted, linux, gpu]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Output image repository
+        id: repo
+        shell: bash
+        run: |
+          echo "repository=livepeer/comfyui-base" >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ steps.repo.outputs.repository }}
+          tags: |
+            type=sha
+            type=ref,event=pr
+            type=ref,event=tag
+            type=sha,format=long
+            type=ref,event=branch
+            type=semver,pattern={{version}},prefix=v
+            type=semver,pattern={{major}}.{{minor}},prefix=v
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.event.pull_request.head.ref }}
+            type=raw,value=stable,enable=${{ startsWith(github.event.ref, 'refs/tags/v') }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.CI_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.CI_DOCKERHUB_TOKEN }}
+
+      - name: Build and push livepeer docker image
+        id: build
+        timeout-minutes: 200
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          provenance: mode=max
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          file: docker/Dockerfile.base
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          cache-from: type=registry,ref=livepeer/comfyui-base:build-cache
+          cache-to: type=registry,mode=max,ref=livepeer/comfyui-base:build-cache
+
+  comfystream:
+    name: Build comfystream docker image
+    needs: base
     if: ${{ github.repository == 'livepeer/comfystream' }}
     permissions:
       packages: write
@@ -28,12 +95,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.CI_DOCKERHUB_USERNAME }}
-          password: ${{ secrets.CI_DOCKERHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -56,6 +117,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.CI_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.CI_DOCKERHUB_TOKEN }}
+
       - name: Build and push livepeer docker image
         uses: docker/build-push-action@v6
         with:
@@ -65,6 +132,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           file: docker/Dockerfile
+          build-args: |
+            BASE_IMAGE: "${{ needs.outputs.repository}}@${{ needs.outputs.image-digest }}"
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=registry,ref=${{ github.repository }}:build-cache
