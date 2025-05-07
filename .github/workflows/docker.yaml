@@ -133,7 +133,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           file: docker/Dockerfile
           build-args: |
-            BASE_IMAGE: "${{ needs.outputs.repository}}@${{ needs.outputs.image-digest }}"
+            BASE_IMAGE=${{ needs.base.outputs.repository }}@${{ needs.base.outputs.image-digest }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=registry,ref=${{ github.repository }}:build-cache
