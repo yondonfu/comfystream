@@ -79,7 +79,17 @@ def setup_directories(workspace_dir):
     # Create base directories
     workspace_dir.mkdir(parents=True, exist_ok=True)
     models_dir = workspace_dir / "models"
-    models_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check if models directory exists or is a symbolic link
+    if not models_dir.exists() and not models_dir.is_symlink():
+        print(f"Creating models directory at {models_dir}")
+        models_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        print(f"Models directory already exists or is a symbolic link at {models_dir}")
+
+    # Resolve the target of the symbolic link if it exists
+    if models_dir.is_symlink():
+        models_dir = models_dir.resolve()
 
     # Create model subdirectories
     model_dirs = [
@@ -91,7 +101,8 @@ def setup_directories(workspace_dir):
         "LLM",
     ]
     for dir_name in model_dirs:
-        (models_dir / dir_name).mkdir(parents=True, exist_ok=True)
+        subdir = models_dir / dir_name
+        subdir.mkdir(parents=True, exist_ok=True)
 
 def setup_models():
     args = parse_args()
