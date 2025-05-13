@@ -7,7 +7,7 @@ nodes:
     type: "tensorrt"
     dependencies: 
       - "onnxruntime-gpu>=1.17.0"
-      - "onnx>=1.17.0"
+      - "onnx==1.17.0"
 
   comfyui-depthanything-tensorrt:
     name: "ComfyUI DepthAnything TensorRT"
