@@ -78,7 +78,7 @@ Make sure you have [PyTorch](https://pytorch.org/get-started/locally/) installed
 Install `comfystream`:
 
 ```bash
-pip install git+https://github.com/yondonfu/comfystream.git
+pip install git+https://github.com/livepeer/comfystream.git
 
 # This can be used to install from a local repo
 # pip install .
