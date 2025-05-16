@@ -4,7 +4,7 @@ import asyncio
 from api.nodes.nodes import list_nodes, install_node, delete_node, toggle_node
 from api.models.models import list_models, add_model, delete_model
 from api.settings.settings import set_twilio_account_info, restart_comfyui
-from pipeline import Pipeline
+from comfystream.pipeline import Pipeline
 
 from comfy.nodes.package import _comfy_nodes, import_all_nodes_in_workspace
 
