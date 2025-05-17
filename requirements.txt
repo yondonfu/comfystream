@@ -6,3 +6,4 @@ toml
 twilio
 prometheus_client
 librosa
+GitPython

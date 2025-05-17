@@ -15,7 +15,8 @@ dependencies = [
     "toml",
     "twilio",
     "prometheus_client",
-    "librosa"
+    "librosa",
+    "GitPython"
 ]
 
 [project.optional-dependencies]

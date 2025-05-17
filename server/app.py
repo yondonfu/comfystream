@@ -468,6 +468,10 @@ if __name__ == "__main__":
         )
         app.router.add_get("/metrics", app["metrics_manager"].metrics_handler)
 
+    #add management api routes
+    from api.api import add_mgmt_api_routes
+    add_mgmt_api_routes(app)
+
     # Add hosted platform route prefix.
     # NOTE: This ensures that the local and hosted experiences have consistent routes.
     add_prefix_to_app_routes(app, "/live")
@@ -483,4 +487,5 @@ if __name__ == "__main__":
     if args.comfyui_inference_log_level:
         app["comfui_inference_log_level"] = args.comfyui_inference_log_level
 
+    
     web.run_app(app, host=args.host, port=int(args.port), print=force_print)

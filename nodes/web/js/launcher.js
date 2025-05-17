@@ -98,6 +98,38 @@ document.addEventListener('comfy-extension-registered', (event) => {
     }
 });
 
+async function restartComfyUI() {
+    try {
+        const response = await fetch('/comfyui/restart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: "" // No body needed
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("[ComfyStream] ComfyUI restart returned error response:", response.status, errorText);
+            try {
+                const errorData = JSON.parse(errorText);
+                throw new Error(errorData.error || `Server error: ${response.status}`);
+            } catch (e) {
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
+            }
+        }
+
+        const data = await response.json();
+
+        return data;
+    } catch (error) {
+        console.error('[ComfyStream] Error restarting ComfyUI:', error);
+        app.ui.dialog.show('Error', error.message || 'Failed to restart ComfyUI');
+        throw error;
+    }
+}
+
 async function controlServer(action) {
     try {
         // Get settings from the settings manager
@@ -256,6 +288,12 @@ const extension = {
             icon: "pi pi-cog",
             label: "Server Settings",
             function: openSettings
+        },
+        {
+            id: "ComfyStream.RestartComfyUI",
+            icon: "pi pi-refresh",
+            label: "Restart ComfyUI",
+            function: restartComfyUI
         }
     ],
 
@@ -270,7 +308,9 @@ const extension = {
                 "ComfyStream.StopServer", 
                 "ComfyStream.RestartServer",
                 null, // Separator
-                "ComfyStream.Settings"
+                "ComfyStream.Settings",
+                null, // Separator
+                "ComfyStream.RestartComfyUI"
             ]
         }
     ],
@@ -300,6 +340,8 @@ const extension = {
             comfyStreamMenu.addItem("Restart Server", () => controlServer('restart'), { icon: "pi pi-refresh" });
             comfyStreamMenu.addSeparator();
             comfyStreamMenu.addItem("Server Settings", openSettings, { icon: "pi pi-cog" });
+            comfyStreamMenu.addSeparator();
+            comfyStreamMenu.addItem("Restart ComfyUI", () => restartComfyUI(), { icon: "pi pi-refresh" });
         }
         // New menu system is handled automatically by the menuCommands registration
         
