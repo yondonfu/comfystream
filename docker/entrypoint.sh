@@ -3,17 +3,19 @@
 set -e
 eval "$(conda shell.bash hook)"
 
-# Handle workspace mounting
-if [ -d "/app" ] && [ ! -d "/app/miniconda3" ]; then
-  echo "Initializing workspace in /app..."
-  cp -r /workspace/* /app
-fi
+if [ "$1" = "--server" ]; then
+  # Handle workspace mounting
+  if [ -d "/app" ] && [ ! -d "/app/miniconda3" ]; then
+    echo "Initializing workspace in /app..."
+    cp -r /workspace/* /app
+  fi
 
-if [ -d "/app" ] && [ ! -L "/workspace" ]; then
-  echo "Starting from volume mount /app..."
-  cd / && rm -rf /workspace
-  ln -sf /app /workspace
-  cd /workspace/comfystream
+  if [ -d "/app" ] && [ ! -L "/workspace" ]; then
+    echo "Starting from volume mount /app..."
+    cd / && rm -rf /workspace
+    ln -sf /app /workspace
+    cd /workspace/comfystream
+  fi
 fi
 
 # Add help command to show usage

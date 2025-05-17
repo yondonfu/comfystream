@@ -23,16 +23,20 @@ RUN	bash -c "source $NVM_DIR/nvm.sh && \
 ENV	NODE_PATH="$NVM_DIR/v$NODE_VERSION/lib/node_modules" \
 	PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
 
-
 # Create the supervisor configuration file for ComfyUI and ComfyStream
 COPY	docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY    --chmod=0755	docker/entrypoint.sh /workspace/comfystream/docker/entrypoint.sh
+
+WORKDIR	/workspace/comfystream/ui
+RUN npm install
+RUN	npm run build
+
+# Restore .gitkeep file after ui build for devcontainer users
+RUN touch /workspace/comfystream/nodes/web/static/.gitkeep
 
 WORKDIR	/workspace/comfystream
-COPY --chmod=0755	docker/entrypoint.sh /workspace/comfystream/docker/entrypoint.sh
 
-EXPOSE	8188
-EXPOSE	8889
-EXPOSE	3000
+EXPOSE	8188	8889	3000
 EXPOSE	1024-65535/udp
 
 ENTRYPOINT	[ "/workspace/comfystream/docker/entrypoint.sh" ]
