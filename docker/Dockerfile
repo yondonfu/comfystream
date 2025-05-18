@@ -8,9 +8,18 @@ ENV	PATH="/workspace/miniconda3/bin:${PATH}" \
 
 RUN	echo "Using base image: ${BASE_IMAGE}" && \
 	apt update && \
-	apt install -yqq supervisor && \
+	apt install -yqq supervisor libglvnd-dev && \
 	wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
+#enable opengl support with nvidia gpu
+RUN printf '%s\n' \
+  '{' \
+  '    "file_format_version" : "1.0.0",' \
+  '    "ICD" : {' \
+  '        "library_path" : "libEGL_nvidia.so.0"' \
+  '    }' \
+  '}' > /usr/share/glvnd/egl_vendor.d/10_nvidia.json
+  
 WORKDIR	/
 
 # Install node and npm
