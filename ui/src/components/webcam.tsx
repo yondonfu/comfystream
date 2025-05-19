@@ -336,6 +336,13 @@ export function Webcam({
   const hasVideo = stream && stream.getVideoTracks().length > 0;
   const hasAudio = stream && stream.getAudioTracks().length > 0;
 
+  // Ensure audio only stream is passed to parent component.
+  useEffect(() => {
+    if (stream && !hasVideo && hasAudio) {
+      onStreamReady(stream);
+    }
+  }, [stream, hasVideo, hasAudio, onStreamReady]);
+
   // Return audio-only placeholder if we have audio but no video
   if (!hasVideo && hasAudio) {
     return (
