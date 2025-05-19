@@ -19,8 +19,19 @@ RUN apt update && apt install -yqq \
     nano \
     socat \
     libsndfile1 \
-    build-essential llvm tk-dev && \
+    build-essential \
+    llvm tk-dev \
+    libglvnd-dev && \
     rm -rf /var/lib/apt/lists/*
+
+#enable opengl support with nvidia gpu
+RUN printf '%s\n' \
+  '{' \
+  '    "file_format_version" : "1.0.0",' \
+  '    "ICD" : {' \
+  '        "library_path" : "libEGL_nvidia.so.0"' \
+  '    }' \
+  '}' > /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
 # Conda setup
 RUN mkdir -p /workspace/comfystream && \
