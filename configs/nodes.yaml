@@ -15,6 +15,12 @@ nodes:
     branch: "feature/add-export-trt-args"
     type: "tensorrt"
 
+  comfyui-streamdiffusion:
+    name: "ComfyUI StreamDiffusion"
+    url: "https://github.com/pschroedl/ComfyUI-StreamDiffusion"
+    branch: "main"
+    type: "tensorrt"
+
   # Ryan's nodes
   comfyui-ryanontheinside:
     name: "ComfyUI RyanOnTheInside"
