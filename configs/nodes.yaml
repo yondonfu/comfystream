@@ -14,6 +14,12 @@ nodes:
     url: "https://github.com/yuvraj108c/ComfyUI-Depth-Anything-Tensorrt"
     type: "tensorrt"
 
+  comfyui-streamdiffusion:
+    name: "ComfyUI StreamDiffusion"
+    url: "https://github.com/pschroedl/ComfyUI-StreamDiffusion"
+    branch: "main"
+    type: "tensorrt"
+
   # Ryan's nodes
   comfyui-ryanontheinside:
     name: "ComfyUI RyanOnTheInside"
