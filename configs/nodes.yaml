@@ -11,8 +11,7 @@ nodes:
 
   comfyui-depthanything-tensorrt:
     name: "ComfyUI DepthAnything TensorRT"
-    url: "https://github.com/rickstaa/ComfyUI-Depth-Anything-Tensorrt"
-    branch: "feature/add-export-trt-args"
+    url: "https://github.com/yuvraj108c/ComfyUI-Depth-Anything-Tensorrt"
     type: "tensorrt"
 
   # Ryan's nodes
