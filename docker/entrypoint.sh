@@ -43,7 +43,7 @@ if [ "$1" = "--download-models" ]; then
   shift
 fi
 
-DEPTH_ANYTHING_DIR="/workspace/ComfyUI/models/tensorrt/depth-anything"
+TENSORRT_DIR="/workspace/ComfyUI/models/tensorrt"
 
 if [ "$1" = "--build-engines" ]; then
   cd /workspace/comfystream
@@ -64,24 +64,46 @@ if [ "$1" = "--build-engines" ]; then
                 --max-height 704
 
   # Build Engine for Depth Anything V2
-  if [ ! -f "$DEPTH_ANYTHING_DIR/depth_anything_vitl14-fp16.engine" ]; then
-    if [ ! -d "$DEPTH_ANYTHING_DIR" ]; then
-      mkdir -p "$DEPTH_ANYTHING_DIR"
+  if [ ! -f "$TENSORRT_DIR/depth-anything/depth_anything_vitl14-fp16.engine" ]; then
+    if [ ! -d "$TENSORRT_DIR/depth-anything" ]; then
+      mkdir -p "$TENSORRT_DIR/depth-anything"
     fi
-    cd "$DEPTH_ANYTHING_DIR"
+    cd "$TENSORRT_DIR/depth-anything"
     python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
   else
     echo "Engine for DepthAnything2 already exists, skipping..."
   fi
 
   # Build Engine for Depth Anything2 (large)
-  if [ ! -f "$DEPTH_ANYTHING_DIR/depth_anything_v2_vitl-fp16.engine" ]; then
-    cd "$DEPTH_ANYTHING_DIR"
-    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py --trt-path "${DEPTH_ANYTHING_DIR}/depth_anything_v2_vitl-fp16.engine" --onnx-path "${DEPTH_ANYTHING_DIR}/depth_anything_v2_vitl.onnx"
+  if [ ! -f "$TENSORRT_DIR/depth-anything/depth_anything_v2_vitl-fp16.engine" ]; then
+    cd "$TENSORRT_DIR/depth-anything"
+    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py --trt-path "${TENSORRT_DIR}/depth-anything/depth_anything_v2_vitl-fp16.engine" --onnx-path "${TENSORRT_DIR}/depth-anything/depth_anything_v2_vitl.onnx"
   else
     echo "Engine for DepthAnything2 (large) already exists, skipping..."
   fi
   shift
+
+
+fi
+
+if [ "$1" = "--streamdiffusion" ]; then
+  # Build Engine for StreamDiffusion
+  if [ ! -f "$TENSORRT_DIR/StreamDiffusion-engines/stream_diffusion_v2_1_fp16.engine" ]; then #TODO: fix relevant file to check
+    cd /workspace/ComfyUI/custom_nodes/ComfyUI-StreamDiffusion
+    MODELS="stabilityai/sd-turbo KBlueLeaf/kohaku-v2.1"
+    TIMESTEPS="3"
+    for model in $MODELS; do
+      for timestep in $TIMESTEPS; do
+        echo "Building model=$model with timestep=$timestep"
+        python build_tensorrt.py \
+          --model-id "$model" \
+          --timesteps "$timestep" \
+          --engine-dir $TENSORRT_DIR/StreamDiffusion-engines
+      done
+    done
+  else
+    echo "Engine for StreamDiffusion already exists, skipping..."
+  fi
 fi
 
 if [ "$1" = "--opencv-cuda" ]; then
