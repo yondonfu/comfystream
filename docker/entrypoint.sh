@@ -88,7 +88,6 @@ if [ "$1" = "--build-engines" ]; then
   else
     echo "Engine for DepthAnything2 (large) already exists, skipping..."
   fi
-  shift
 
   # Build Engines for FasterLivePortrait
   if [ ! -f "$FASTERLIVEPORTRAIT_DIR/warping_spade-fix.trt" ]; then
@@ -97,7 +96,6 @@ if [ "$1" = "--build-engines" ]; then
   else
     echo "Engines for FasterLivePortrait already exists, skipping..."
   fi
-  shift
 
   # Build Engine for StreamDiffusion
   if [ ! -f "$TENSORRT_DIR/StreamDiffusion-engines/stream_diffusion_v2_1_fp16.engine" ]; then #TODO: fix relevant file to check
@@ -116,6 +114,7 @@ if [ "$1" = "--build-engines" ]; then
   else
     echo "Engine for StreamDiffusion already exists, skipping..."
   fi
+  shift
 fi
 
 if [ "$1" = "--opencv-cuda" ]; then
