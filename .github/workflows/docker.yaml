@@ -76,6 +76,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           file: docker/Dockerfile.base
+          build-args: |
+            CACHEBUST=${{ github.run_id }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=registry,ref=livepeer/comfyui-base:build-cache
