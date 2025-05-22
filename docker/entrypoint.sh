@@ -43,7 +43,10 @@ if [ "$1" = "--download-models" ]; then
   shift
 fi
 
-TENSORRT_DIR="/workspace/ComfyUI/models/tensorrt/"
+TENSORRT_DIR="/workspace/ComfyUI/models/tensorrt"
+DEPTH_ANYTHING_DIR="${TENSORRT_DIR}/depth-anything"
+DEPTH_ANYTHING_ENGINE="depth_anything_vitl14-fp16.engine"
+DEPTH_ANYTHING_ENGINE_LARGE="depth_anything_v2_vitl-fp16.engine"
 FASTERLIVEPORTRAIT_DIR="/workspace/ComfyUI/models/liveportrait_onnx"
 
 if [ "$1" = "--build-engines" ]; then
@@ -71,22 +74,22 @@ if [ "$1" = "--build-engines" ]; then
                 --max-height 704
 
   # Build Engine for Depth Anything V2
-  if [ ! -f "$TENSORRT_DIR/depth-anything/depth_anything_vitl14-fp16.engine" ]; then
-    if [ ! -d "$TENSORRT_DIR/depth-anything" ]; then
-      mkdir -p "$TENSORRT_DIR/depth-anything"
+  if [ ! -f "$DEPTH_ANYTHING_DIR/$DEPTH_ANYTHING_ENGINE" ]; then
+    if [ ! -d "$DEPTH_ANYTHING_DIR" ]; then
+      mkdir -p "$DEPTH_ANYTHING_DIR"
     fi
-    cd "$TENSORRT_DIR/depth-anything"
+    cd "$DEPTH_ANYTHING_DIR"
     python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
   else
-    echo "Engine for DepthAnything2 already exists, skipping..."
+    echo "Engine for DepthAnything2 already exists at ${DEPTH_ANYTHING_DIR}/${DEPTH_ANYTHING_ENGINE}, skipping..."
   fi
 
   # Build Engine for Depth Anything2 (large)
-  if [ ! -f "$TENSORRT_DIR/depth-anything/depth_anything_v2_vitl-fp16.engine" ]; then
-    cd "$TENSORRT_DIR/depth-anything"
-    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py --trt-path "${TENSORRT_DIR}/depth-anything/depth_anything_v2_vitl-fp16.engine" --onnx-path "${TENSORRT_DIR}/depth-anything/depth_anything_v2_vitl.onnx"
+  if [ ! -f "$DEPTH_ANYTHING_DIR/$DEPTH_ANYTHING_ENGINE_LARGE" ]; then
+    cd "$DEPTH_ANYTHING_DIR"
+    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py --trt-path "${DEPTH_ANYTHING_DIR}/${DEPTH_ANYTHING_ENGINE_LARGE}" --onnx-path "${DEPTH_ANYTHING_DIR}/depth_anything_v2_vitl.onnx"
   else
-    echo "Engine for DepthAnything2 (large) already exists, skipping..."
+    echo "Engine for DepthAnything2 (large) already exists at ${DEPTH_ANYTHING_DIR}/${DEPTH_ANYTHING_ENGINE_LARGE}, skipping..."
   fi
 
   # Build Engines for FasterLivePortrait
