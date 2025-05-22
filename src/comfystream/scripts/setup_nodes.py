@@ -14,6 +14,12 @@ def parse_args():
         default=os.environ.get("COMFY_UI_WORKSPACE", Path("~/comfyui").expanduser()),
         help="ComfyUI workspace directory (default: ~/comfyui or $COMFY_UI_WORKSPACE)",
     )
+    parser.add_argument(
+        "--pull-branches",
+        action="store_true",
+        default=False,
+        help="Update existing nodes to their specified branches",
+    )
     return parser.parse_args()
 
 
@@ -31,7 +37,7 @@ def setup_directories(workspace_dir):
     custom_nodes_dir.mkdir(parents=True, exist_ok=True)
 
 
-def install_custom_nodes(workspace_dir, config_path=None):
+def install_custom_nodes(workspace_dir, config_path=None, pull_branches=False):
     """Install custom nodes based on configuration"""
     if config_path is None:
         config_path = get_config_path("nodes.yaml")
@@ -55,22 +61,25 @@ def install_custom_nodes(workspace_dir, config_path=None):
 
             print(f"Installing {node_info['name']}...")
 
-            # Clone the repository if it doesn't already exist
+            # Clone or update the repository
             if not node_path.exists():
                 cmd = ["git", "clone", node_info["url"]]
                 if "branch" in node_info:
                     cmd.extend(["-b", node_info["branch"]])
                 subprocess.run(cmd, check=True)
+            elif pull_branches and "branch" in node_info:
+                print(f"Updating {node_info['name']} to latest {node_info['branch']}...")
+                subprocess.run(["git", "-C", dir_name, "fetch", "origin"], check=True)
+                subprocess.run(["git", "-C", dir_name, "checkout", node_info["branch"]], check=True)
+                subprocess.run(["git", "-C", dir_name, "pull", "origin", node_info["branch"]], check=True)
             else:
                 print(f"{node_info['name']} already exists, skipping clone.")
 
             # Checkout specific commit if branch is a commit hash
-            if (
-                "branch" in node_info and len(node_info["branch"]) == 40
-            ):  # SHA-1 hash length
-                subprocess.run(
-                    ["git", "-C", dir_name, "checkout", node_info["branch"]], check=True
-                )
+            if "branch" in node_info and len(node_info["branch"]) == 40:  # SHA-1 hash length
+                print(f"Checking out specific commit {node_info['branch']}...")
+                subprocess.run(["git", "-C", dir_name, "fetch", "origin"], check=True)
+                subprocess.run(["git", "-C", dir_name, "checkout", node_info["branch"]], check=True)
 
             # Install requirements if present
             requirements_file = node_path / "requirements.txt"
@@ -106,7 +115,7 @@ def setup_nodes():
 
     setup_environment(workspace_dir)
     setup_directories(workspace_dir)
-    install_custom_nodes(workspace_dir)
+    install_custom_nodes(workspace_dir, pull_branches=args.pull_branches)
 
 
 if __name__ == "__main__":
