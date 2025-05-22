@@ -85,6 +85,10 @@ RUN ln -s /workspace/comfystream /workspace/ComfyUI/custom_nodes/comfystream
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install -e . --root-user-action=ignore
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python install.py --workspace /workspace/ComfyUI
 
+# Accept a build-arg that lets CI force-invalidate setup_nodes.py
+ARG CACHEBUST=static
+ENV CACHEBUST=${CACHEBUST}
+
 # Run setup_nodes
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
 
