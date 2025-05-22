@@ -7,6 +7,10 @@ FROM "${BASE_IMAGE}"
 ARG CONDA_VERSION \
     PYTHON_VERSION
 
+# Accept a build-arg that lets CI force-invalidate setup_nodes.py
+ARG CACHEBUST=static
+
+
 ENV TensorRT_ROOT=/opt/TensorRT-10.9.0.34 \
     DEBIAN_FRONTEND=noninteractive \
     CONDA_VERSION="${CONDA_VERSION}" \
@@ -84,6 +88,10 @@ RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip in
 RUN ln -s /workspace/comfystream /workspace/ComfyUI/custom_nodes/comfystream
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install -e . --root-user-action=ignore
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python install.py --workspace /workspace/ComfyUI
+
+
+# Force-invalidate setup_nodes.py if build arg is provided
+ENV CACHEBUST=${CACHEBUST}
 
 # Run setup_nodes
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
