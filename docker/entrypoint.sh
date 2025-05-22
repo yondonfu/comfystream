@@ -98,7 +98,7 @@ if [ "$1" = "--build-engines" ]; then
   fi
 
   # Build Engine for StreamDiffusion
-  if [ ! -f "$TENSORRT_DIR/StreamDiffusion-engines/stream_diffusion_v2_1_fp16.engine" ]; then #TODO: fix relevant file to check
+  if [ ! -f "$TENSORRT_DIR/StreamDiffusion-engines/stabilityai/sd-turbo--lcm_lora-True--tiny_vae-True--max_batch-3--min_batch-3--mode-img2img/unet.engine.opt.onnx" ]; then
     cd /workspace/ComfyUI/custom_nodes/ComfyUI-StreamDiffusion
     MODELS="stabilityai/sd-turbo KBlueLeaf/kohaku-v2.1"
     TIMESTEPS="3"
