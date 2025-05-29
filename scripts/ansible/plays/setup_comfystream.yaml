@@ -3,7 +3,7 @@
   hosts: all
   become: yes
   vars:
-    docker_image: "livepeer/comfystream:0.0.3"
+    docker_image: "livepeer/comfystream:stable"
     comfyui_username: "comfyadmin"
 
   tasks:
