@@ -5,9 +5,6 @@ nodes:
     url: "https://github.com/yondonfu/ComfyUI_TensorRT.git"
     branch: "quantization_with_controlnet_fixes"
     type: "tensorrt"
-    dependencies: 
-      - "onnxruntime-gpu>=1.17.0"
-      - "onnx==1.17.0"
 
   comfyui-depthanything-tensorrt:
     name: "ComfyUI DepthAnything TensorRT"

@@ -54,6 +54,12 @@ def install_custom_nodes(workspace_dir, config_path=None, pull_branches=False):
     custom_nodes_path.mkdir(parents=True, exist_ok=True)
     os.chdir(custom_nodes_path)
 
+    # Get the absolute path to constraints.txt
+    constraints_path = Path(__file__).parent / "constraints.txt"
+    if not constraints_path.exists():
+        print(f"Warning: constraints.txt not found at {constraints_path}")
+        constraints_path = None
+
     try:
         for _, node_info in config["nodes"].items():
             dir_name = node_info["url"].split("/")[-1].replace(".git", "")
@@ -84,24 +90,25 @@ def install_custom_nodes(workspace_dir, config_path=None, pull_branches=False):
             # Install requirements if present
             requirements_file = node_path / "requirements.txt"
             if requirements_file.exists():
-                subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "pip",
-                        "install",
-                        "-r",
-                        str(requirements_file),
-                    ],
-                    check=True,
-                )
+                pip_cmd = [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r",
+                    str(requirements_file),
+                ]
+                if constraints_path and constraints_path.exists():
+                    pip_cmd.extend(["-c", str(constraints_path)])
+                subprocess.run(pip_cmd, check=True)
 
             # Install additional dependencies if specified
             if "dependencies" in node_info:
                 for dep in node_info["dependencies"]:
-                    subprocess.run(
-                        [sys.executable, "-m", "pip", "install", dep], check=True
-                    )
+                    pip_cmd = [sys.executable, "-m", "pip", "install", dep]
+                    if constraints_path and constraints_path.exists():
+                        pip_cmd.extend(["-c", str(constraints_path)])
+                    subprocess.run(pip_cmd, check=True)
 
             print(f"Installed {node_info['name']}")
     except Exception as e:
