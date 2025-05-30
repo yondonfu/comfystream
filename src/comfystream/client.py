@@ -21,6 +21,7 @@ class ComfyStreamClient:
         self.cleanup_lock = asyncio.Lock()
 
     async def set_prompts(self, prompts: List[PromptDictInput]):
+        await self.cancel_running_prompts()
         self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
         for idx in range(len(self.current_prompts)):
             task = asyncio.create_task(self.run_prompt(idx))
@@ -32,18 +33,39 @@ class ComfyStreamClient:
             raise ValueError(
                 "Number of updated prompts must match the number of currently running prompts."
             )
-        self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
+        # Validation step before updating the prompt, only meant for a single prompt for now
+        for idx, prompt in enumerate(prompts):
+            converted_prompt = convert_prompt(prompt)
+            try:
+                await self.comfy_client.queue_prompt(converted_prompt)
+                self.current_prompts[idx] = converted_prompt
+            except Exception as e:
+                raise Exception("Prompt update failed") from e
 
     async def run_prompt(self, prompt_index: int):
         while True:
             try:
                 await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 await self.cleanup()
                 logger.error(f"Error running prompt: {str(e)}")
                 raise
 
     async def cleanup(self):
+        await self.cancel_running_prompts()
+        async with self.cleanup_lock:
+            if self.comfy_client.is_running:
+                try:
+                    await self.comfy_client.__aexit__()
+                except Exception as e:
+                    logger.error(f"Error during ComfyClient cleanup: {e}")
+
+            await self.cleanup_queues()
+            logger.info("Client cleanup complete")
+
+    async def cancel_running_prompts(self):
         async with self.cleanup_lock:
             tasks_to_cancel = list(self.running_prompts.values())
             for task in tasks_to_cancel:
@@ -53,16 +75,6 @@ class ComfyStreamClient:
                 except asyncio.CancelledError:
                     pass
             self.running_prompts.clear()
-
-            if self.comfy_client.is_running:
-                try:
-                    await self.comfy_client.__aexit__()
-                except Exception as e:
-                    logger.error(f"Error during ComfyClient cleanup: {e}")
-
-
-            await self.cleanup_queues()
-            logger.info("Client cleanup complete")
 
         
     async def cleanup_queues(self):

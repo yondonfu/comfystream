@@ -256,7 +256,10 @@ async def offer(request):
                                 "[Control] Missing prompt in update_prompt message"
                             )
                             return
-                        await pipeline.update_prompts(params["prompts"])
+                        try:
+                            await pipeline.update_prompts(params["prompts"])
+                        except Exception as e:
+                            logger.error(f"Error updating prompt: {str(e)}")
                         response = {"type": "prompts_updated", "success": True}
                         channel.send(json.dumps(response))
                     elif params.get("type") == "update_resolution":
