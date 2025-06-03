@@ -40,7 +40,7 @@ class ComfyStreamClient:
                 await self.comfy_client.queue_prompt(converted_prompt)
                 self.current_prompts[idx] = converted_prompt
             except Exception as e:
-                raise Exception("Prompt update failed") from e
+                raise Exception(f"Prompt update failed: {str(e)}") from e
 
     async def run_prompt(self, prompt_index: int):
         while True:
