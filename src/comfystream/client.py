@@ -1,6 +1,7 @@
 import asyncio
 from typing import List
 import logging
+import torch
 
 from comfystream import tensor_cache
 from comfystream.utils import convert_prompt
@@ -19,6 +20,7 @@ class ComfyStreamClient:
         self.running_prompts = {} # To be used for cancelling tasks
         self.current_prompts = []
         self.cleanup_lock = asyncio.Lock()
+        self.is_shutting_down = False
 
     async def set_prompts(self, prompts: List[PromptDictInput]):
         await self.cancel_running_prompts()
@@ -54,48 +56,131 @@ class ComfyStreamClient:
                 raise
 
     async def cleanup(self):
-        await self.cancel_running_prompts()
+        """Clean up all resources and stop all tasks."""
         async with self.cleanup_lock:
-            if self.comfy_client.is_running:
-                try:
-                    await self.comfy_client.__aexit__()
-                except Exception as e:
-                    logger.error(f"Error during ComfyClient cleanup: {e}")
+            try:
+                # Set shutdown flag first to prevent new operations
+                self.is_shutting_down = True
+                logger.info("Starting client cleanup")
 
-            await self.cleanup_queues()
-            logger.info("Client cleanup complete")
+                # First cancel all running prompts
+                await self.cancel_running_prompts()
+                
+                # Then clean up queues and dispose comfy_client
+                await self.cleanup_queues()
+                
+                # Finally unload all models to free GPU memory
+                await self.unload_all_models()
+                
+                logger.info("Client cleanup complete")
+            except Exception as e:
+                logger.error(f"Error during cleanup: {e}")
+                raise
+            finally:
+                # Reset the shutdown flag only if we're not shutting down
+                if not self.is_shutting_down:
+                    self.is_shutting_down = False
 
     async def cancel_running_prompts(self):
-        async with self.cleanup_lock:
-            tasks_to_cancel = list(self.running_prompts.values())
-            for task in tasks_to_cancel:
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-            self.running_prompts.clear()
+        """Cancel all running prompt tasks."""
+        tasks_to_cancel = list(self.running_prompts.values())
+        for task in tasks_to_cancel:
+            task.cancel()
+            try:
+                await asyncio.wait_for(task, timeout=5.0)  # Add timeout for task cancellation
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass
+            except Exception as e:
+                logger.error(f"Error cancelling task: {e}")
+        self.running_prompts.clear()
 
-        
     async def cleanup_queues(self):
-        while not tensor_cache.image_inputs.empty():
-            tensor_cache.image_inputs.get()
+        """Clean up all queues and dispose of the comfy_client."""
+        try:
+            # Clear queues and move CUDA tensors to CPU before discarding
+            while not tensor_cache.image_inputs.empty():
+                try:
+                    tensor = tensor_cache.image_inputs.get_nowait()
+                    if isinstance(tensor, torch.Tensor) and tensor.is_cuda:
+                        tensor.cpu()
+                except Exception as e:
+                    logger.error(f"Error clearing image inputs queue: {e}")
 
-        while not tensor_cache.audio_inputs.empty():
-            tensor_cache.audio_inputs.get()
+            while not tensor_cache.audio_inputs.empty():
+                try:
+                    tensor = tensor_cache.audio_inputs.get_nowait()
+                    if isinstance(tensor, torch.Tensor) and tensor.is_cuda:
+                        tensor.cpu()
+                except Exception as e:
+                    logger.error(f"Error clearing audio inputs queue: {e}")
 
-        while not tensor_cache.image_outputs.empty():
-            await tensor_cache.image_outputs.get()
+            # Use asyncio.wait_for to prevent hanging on queue cleanup
+            try:
+                while not tensor_cache.image_outputs.empty():
+                    try:
+                        tensor = await asyncio.wait_for(
+                            tensor_cache.image_outputs.get_nowait(),
+                            timeout=1.0
+                        )
+                        if isinstance(tensor, torch.Tensor) and tensor.is_cuda:
+                            tensor.cpu()
+                    except asyncio.TimeoutError:
+                        logger.warning("Timeout while clearing image outputs queue")
+                        break
+                    except asyncio.QueueEmpty:
+                        break
+                    except Exception as e:
+                        logger.error(f"Error clearing image outputs queue: {e}")
+            except Exception as e:
+                logger.error(f"Error during image outputs queue cleanup: {e}")
 
-        while not tensor_cache.audio_outputs.empty():
-            await tensor_cache.audio_outputs.get()
+            try:
+                while not tensor_cache.audio_outputs.empty():
+                    try:
+                        tensor = await asyncio.wait_for(
+                            tensor_cache.audio_outputs.get_nowait(),
+                            timeout=1.0
+                        )
+                        if isinstance(tensor, torch.Tensor) and tensor.is_cuda:
+                            tensor.cpu()
+                    except asyncio.TimeoutError:
+                        logger.warning("Timeout while clearing audio outputs queue")
+                        break
+                    except asyncio.QueueEmpty:
+                        break
+                    except Exception as e:
+                        logger.error(f"Error clearing audio outputs queue: {e}")
+            except Exception as e:
+                logger.error(f"Error during audio outputs queue cleanup: {e}")
+
+            # Dispose of the comfy_client
+            if hasattr(self, 'comfy_client') and self.comfy_client.is_running:
+                try:
+                    await asyncio.wait_for(
+                        self.comfy_client.__aexit__(),
+                        timeout=5.0
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning("Timeout while disposing comfy_client")
+                except Exception as e:
+                    logger.error(f"Error disposing comfy_client: {e}")
+
+        except Exception as e:
+            logger.error(f"Error cleaning up queues: {str(e)}")
+            raise
 
     def put_video_input(self, frame):
+        if self.is_shutting_down:
+            logger.warning("Cannot put video input - client is shutting down")
+            return
         if tensor_cache.image_inputs.full():
             tensor_cache.image_inputs.get(block=True)
         tensor_cache.image_inputs.put(frame)
     
     def put_audio_input(self, frame):
+        if self.is_shutting_down:
+            logger.warning("Cannot put audio input - client is shutting down")
+            return
         tensor_cache.audio_inputs.put(frame)
 
     async def get_video_output(self):
@@ -229,3 +314,96 @@ class ComfyStreamClient:
         except Exception as e:
             logger.error(f"Error getting node info: {str(e)}")
             return {}
+
+    async def unload_all_models(self):
+        """Unload all models from memory and release CUDA resources.
+        
+        This sends a special prompt to ComfyUI that triggers unloading of all models.
+        This is useful for freeing up GPU memory and ensuring clean state.
+        """
+        try:
+            unload_prompt = {
+                "2": {
+                    "inputs": {
+                        "value": [
+                            "12",
+                            0
+                        ]
+                    },
+                    "class_type": "UnloadAllModels",
+                    "_meta": {
+                        "title": "UnloadAllModels"
+                    }
+                },
+                "4": {
+                    "inputs": {
+                        "width": 512,
+                        "height": 512,
+                        "font_size": 48,
+                        "font_color": "white",
+                        "background_color": "black",
+                        "x_offset": 0,
+                        "y_offset": 0,
+                        "align": "center",
+                        "wrap_width": 0,
+                        "any": [
+                            "2",
+                            0
+                        ]
+                    },
+                    "class_type": "TextRenderer",
+                    "_meta": {
+                        "title": "Text Renderer"
+                    }
+                },
+                "6": {
+                    "inputs": {
+                        "images": [
+                            "4",
+                            0
+                        ]
+                    },
+                    "class_type": "PreviewImage",
+                    "_meta": {
+                        "title": "Preview Image"
+                    }
+                },
+                "8": {
+                    "inputs": {
+                        "image": "example-512x512.png"
+                    },
+                    "class_type": "LoadImage",
+                    "_meta": {
+                        "title": "Load Image"
+                    }
+                },
+                "12": {
+                    "inputs": {
+                        "text": "true",
+                        "strip_whitespace": True,
+                        "remove_empty_lines": False
+                    },
+                    "class_type": "MultilineText",
+                    "_meta": {
+                        "title": "Multiline Text"
+                    }
+                }
+            }
+            
+            # Convert the prompt to the format expected by ComfyUI
+            converted_prompt = convert_prompt(unload_prompt)
+            
+            # Queue the unload prompt
+            await self.comfy_client.queue_prompt(converted_prompt)
+            
+            # Wait a bit to ensure the unload completes
+            await asyncio.sleep(1.0)
+            
+            # Clear CUDA cache after models are unloaded
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                logger.info("Models unloaded and CUDA cache cleared")
+                
+        except Exception as e:
+            logger.error(f"Error unloading models: {e}")
+            raise

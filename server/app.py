@@ -406,6 +406,26 @@ async def on_shutdown(app: web.Application):
     pcs.clear()
 
 
+async def unload_models(request):
+    """Unload all models from memory and release CUDA resources."""
+    try:
+        # Get the client from the request
+        pipeline = request.app.get("pipeline")
+        if not pipeline.client:
+            return web.json_response({"error": "No client available"}, status=500)
+
+        # Unload all models
+        await pipeline.client.unload_all_models()
+        
+        return web.json_response({
+            "success": True,
+            "message": "All models unloaded successfully"
+        })
+    except Exception as e:
+        logger.error(f"Error unloading models: {e}")
+        return web.json_response({"error": str(e)}, status=500)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run comfystream server")
     parser.add_argument("--port", default=8889, help="Set the signaling port")
@@ -477,6 +497,7 @@ if __name__ == "__main__":
     # WebRTC signalling and control routes.
     app.router.add_post("/offer", offer)
     app.router.add_post("/prompt", set_prompt)
+    app.router.add_post("/unload_models", unload_models)
     
     # Setup HTTP streaming routes
     setup_routes(app, cors)
