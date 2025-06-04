@@ -26,4 +26,10 @@ echo 'alias prepare_examples="/workspace/comfystream/docker/entrypoint.sh --down
 echo -e "\e[32mContainer ready! Run 'prepare_examples' to download models and build engines for example workflows.\e[0m"
 
 cd /workspace/comfystream
-/bin/bash
+
+# Ensure git doesn't complain about comfystream directory ownership
+git config --global --add safe.directory /workspace/comfystream
+
+# Print final success message
+echo -e "\e[32mDevelopment environment setup complete!\e[0m"
+
