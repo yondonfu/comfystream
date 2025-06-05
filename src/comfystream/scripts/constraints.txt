@@ -1,3 +1,7 @@
-onnxruntime-gpu==1.20.2
-onnxruntime==1.17.0
+torch==2.7.0 --index-url https://download.pytorch.org/whl/cu1126
+torchvision==0.22.0
+torchaudio==2.7.0
+xformers==0.0.30
 onnx==1.17.0
+onnxruntime==1.17.0
+onnxruntime-gpu==1.20.2
