@@ -55,7 +55,7 @@ class ComfyStreamClient:
                 logger.error(f"Error running prompt: {str(e)}")
                 raise
 
-    async def cleanup(self):
+    async def cleanup(self, exit_client: bool = False):
         """Clean up all resources and stop all tasks."""
         async with self.cleanup_lock:
             try:
@@ -66,12 +66,26 @@ class ComfyStreamClient:
                 # First cancel all running prompts
                 await self.cancel_running_prompts()
                 
-                # Then clean up queues and dispose comfy_client
+                # Then clean up queues
                 await self.cleanup_queues()
                 
                 # Finally unload all models to free GPU memory
                 await self.unload_all_models()
                 
+                # Optionally fully exit the client
+                if exit_client and self.comfy_client.is_running:
+                    # Dispose of the comfy_client
+                    if hasattr(self, 'comfy_client') and self.comfy_client.is_running:
+                        try:
+                            await asyncio.wait_for(
+                                self.comfy_client.__aexit__(),
+                                timeout=5.0
+                            )
+                        except asyncio.TimeoutError:
+                            logger.warning("Timeout while disposing comfy_client")
+                        except Exception as e:
+                            logger.error(f"Error disposing comfy_client: {e}")
+
                 logger.info("Client cleanup complete")
             except Exception as e:
                 logger.error(f"Error during cleanup: {e}")
@@ -87,7 +101,7 @@ class ComfyStreamClient:
         for task in tasks_to_cancel:
             task.cancel()
             try:
-                await asyncio.wait_for(task, timeout=5.0)  # Add timeout for task cancellation
+                await asyncio.wait_for(task, timeout=0.5)  # Add timeout for task cancellation
             except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass
             except Exception as e:
@@ -152,18 +166,6 @@ class ComfyStreamClient:
                         logger.error(f"Error clearing audio outputs queue: {e}")
             except Exception as e:
                 logger.error(f"Error during audio outputs queue cleanup: {e}")
-
-            # Dispose of the comfy_client
-            if hasattr(self, 'comfy_client') and self.comfy_client.is_running:
-                try:
-                    await asyncio.wait_for(
-                        self.comfy_client.__aexit__(),
-                        timeout=5.0
-                    )
-                except asyncio.TimeoutError:
-                    logger.warning("Timeout while disposing comfy_client")
-                except Exception as e:
-                    logger.error(f"Error disposing comfy_client: {e}")
 
         except Exception as e:
             logger.error(f"Error cleaning up queues: {str(e)}")
