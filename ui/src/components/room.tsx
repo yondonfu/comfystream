@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ControlPanelsContainer } from "@/components/control-panels-container";
+import { StreamControl } from "@/components/stream-control";
 import fixWebmDuration from 'webm-duration-fix';
 import { set, get, del, keys } from 'idb-keyval';
 import { Drawer, DrawerContent, DrawerTitle } from "./ui/drawer";
@@ -163,10 +164,11 @@ interface StageProps {
   onStreamReady: () => void;
   onComfyUIReady: () => void;
   resolution: { width: number; height: number };
+  backendUrl: string;
   onOutputStreamReady: (stream: MediaStream | null) => void;
 }
 
-function Stage({ connected, onStreamReady, onComfyUIReady, resolution, onOutputStreamReady }: StageProps) {
+function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUrl, onOutputStreamReady }: StageProps) {
   const { remoteStream, peerConnection } = usePeerContext();
   const [frameRate, setFrameRate] = useState<number>(0);
   // Add state and refs for tracking frames
@@ -280,6 +282,8 @@ function Stage({ connected, onStreamReady, onComfyUIReady, resolution, onOutputS
           </TooltipProvider>
         </div>
       )}
+      {/* Add StreamControlIcon at the bottom right corner of the video box */}
+      <StreamControl backendUrl={backendUrl} />
     </div>
   );
 }
@@ -534,6 +538,7 @@ export const Room = () => {
                 <Stage
                   connected={isConnected}
                   onStreamReady={onRemoteStreamReady}
+                  backendUrl={config.streamUrl || ""}
                   onComfyUIReady={onComfyUIReady}
                   resolution={config.resolution}
                   onOutputStreamReady={setOutputStream}
