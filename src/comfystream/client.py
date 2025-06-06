@@ -18,7 +18,8 @@ class ComfyStreamClient:
         self.comfy_client = EmbeddedComfyClient(config, max_workers=max_workers)
         self.running_prompts = {} # To be used for cancelling tasks
         self.current_prompts = []
-        self.cleanup_lock = asyncio.Lock()
+        self._cleanup_lock = asyncio.Lock()
+        self._prompt_update_lock = asyncio.Lock()
 
     async def set_prompts(self, prompts: List[PromptDictInput]):
         await self.cancel_running_prompts()
@@ -28,34 +29,36 @@ class ComfyStreamClient:
             self.running_prompts[idx] = task
 
     async def update_prompts(self, prompts: List[PromptDictInput]):
-        # TODO: currently under the assumption that only already running prompts are updated
-        if len(prompts) != len(self.current_prompts):
-            raise ValueError(
-                "Number of updated prompts must match the number of currently running prompts."
-            )
-        # Validation step before updating the prompt, only meant for a single prompt for now
-        for idx, prompt in enumerate(prompts):
-            converted_prompt = convert_prompt(prompt)
-            try:
-                await self.comfy_client.queue_prompt(converted_prompt)
-                self.current_prompts[idx] = converted_prompt
-            except Exception as e:
-                raise Exception(f"Prompt update failed: {str(e)}") from e
+        async with self._prompt_update_lock:
+            # TODO: currently under the assumption that only already running prompts are updated
+            if len(prompts) != len(self.current_prompts):
+                raise ValueError(
+                    "Number of updated prompts must match the number of currently running prompts."
+                )
+            # Validation step before updating the prompt, only meant for a single prompt for now
+            for idx, prompt in enumerate(prompts):
+                converted_prompt = convert_prompt(prompt)
+                try:
+                    await self.comfy_client.queue_prompt(converted_prompt)
+                    self.current_prompts[idx] = converted_prompt
+                except Exception as e:
+                    raise Exception(f"Prompt update failed: {str(e)}") from e
 
     async def run_prompt(self, prompt_index: int):
         while True:
-            try:
-                await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
-            except asyncio.CancelledError:
-                raise
-            except Exception as e:
-                await self.cleanup()
-                logger.error(f"Error running prompt: {str(e)}")
-                raise
+            async with self._prompt_update_lock:
+                try:
+                    await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    await self.cleanup()
+                    logger.error(f"Error running prompt: {str(e)}")
+                    raise
 
     async def cleanup(self):
         await self.cancel_running_prompts()
-        async with self.cleanup_lock:
+        async with self._cleanup_lock:
             if self.comfy_client.is_running:
                 try:
                     await self.comfy_client.__aexit__()
@@ -66,7 +69,7 @@ class ComfyStreamClient:
             logger.info("Client cleanup complete")
 
     async def cancel_running_prompts(self):
-        async with self.cleanup_lock:
+        async with self._cleanup_lock:
             tasks_to_cancel = list(self.running_prompts.values())
             for task in tasks_to_cancel:
                 task.cancel()
