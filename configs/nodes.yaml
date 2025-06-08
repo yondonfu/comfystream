@@ -84,8 +84,3 @@ nodes:
     url: "https://github.com/livepeer/ComfyUI-Stream-Pack"
     branch: "main"
     type: "utility"
-
-  comfyui-unload-models:
-    name: "ComfyUI Unload Models"
-    url: "https://github.com/SeanScripts/ComfyUI-Unload-Model"
-    type: "utility"

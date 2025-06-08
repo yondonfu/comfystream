@@ -17,6 +17,7 @@ from aiohttp import web, MultipartWriter
 from aiohttp_cors import setup as setup_cors, ResourceOptions
 from aiohttp import web
 from aiortc import (
+    MediaStreamError,
     MediaStreamTrack,
     RTCConfiguration,
     RTCIceServer,
@@ -68,11 +69,13 @@ class VideoStreamTrack(MediaStreamTrack):
         )
         self.running = True
         self.collect_task = asyncio.create_task(self.collect_frames())
+        self._ended = False
         
         # Add cleanup when track ends
         @track.on("ended")
         async def on_ended():
             logger.info("Source video track ended, stopping collection")
+            self._ended = True
             await cancel_collect_frames(self)
 
     async def collect_frames(self):
@@ -80,7 +83,7 @@ class VideoStreamTrack(MediaStreamTrack):
         the processing pipeline. Stops when track ends or connection closes.
         """
         try:
-            while self.running:
+            while self.running and not self._ended:
                 try:
                     frame = await self.track.recv()
                     await self.pipeline.put_video_frame(frame)
@@ -95,34 +98,40 @@ class VideoStreamTrack(MediaStreamTrack):
                     self.running = False
                     break
             
-            # Perform cleanup outside the exception handler
             logger.info("Video frame collection stopped")
         except asyncio.CancelledError:
             logger.info("Frame collection task cancelled")
         except Exception as e:
             logger.error(f"Unexpected error in frame collection: {str(e)}")
         finally:
-            await self.pipeline.cleanup()
+            await self.fps_meter.stop()
+            if not self._ended:  # Only cleanup if not ended (new track will handle cleanup)
+                await self.pipeline.cleanup()
 
     async def recv(self):
-        """Receive a processed video frame from the pipeline, increment the frame
-        count for FPS calculation and return the processed frame to the client.
-        """
-        processed_frame = await self.pipeline.get_processed_video_frame()
-
-                # Update the frame buffer with the processed frame
+        """Receive a processed video frame from the pipeline."""
+        if self._ended:
+            raise MediaStreamError("Track ended")
+            
         try:
-            from frame_buffer import FrameBuffer
-            frame_buffer = FrameBuffer.get_instance()
-            frame_buffer.update_frame(processed_frame)
+            processed_frame = await self.pipeline.get_processed_video_frame() 
+
+            # Update the frame buffer with the processed frame
+            try:
+                from frame_buffer import FrameBuffer
+                frame_buffer = FrameBuffer.get_instance()
+                frame_buffer.update_frame(processed_frame)
+            except Exception as e:
+                pass
+                # logger.error(f"Error updating frame buffer: {e}")
+
+            # Increment the frame count to calculate FPS
+            await self.fps_meter.increment_frame_count()
+
+            return processed_frame
         except Exception as e:
-            # Don't let frame buffer errors affect the main pipeline
-            print(f"Error updating frame buffer: {e}")
-
-        # Increment the frame count to calculate FPS.
-        await self.fps_meter.increment_frame_count()
-
-        return processed_frame
+            logger.error(f"Error receiving processed frame: {e}")
+            raise
 
 
 class AudioStreamTrack(MediaStreamTrack):
@@ -220,7 +229,22 @@ async def offer(request):
 
     params = await request.json()
 
-    await pipeline.set_prompts(params["prompts"])
+    # Start the pipeline with client configuration and prompts
+    try:
+        await pipeline.start(
+            prompts=params["prompts"],
+            max_workers=1,
+            cwd=request.app["workspace"],
+            disable_cuda_malloc=True,
+            gpu_only=True,
+            preview_method='none'
+        )
+    except Exception as e:
+        logger.error(f"Error starting pipeline: {e}")
+        return web.json_response(
+            {"error": f"Failed to start pipeline: {str(e)}"},
+            status=500
+        )
 
     offer_params = params["offer"]
     offer = RTCSessionDescription(sdp=offer_params["sdp"], type=offer_params["type"])
@@ -292,7 +316,8 @@ async def offer(request):
                         
                         # Warm the video pipeline with the new resolution
                         if "m=video" in pc.remoteDescription.sdp:
-                            await pipeline.warm_video()
+                            logger.info("[Control] Warming video")
+                            await pipeline.warm_video(1, pipeline.width, pipeline.height)
                             
                         response = {
                             "type": "resolution_updated",
@@ -347,17 +372,12 @@ async def offer(request):
     # Only warm audio here, video warming happens after resolution update
     if "m=audio" in pc.remoteDescription.sdp:
         await pipeline.warm_audio()
-    
-    # We no longer warm video here - it will be warmed after receiving resolution
 
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
 
-    return web.Response(
-        content_type="application/json",
-        text=json.dumps(
-            {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
-        ),
+    return web.json_response(
+        {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
     )
 
 async def cancel_collect_frames(track):

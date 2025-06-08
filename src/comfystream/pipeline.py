@@ -30,40 +30,97 @@ class Pipeline:
             height: Height of the video frames (default: 512)
             comfyui_inference_log_level: The logging level for ComfyUI inference.
                 Defaults to None, using the global ComfyUI log level.
-            **kwargs: Additional arguments to pass to the ComfyStreamClient
         """
-        self.client = ComfyStreamClient(**kwargs)
+        # Store basic parameters
         self.width = width
         self.height = height
-
+        self._comfyui_inference_log_level = comfyui_inference_log_level
+        self.client = None
+        self._start_lock = asyncio.Lock()
         self.video_incoming_frames = asyncio.Queue()
         self.audio_incoming_frames = asyncio.Queue()
-
         self.processed_audio_buffer = np.array([], dtype=np.int16)
+        self._error_handler_task = None
+        self._is_running = False
+        self._frame_processing_task = None
+        self.video_track = None
+        self._startup_event = asyncio.Event()
 
-        self._comfyui_inference_log_level = comfyui_inference_log_level
+    async def start(self, prompts: Optional[Union[Dict[Any, Any], List[Dict[Any, Any]]]] = None, **client_kwargs):
+        """Start the pipeline and error monitoring."""
+        async with self._start_lock:
+            
+            # Initialize client first
+            if self.client is None or self.client.cleanup_lock.locked():
+                logger.info("Initializing new client for pipeline")
+                self.client = ComfyStreamClient(**client_kwargs)
+                await self.client.start_error_monitor()
+            
+            # Set running state after client is initialized
+            self._is_running = True
+            
+            # Start error handler
+            self._error_handler_task = asyncio.create_task(self._handle_errors())
+            
+            # Run prompts if provided
+            if prompts:
+                await self.client.set_prompts(prompts)
+            
+            # Signal that pipeline is ready
+            self._startup_event.set()
+            
+            # Start video track if it exists
+            if self.video_track:
+                await self.video_track.start()
 
-    async def warm_video(self):
-        """Warm up the video processing pipeline with dummy frames."""
-        # Create dummy frame with the CURRENT resolution settings
-        dummy_frame = av.VideoFrame()
-        dummy_frame.side_data.input = torch.randn(1, self.height, self.width, 3)
+    async def stop(self):
+        """Stop the pipeline and error monitoring."""
+        if not self._is_running:
+            return
         
-        logger.info(f"Warming video pipeline with resolution {self.width}x{self.height}")
+        self._is_running = False
+        self._startup_event.clear()
+        
+        # Cancel error handler
+        if self._error_handler_task:
+            self._error_handler_task.cancel()
+            try:
+                await self._error_handler_task
+            except asyncio.CancelledError:
+                pass
+            self._error_handler_task = None
 
-        for _ in range(WARMUP_RUNS):
-            self.client.put_video_input(dummy_frame)
-            await self.client.get_video_output()
+        # Clear video queue
+        while not self.video_incoming_frames.empty():
+            try:
+                frame = self.video_incoming_frames.get_nowait()
+                self._unload_frame_tensors(frame)
+            except Exception as e:
+                logger.error(f"Error clearing video queue: {e}")
 
-    async def warm_audio(self):
-        """Warm up the audio processing pipeline with dummy frames."""
-        dummy_frame = av.AudioFrame()
-        dummy_frame.side_data.input = np.random.randint(-32768, 32767, int(48000 * 0.5), dtype=np.int16)   # TODO: adds a lot of delay if it doesn't match the buffer size, is warmup needed?
-        dummy_frame.sample_rate = 48000
+        # Clear audio queue  
+        while not self.audio_incoming_frames.empty():
+            try:
+                frame = self.audio_incoming_frames.get_nowait()
+                self._unload_frame_tensors(frame)
+            except Exception as e:
+                logger.error(f"Error clearing audio queue: {e}")
+                
+        self.processed_audio_buffer = np.array([], dtype=np.int16)
+        await self.client.stop_error_monitor()
+        await self.client.cleanup(exit_client=True)
 
-        for _ in range(WARMUP_RUNS):
-            self.client.put_audio_input(dummy_frame)
-            await self.client.get_audio_output()
+    async def _handle_errors(self):
+        """Handle errors from the client."""
+        while self._is_running:
+            try:
+                error = await self.client.error_queue.get()
+                logger.error(f"Pipeline error: {error}")
+                self.client.error_queue.task_done()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in error handler: {e}")
 
     async def set_prompts(self, prompts: Union[Dict[Any, Any], List[Dict[Any, Any]]]):
         """Set the processing prompts for the pipeline.
@@ -71,6 +128,9 @@ class Pipeline:
         Args:
             prompts: Either a single prompt dictionary or a list of prompt dictionaries
         """
+        if self.client is None:
+            raise RuntimeError("Pipeline client not initialized. Call start() first.")
+            
         if isinstance(prompts, list):
             await self.client.set_prompts(prompts)
         else:
@@ -82,10 +142,21 @@ class Pipeline:
         Args:
             prompts: Either a single prompt dictionary or a list of prompt dictionaries
         """
+        if self.client is None:
+            raise RuntimeError("Pipeline client not initialized. Call start() first.")
+            
         if isinstance(prompts, list):
             await self.client.update_prompts(prompts)
         else:
             await self.client.update_prompts([prompts])
+
+    async def warm_video(self, WARMUP_RUNS: int = 5, width: int = 512, height: int = 512):
+        """Warm up the video processing pipeline."""
+        await self.client.warm_video(WARMUP_RUNS, width, height)
+        
+    async def warm_audio(self, WARMUP_RUNS: int = 5, sample_rate: int = 48000, buffer_size: int = 48000):
+        """Warm up the audio processing pipeline."""
+        await self.client.warm_audio(WARMUP_RUNS, sample_rate, buffer_size)
 
     async def put_video_frame(self, frame: av.VideoFrame):
         """Queue a video frame for processing.
@@ -156,7 +227,6 @@ class Pipeline:
         """
         return av.AudioFrame.from_ndarray(np.repeat(output, 2).reshape(1, -1))
     
-    # TODO: make it generic to support purely generative video cases
     async def get_processed_video_frame(self) -> av.VideoFrame:
         """Get the next processed video frame.
         
@@ -207,4 +277,22 @@ class Pipeline:
     
     async def cleanup(self):
         """Clean up resources used by the pipeline."""
-        await self.client.cleanup() 
+        await self.stop()
+    
+        
+    # Clear queues and move CUDA tensors to CPU before discarding
+    def _unload_frame_tensors(self, frame):
+        """Move CUDA tensors in frame to CPU."""
+        if hasattr(frame, 'side_data') and hasattr(frame.side_data, 'input'):
+            if isinstance(frame.side_data.input, torch.Tensor) and frame.side_data.input.is_cuda:
+                frame.side_data.input = frame.side_data.input.cpu()
+
+    def set_video_track(self, track):
+        """Set the video track and start it if pipeline is running."""
+        self.video_track = track
+        if self._is_running and self._startup_event.is_set():
+            asyncio.create_task(track.start())
+
+    async def wait_for_startup(self):
+        """Wait for pipeline to be fully initialized and ready."""
+        await self._startup_event.wait()

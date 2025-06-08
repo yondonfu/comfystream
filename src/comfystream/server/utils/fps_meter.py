@@ -23,14 +23,42 @@ class FPSMeter:
         self._running_event = asyncio.Event()
         self._metrics_manager = metrics_manager
         self.track_id = track_id
+        self._fps_loop_task = None
+        self._is_running = False
 
-        asyncio.create_task(self._calculate_fps_loop())
+    async def start(self):
+        """Start the FPS calculation loop."""
+        if self._is_running:
+            return
+        
+        self._is_running = True
+        self._running_event.set()
+        self._fps_loop_task = asyncio.create_task(self._calculate_fps_loop())
+
+    async def stop(self):
+        """Stop the FPS calculation loop."""
+        self._is_running = False
+        self._running_event.clear()
+        if self._fps_loop_task:
+            self._fps_loop_task.cancel()
+            try:
+                await self._fps_loop_task
+            except asyncio.CancelledError:
+                pass
+            self._fps_loop_task = None
+        
+        # Reset all counters
+        async with self._lock:
+            self._fps_interval_frame_count = 0
+            self._last_fps_calculation_time = None
+            self._fps_loop_start_time = None
+            self._fps = 0.0
+            self._fps_measurements.clear()
 
     async def _calculate_fps_loop(self):
         """Loop to calculate FPS periodically."""
-        await self._running_event.wait()
         self._fps_loop_start_time = time.monotonic()
-        while True:
+        while self._is_running:
             async with self._lock:
                 current_time = time.monotonic()
                 if self._last_fps_calculation_time is not None:
@@ -58,10 +86,11 @@ class FPSMeter:
 
     async def increment_frame_count(self):
         """Increment the frame count to calculate FPS."""
+        if not self._is_running:
+            await self.start()
+        
         async with self._lock:
             self._fps_interval_frame_count += 1
-            if not self._running_event.is_set():
-                self._running_event.set()
 
     @property
     async def fps(self) -> float:
