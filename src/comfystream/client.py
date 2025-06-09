@@ -24,6 +24,7 @@ class ComfyStreamClient:
         self.running_prompts = {} # To be used for cancelling tasks
         self.current_prompts = []
         self.cleanup_lock = asyncio.Lock()
+        self._prompt_update_lock = asyncio.Lock()
         self.error_queue = asyncio.Queue()
         self._error_monitor_task = None
 
@@ -66,30 +67,33 @@ class ComfyStreamClient:
             self.running_prompts[idx] = task
 
     async def update_prompts(self, prompts: List[PromptDictInput]):
-        # TODO: currently under the assumption that only already running prompts are updated
-        if len(prompts) != len(self.current_prompts):
-            raise ValueError(
-                "Number of updated prompts must match the number of currently running prompts."
-            )
-        # Validation step before updating the prompt, only meant for a single prompt for now
-        for idx, prompt in enumerate(prompts):
-            converted_prompt = convert_prompt(prompt)
-            try:
-                await self.comfy_client.queue_prompt(converted_prompt)
-                self.current_prompts[idx] = converted_prompt
-            except Exception as e:
-                raise Exception(f"Prompt update failed: {str(e)}") from e
+        async with self._prompt_update_lock:
+            # TODO: currently under the assumption that only already running prompts are updated
+            if len(prompts) != len(self.current_prompts):
+                raise ValueError(
+                    "Number of updated prompts must match the number of currently running prompts."
+                )
+            # Validation step before updating the prompt, only meant for a single prompt for now
+            for idx, prompt in enumerate(prompts):
+                converted_prompt = convert_prompt(prompt)
+                try:
+                    await self.comfy_client.queue_prompt(converted_prompt)
+                    self.current_prompts[idx] = converted_prompt
+                except Exception as e:
+                    raise Exception(f"Prompt update failed: {str(e)}") from e
 
     async def run_prompt(self, prompt_index: int):
         while True:
-            try:
-                await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
-            except asyncio.CancelledError:
-                raise
-            except Exception as e:
-                await self.report_error(e)
-                await self.cleanup()
-                raise
+            async with self._prompt_update_lock:
+                try:
+                    await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    await self.report_error(e)
+                    await self.cleanup()
+                    logger.error(f"Error running prompt: {str(e)}")
+                    raise
 
     async def warm_video(self, WARMUP_RUNS: int = 5, width: int = 512, height: int = 512):
         """Warm up the video processing pipeline with dummy frames."""
@@ -159,18 +163,25 @@ class ComfyStreamClient:
                 await self.report_error(e)
                 raise
 
-    async def cancel_running_prompts(self):
+    async def cancel_running_prompts(self, use_lock: bool = True):
         """Cancel all running prompt tasks."""
-        tasks_to_cancel = list(self.running_prompts.values())
-        for task in tasks_to_cancel:
-            task.cancel()
-            try:
-                await asyncio.wait_for(task, timeout=0.5)  # Add timeout for task cancellation
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
-            except Exception as e:
-                logger.error(f"Error cancelling task: {e}")
-        self.running_prompts.clear()
+        async def _cancel():
+            tasks_to_cancel = list(self.running_prompts.values())
+            for task in tasks_to_cancel:
+                task.cancel()
+                try:
+                    await asyncio.wait_for(task, timeout=0.5)  # Add timeout for task cancellation
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    pass
+                except Exception as e:
+                    logger.error(f"Error cancelling task: {e}")
+            self.running_prompts.clear()
+
+        if use_lock:
+            async with self.cleanup_lock:
+                await _cancel()
+        else:
+            await _cancel()
 
     async def cleanup_queues(self):
         """Clean up all queues and dispose of the comfy_client."""
