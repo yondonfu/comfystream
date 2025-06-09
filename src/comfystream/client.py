@@ -124,7 +124,7 @@ class ComfyStreamClient:
                 logger.info("Starting client cleanup")
 
                 # First cancel all running prompts without acquiring the lock again
-                await self.cancel_running_prompts()
+                await self.cancel_running_prompts(use_lock=False)
                 self.current_prompts.clear()
                 
                 # Clean up queues with timeout
