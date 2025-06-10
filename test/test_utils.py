@@ -1,6 +1,6 @@
 import pytest
 
-from hiddenswitch_comfy.api.components.schema.prompt import Prompt
+from comfy.api.components.schema.prompt import Prompt
 from comfystream.utils import convert_prompt
 
 

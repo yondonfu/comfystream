@@ -64,7 +64,7 @@ RUN conda run -n comfystream pip install --no-cache-dir \
     ${TensorRT_ROOT}/python/tensorrt-10.9.0.34-cp311-none-linux_x86_64.whl
 
 # Clone ComfyUI
-RUN git clone --branch v0.3.39 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+RUN git clone --branch v0.3.27 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
 
 # Copy only files needed for setup
 COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
@@ -104,8 +104,5 @@ RUN conda config --set auto_activate_base false && \
 
 # Set comfystream environment as default
 RUN echo "conda activate comfystream" >> ~/.bashrc
-
-# Set /workspace/ComfyUI to PYTHONPATH
-RUN echo "export PYTHONPATH=/workspace/ComfyUI" >> ~/.bashrc
 
 WORKDIR /workspace/comfystream
