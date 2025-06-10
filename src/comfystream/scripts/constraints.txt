@@ -5,3 +5,4 @@ xformers==0.0.30
 onnx==1.17.0
 onnxruntime==1.17.0
 onnxruntime-gpu==1.20.2
+onnxmltools==1.13.0
