@@ -24,6 +24,9 @@ dev = ["pytest", "pytest-cov"]
 [project.urls]
 repository = "https://github.com/yondonfu/comfystream"
 
+[project.scripts]
+comfystream-build-trt = "comfystream.scripts.build_trt:main"
+
 [tool.comfy]
 PublisherId = "livepeer-comfystream"
 DisplayName = "ComfyStream"
