@@ -3,26 +3,12 @@
 set -e
 eval "$(conda shell.bash hook)"
 
-if [ "$1" = "--server" ]; then
-  # Handle workspace mounting
-  if [ -d "/app" ] && [ ! -d "/app/miniconda3" ]; then
-    echo "Initializing workspace in /app..."
-    cp -r /workspace/* /app
-  fi
-
-  if [ -d "/app" ] && [ ! -L "/workspace" ]; then
-    echo "Starting from volume mount /app..."
-    cd / && rm -rf /workspace
-    ln -sf /app /workspace
-    cd /workspace/comfystream
-  fi
-fi
-
 # Add help command to show usage
 show_help() {
   echo "Usage: entrypoint.sh [OPTIONS]"
   echo ""
   echo "Options:"
+  echo "  --use-volume     Initialize persistent volume mount"
   echo "  --download-models       Download default models"
   echo "  --build-engines         Build TensorRT engines for default models"
   echo "  --opencv-cuda           Setup OpenCV with CUDA support"
@@ -34,6 +20,36 @@ show_help() {
 if [ "$1" = "--help" ]; then
   show_help
   exit 0
+fi
+
+# Define reusable paths
+WORKSPACE_STORAGE="/app/storage"
+COMFYUI_DIR="/workspace/ComfyUI"
+MODELS_DIR="$COMFYUI_DIR/models"
+OUTPUT_DIR="$COMFYUI_DIR/output"
+
+# Map persistent volume mount for models and engines using symlinks
+if [ "$1" = "--use-volume" ] && [ -d "$WORKSPACE_STORAGE" ]; then
+  echo "Initializing persistent volume mount..."
+  if [ ! -L "$MODELS_DIR" ]; then
+      rm -rf "$MODELS_DIR"
+      ln -s $WORKSPACE_STORAGE/ComfyUI--models "$MODELS_DIR"
+      echo "created symlink for models at $MODELS_DIR"
+  else
+      echo "symlink for models already exists at $MODELS_DIR"
+  fi
+
+  if [ ! -L "$OUTPUT_DIR" ]; then
+      rm -rf "$OUTPUT_DIR"
+      ln -s $WORKSPACE_STORAGE/ComfyUI--output "$OUTPUT_DIR"
+      if [ ! -d "$WORKSPACE_STORAGE/ComfyUI--output/tensorrt" ]; then
+          mkdir -p "$WORKSPACE_STORAGE/ComfyUI--output/tensorrt"
+      fi
+      echo "created symlink for output at $OUTPUT_DIR"
+  else
+      echo "symlink for output already exists at $OUTPUT_DIR"
+  fi
+  shift
 fi
 
 if [ "$1" = "--download-models" ]; then
