@@ -45,6 +45,8 @@ RUN mkdir -p /workspace/comfystream && \
     wget "https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_VERSION}-Linux-x86_64.sh" -O /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -b -p /workspace/miniconda3 && \
     eval "$(/workspace/miniconda3/bin/conda shell.bash hook)" && \
+    /workspace/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    /workspace/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
     conda create -n comfystream python="${PYTHON_VERSION}" ffmpeg=6 -c conda-forge -y && \
     rm /tmp/miniconda.sh && echo 'export LD_LIBRARY_PATH=/workspace/miniconda3/envs/comfystream/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
 
