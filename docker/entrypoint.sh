@@ -12,7 +12,9 @@ show_help() {
   echo "  --download-models       Download default models"
   echo "  --build-engines         Build TensorRT engines for default models"
   echo "  --opencv-cuda           Setup OpenCV with CUDA support"
-  echo "  --server                Start the Comfystream server, UI and ComfyUI"
+  echo "  --server                Start ComfyUI only"
+  echo "  --api                   Start ComfyStream API Server only"
+  echo "  --ui                    Start ComfyStream UI only"
   echo "  --help                  Show this help message"
   echo ""
 }
@@ -27,6 +29,26 @@ WORKSPACE_STORAGE="/app/storage"
 COMFYUI_DIR="/workspace/ComfyUI"
 MODELS_DIR="$COMFYUI_DIR/models"
 OUTPUT_DIR="$COMFYUI_DIR/output"
+
+# Initialize variables to track which services to start
+START_COMFYUI=false
+START_API=false
+START_UI=false
+
+# First pass: check for service flags and set variables
+for arg in "$@"; do
+  case "$arg" in
+    --server)
+      START_COMFYUI=true
+      ;;
+    --api)
+      START_API=true
+      ;;
+    --ui)
+      START_UI=true
+      ;;
+  esac
+done
 
 # Map persistent volume mount for models and engines using symlinks
 if [ "$1" = "--use-volume" ] && [ -d "$WORKSPACE_STORAGE" ]; then
@@ -186,11 +208,29 @@ if [ "$1" = "--opencv-cuda" ]; then
   shift
 fi
 
-if [ "$1" = "--server" ]; then
-  /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
-  shift
-fi
-
 cd /workspace/comfystream
+
+# If any service flags were specified, start supervisord and the requested services
+if [ "$START_COMFYUI" = true ] || [ "$START_API" = true ] || [ "$START_UI" = true ]; then
+  # Start supervisord in background
+  /usr/bin/supervisord -c /etc/supervisor/supervisord.conf &
+  sleep 2  # Give supervisord time to start
+  
+  # Start requested services
+  if [ "$START_COMFYUI" = true ]; then
+    supervisorctl -c /etc/supervisor/supervisord.conf start comfyui
+  fi
+  
+  if [ "$START_API" = true ]; then
+    supervisorctl -c /etc/supervisor/supervisord.conf start comfystream-api
+  fi
+  
+  if [ "$START_UI" = true ]; then
+    supervisorctl -c /etc/supervisor/supervisord.conf start comfystream-ui
+  fi
+  
+  # Keep the script running
+  tail -f /var/log/supervisord.log
+fi
 
 exec "$@"
