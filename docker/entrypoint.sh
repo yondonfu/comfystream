@@ -130,14 +130,6 @@ if [ "$1" = "--build-engines" ]; then
     echo "Engine for DepthAnything2 (large) already exists at ${DEPTH_ANYTHING_DIR}/${DEPTH_ANYTHING_ENGINE_LARGE}, skipping..."
   fi
 
-  # Build Engines for FasterLivePortrait
-  if [ ! -f "$FASTERLIVEPORTRAIT_DIR/warping_spade-fix.trt" ]; then
-    cd "$FASTERLIVEPORTRAIT_DIR"
-    bash /workspace/ComfyUI/custom_nodes/ComfyUI-FasterLivePortrait/scripts/build_fasterliveportrait_trt.sh "${FASTERLIVEPORTRAIT_DIR}" "${FASTERLIVEPORTRAIT_DIR}" "${FASTERLIVEPORTRAIT_DIR}"
-  else
-    echo "Engines for FasterLivePortrait already exists, skipping..."
-  fi
-
   # Build Engine for StreamDiffusion
   if [ ! -f "$TENSORRT_DIR/StreamDiffusion-engines/stabilityai/sd-turbo--lcm_lora-True--tiny_vae-True--max_batch-3--min_batch-3--mode-img2img/unet.engine.opt.onnx" ]; then
     cd /workspace/ComfyUI/custom_nodes/ComfyUI-StreamDiffusion
@@ -166,7 +158,7 @@ if [ "$1" = "--opencv-cuda" ]; then
   if [ ! -f "/workspace/comfystream/opencv-cuda-release.tar.gz" ]; then
     # Download and extract OpenCV CUDA build
     DOWNLOAD_NAME="opencv-cuda-release.tar.gz"
-    wget -q -O "$DOWNLOAD_NAME" https://github.com/JJassonn69/ComfyUI-Stream-Pack/releases/download/v1.0/opencv-cuda-release.tar.gz
+    wget -q -O "$DOWNLOAD_NAME" https://github.com/JJassonn69/ComfyUI-Stream-Pack/releases/download/v2/opencv-cuda-release.tar.gz
     tar -xzf "$DOWNLOAD_NAME" -C /workspace/comfystream/
     rm "$DOWNLOAD_NAME"
   else

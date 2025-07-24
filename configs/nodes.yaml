@@ -2,19 +2,13 @@ nodes:
   # Core TensorRT nodes
   comfyui-tensorrt:
     name: "ComfyUI TensorRT"
-    url: "https://github.com/yondonfu/ComfyUI_TensorRT.git"
-    branch: "quantization_with_controlnet_fixes"
+    url: "https://github.com/eliteprox/ComfyUI_TensorRT.git"
+    branch: "chore/upgrade-onnxmltools-1.14.0"
     type: "tensorrt"
 
   comfyui-depthanything-tensorrt:
     name: "ComfyUI DepthAnything TensorRT"
     url: "https://github.com/yuvraj108c/ComfyUI-Depth-Anything-Tensorrt"
-    type: "tensorrt"
-
-  comfyui-fasterliveportrait:
-    name: "ComfyUI FasterLivePortrait"
-    url: "https://github.com/pschroedl/ComfyUI-FasterLivePortrait.git"
-    branch: "main"
     type: "tensorrt"
 
   comfyui-streamdiffusion:
