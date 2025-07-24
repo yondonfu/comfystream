@@ -8,35 +8,41 @@ This PR creates a new GitHub workflow and updates the OpenCV build process based
 
 ### 1. New GitHub Workflow (`.github/workflows/opencv-cuda-build.yaml`)
 
-- **Automated building** of OpenCV with CUDA support
+- **Docker-based automated building** using `livepeer/comfyui-base` as foundation
 - **Artifact generation** for distribution and deployment
 - **Configurable parameters** for OpenCV version and CUDA architecture
 - **Self-hosted GPU runner** support for optimal build environment
 - **Release automation** for tagged versions
 
 #### Key Features:
+- **Dockerfile-based builds** for better maintainability
 - Triggers on changes to build-related files
 - Manual dispatch with customizable options
 - Produces downloadable artifacts with 30-day retention
 - Creates GitHub releases for tagged versions
+- **Modular script architecture** separated from workflow logic
 - Comprehensive build verification
 
-### 2. Updated Build Script (`docker/opencv-build.sh`)
+### 2. Docker-based Build System
 
-Based on the enhanced script from the comfystream documentation, this includes:
+#### New Dockerfile (`docker/Dockerfile.opencv-cuda`)
+- **Uses `livepeer/comfyui-base`** as the foundation image
+- **Modular script execution** for better maintainability
+- **Configurable build arguments** for OpenCV version and CUDA architecture
+- **Multi-stage verification** throughout the build process
 
-- **Comprehensive dependency installation** with all required system packages
-- **Flexible Python environment detection** (Conda vs system Python)
-- **Enhanced CMake configuration** with optimized build flags
-- **Custom toolchain file** to avoid Conda path conflicts
-- **Automatic verification** of CUDA functionality
-- **Detailed logging** and progress information
+#### Modular Build Scripts
+1. **`scripts/opencv-cuda-deps.sh`** - Comprehensive dependency installation
+2. **`scripts/opencv-build.sh`** - Core OpenCV compilation (updated from documentation)
+3. **`scripts/opencv-package.sh`** - Artifact creation with installation script
 
 #### Improvements from Documentation:
 - Updated to OpenCV 4.11.0 by default
+- **Modular architecture** instead of monolithic scripts
 - Better handling of CUDA architectures
 - Improved library path management
 - Enhanced error handling and verification
+- **Docker layer optimization** for faster rebuilds
 
 ### 3. Enhanced Entrypoint Script (`docker/entrypoint.sh`)
 
@@ -96,7 +102,10 @@ All changes maintain full backward compatibility:
 ## Files Changed
 
 - ✅ `.github/workflows/opencv-cuda-build.yaml` (new)
-- ✅ `docker/opencv-build.sh` (new)
+- ✅ `docker/Dockerfile.opencv-cuda` (new)
+- ✅ `scripts/opencv-cuda-deps.sh` (new)
+- ✅ `scripts/opencv-build.sh` (new)
+- ✅ `scripts/opencv-package.sh` (new)
 - ✅ `docker/entrypoint.sh` (updated)
 - ✅ `docs/opencv-cuda-build.md` (new documentation)
 

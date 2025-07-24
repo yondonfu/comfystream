@@ -22,11 +22,13 @@ The new `.github/workflows/opencv-cuda-build.yaml` workflow provides:
 - **Manual dispatch** (with configurable parameters)
 
 ### Features
+- **Docker-based builds** using `livepeer/comfyui-base` as base image
 - Builds OpenCV 4.11.0 with CUDA support by default
 - Configurable OpenCV version and CUDA architecture
 - Runs on self-hosted GPU runners
 - Produces downloadable artifacts
 - Creates GitHub releases for tagged versions
+- **Maintainable scripts** separated from workflow logic
 
 ### Manual Execution
 You can manually trigger the workflow with custom parameters:
@@ -38,9 +40,20 @@ You can manually trigger the workflow with custom parameters:
    - `opencv_version`: OpenCV version to build (default: 4.11.0)
    - `cuda_arch`: CUDA architecture (default: 8.0+PTX)
 
-## Build Script Updates
+## Build System Architecture
 
-The new `docker/opencv-build.sh` script includes:
+The new build system consists of modular scripts and Docker-based builds:
+
+### Docker-based Build (`docker/Dockerfile.opencv-cuda`)
+- **Uses `livepeer/comfyui-base`** as the foundation
+- **Modular script execution** for maintainability
+- **Environment variable configuration** for flexibility
+- **Multi-stage verification** throughout the build process
+
+### Build Scripts
+1. **`scripts/opencv-cuda-deps.sh`** - Handles all dependency installation
+2. **`scripts/opencv-build.sh`** - Core OpenCV compilation logic  
+3. **`scripts/opencv-package.sh`** - Artifact creation and packaging
 
 ### Improvements from Documentation
 - **Better dependency management** with comprehensive system packages
@@ -49,6 +62,7 @@ The new `docker/opencv-build.sh` script includes:
 - **Improved toolchain file** to avoid Conda conflicts
 - **Verification step** to ensure CUDA support is working
 - **Detailed logging** and progress information
+- **Maintainable modular scripts** instead of monolithic builds
 
 ### Configuration Options
 Environment variables you can set:

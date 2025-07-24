@@ -1,0 +1,38 @@
+ARG BASE_IMAGE=livepeer/comfyui-base:latest
+FROM ${BASE_IMAGE}
+
+# Build arguments
+ARG OPENCV_VERSION=4.11.0
+ARG CUDA_ARCH_LIST="8.0+PTX"
+ARG PYTHON_VERSION=3.11
+
+# Set environment variables
+ENV OPENCV_VERSION=${OPENCV_VERSION} \
+    CUDA_ARCH_LIST=${CUDA_ARCH_LIST} \
+    PYTHON_VERSION=${PYTHON_VERSION} \
+    WORKSPACE_DIR=/workspace \
+    BUILD_JOBS=8
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy build scripts
+COPY scripts/opencv-cuda-deps.sh /workspace/scripts/
+COPY scripts/opencv-build.sh /workspace/scripts/
+COPY scripts/opencv-package.sh /workspace/scripts/
+
+# Install additional dependencies needed for OpenCV build
+RUN chmod +x /workspace/scripts/*.sh && \
+    /workspace/scripts/opencv-cuda-deps.sh
+
+# Build OpenCV with CUDA support
+RUN /workspace/scripts/opencv-build.sh
+
+# Package the built OpenCV
+RUN /workspace/scripts/opencv-package.sh
+
+# Verify the installation
+RUN python3 -c "import cv2; print(f'OpenCV {cv2.__version__} with {cv2.cuda.getCudaEnabledDeviceCount()} CUDA devices')"
+
+# Set the default command
+CMD ["/bin/bash"]
