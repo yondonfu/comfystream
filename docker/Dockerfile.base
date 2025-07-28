@@ -20,7 +20,6 @@ RUN apt update && apt install -yqq --no-install-recommends \
     socat \
     libsndfile1 \
     build-essential \
-    \
     llvm \
     tk-dev \
     libglvnd-dev \
@@ -50,22 +49,19 @@ RUN mkdir -p /workspace/comfystream && \
     rm /tmp/miniconda.sh && echo 'export LD_LIBRARY_PATH=/workspace/miniconda3/envs/comfystream/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
 
 RUN conda run -n comfystream --no-capture-output pip install --upgrade pip && \
-    conda run -n comfystream --no-capture-output pip install wheel && \
-    conda run -n comfystream --no-capture-output pip install --upgrade --root-user-action=ignore \
-    tensorrt-cu12==10.12.0.36 \
-    onnx==1.18.0 \
-    onnxruntime==1.22.0 \
-    onnxruntime-gpu==1.22.0
-
-# Clone ComfyUI
-RUN git clone --branch v0.3.27 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+conda run -n comfystream --no-capture-output pip install wheel
 
 # Copy only files needed for setup
 COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
 COPY ./configs /workspace/comfystream/configs
 
+# Clone ComfyUI
+RUN git clone --branch v0.3.27 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+
 # Copy ComfyStream files into ComfyUI
 COPY . /workspace/comfystream
+
+RUN conda run -n comfystream --cwd /workspace/comfystream --no-capture-output pip install -r ./src/comfystream/scripts/constraints.txt
 
 # Copy comfystream and example workflows to ComfyUI
 COPY ./workflows/comfyui/* /workspace/ComfyUI/user/default/workflows/
@@ -88,6 +84,10 @@ RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream py
 
 # Setup opencv with CUDA support
 RUN conda run -n comfystream --no-capture-output bash /workspace/comfystream/docker/entrypoint.sh --opencv-cuda
+
+RUN conda run -n comfystream --no-capture-output pip install "numpy<2.0.0"
+
+RUN conda run -n comfystream --no-capture-output pip install --no-cache-dir xformers==0.0.30 --no-deps
 
 # Configure no environment activation by default
 RUN conda config --set auto_activate_base false && \

@@ -5,6 +5,8 @@ nodes:
     url: "https://github.com/eliteprox/ComfyUI_TensorRT.git"
     branch: "chore/upgrade-onnxmltools-1.14.0"
     type: "tensorrt"
+    dependencies:
+      - "tensorrt==10.12.0.36"
 
   comfyui-depthanything-tensorrt:
     name: "ComfyUI DepthAnything TensorRT"
