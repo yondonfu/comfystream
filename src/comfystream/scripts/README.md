@@ -14,13 +14,18 @@
 
 From the repository root:
 
+> The `--workspace` flag is optional and will default to `$COMFY_UI_WORKSPACE` or `~/comfyui`.
+
+### Install custom nodes
 ```bash
-# Install both nodes and models (default workspace: ~/comfyui)
 python src/comfystream/scripts/setup_nodes.py --workspace /path/to/comfyui
+```
+> The optional flag `--pull-branches` can be used to ensure the latest git changes are pulled for any custom nodes defined with a `branch` in nodes.yaml
+
+### Download models and compile tensorrt engines
+```bash
 python src/comfystream/scripts/setup_models.py --workspace /path/to/comfyui
 ```
-
-> The `--workspace` flag is optional and will default to `$COMFY_UI_WORKSPACE` or `~/comfyui`.
 
 ## Configuration Examples
 
@@ -32,9 +37,12 @@ nodes:
     name: "ComfyUI TensorRT"
     url: "https://github.com/yondonfu/ComfyUI_TensorRT"
     type: "tensorrt"
+    branch: "master"
     dependencies:
       - "tensorrt"
 ```
+
+> The `branch` property can be substituted with a SHA-256 commit hash for pinning custom node versions 
 
 ### Models (models.yaml)
 
