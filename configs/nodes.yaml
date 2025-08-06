@@ -2,8 +2,8 @@ nodes:
   # Core TensorRT nodes
   comfyui-tensorrt:
     name: "ComfyUI TensorRT"
-    url: "https://github.com/eliteprox/ComfyUI_TensorRT.git"
-    branch: "chore/upgrade-onnxmltools-1.14.0"
+    url: "https://github.com/yondonfu/ComfyUI_TensorRT.git"
+    branch: "quantization_with_controlnet_fixes"
     type: "tensorrt"
     dependencies:
       - "tensorrt==10.12.0.36"
