@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -180,6 +181,7 @@ export const PromptContext = createContext<PromptContextType>({
 export const usePrompt = () => useContext(PromptContext);
 
 function ConfigForm({ config, onSubmit }: ConfigFormProps) {
+  const [enablePassthrough, setEnablePassthrough] = useState(false);
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const { setOriginalPrompts } = usePrompt();
   const [videoDevices, setVideoDevices] = useState<AVDevice[]>([]);
@@ -334,6 +336,15 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} autoComplete="off">
+        <div className="flex items-center space-x-2 mt-4">
+          <Checkbox
+            id="enable-passthrough"
+            checked={enablePassthrough}
+            onCheckedChange={(checked) => setEnablePassthrough(checked === true)}
+          />
+          <Label htmlFor="enable-passthrough">Enable Passthrough</Label>
+        </div>
+        
         <FormField
           control={form.control}
           name="streamUrl"
@@ -341,7 +352,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             <FormItem className="mt-4">
               <FormLabel>Stream URL</FormLabel>
               <FormControl>
-                <Input placeholder="Stream URL" {...field} />
+                <Input placeholder="Stream URL" {...field} disabled={enablePassthrough} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -355,7 +366,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             <FormItem className="mt-4">
               <FormLabel>Frame Rate</FormLabel>
               <FormControl>
-                <Input placeholder="Frame Rate" {...field} type="number" />
+                <Input placeholder="Frame Rate" {...field} type="number" disabled={enablePassthrough} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -376,6 +387,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
                     max="2048"
                     step="64"
                     {...field}
+                    disabled={enablePassthrough}
                     onChange={(e) => {
                       const value = parseInt(e.target.value);
                       field.onChange(value);
@@ -400,6 +412,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
                     max="2048"
                     step="64"
                     {...field}
+                    disabled={enablePassthrough}
                     onChange={(e) => {
                       const value = parseInt(e.target.value);
                       field.onChange(value);
@@ -419,6 +432,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             required={selectedAudioDevice == "none" && selectedVideoDevice == "none" ? true : false}
             value={selectedVideoDevice == "none" ? "" : selectedVideoDevice}
             onValueChange={handleCameraSelect}
+            disabled={enablePassthrough}
           >
             <Select.Trigger className="w-full mt-2">
               {selectedVideoDevice
@@ -447,6 +461,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
           <Select
             value={selectedAudioDevice}
             onValueChange={handleMicrophoneSelect}
+            disabled={enablePassthrough}
           >
             <Select.Trigger className="w-full mt-2">
               {selectedAudioDevice
@@ -487,6 +502,7 @@ function ConfigForm({ config, onSubmit }: ConfigFormProps) {
             multiple
             onChange={handlePromptsChange}
             required={true}
+            disabled={enablePassthrough}
           />
         </div>
 
