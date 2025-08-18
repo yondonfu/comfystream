@@ -73,3 +73,9 @@ models:
     url: "https://huggingface.co/Lykon/dreamshaper-8/resolve/main/text_encoder/model.fp16.safetensors"
     path: "text_encoders/CLIPText/model.fp16.safetensors"
     type: "text_encoder"
+
+  sd-turbo:
+    name: "SD-Turbo"
+    url: "https://huggingface.co/stabilityai/sd-turbo/resolve/main/sd_turbo.safetensors"
+    path: "checkpoints/SD1.5/sd_turbo.safetensors"
+    type: "checkpoint"

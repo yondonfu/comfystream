@@ -12,6 +12,18 @@ from .. import settings_storage
 routes = None
 server_manager = None
 
+# Middleware to add Cache-Control: no-cache for index.html
+@web.middleware
+async def cache_control_middleware(request, handler):
+    # Log every request path that goes through this middleware
+    response = await handler(request)
+    target_path = f"{STATIC_ROUTE}/index.html"
+    # Log comparison details
+    if request.path == target_path:
+        response.headers['Cache-Control'] = 'no-cache'
+        logging.debug(f"[CacheMiddleware] Added Cache-Control: no-cache for {request.path}") # Kept debug log
+    return response
+
 # Only set up routes if we're in the main ComfyUI instance
 if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.routes, 'static'):
     routes = PromptServer.instance.routes
@@ -20,23 +32,33 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
     STATIC_DIR = pathlib.Path(__file__).parent.parent.parent / "nodes" / "web" / "static"    
     
     # Dynamically determine the extension name from the directory structure
+    extension_name = "comfystream" # Define a local default for the try/except block
     try:
         # Get the parent directory of the current file
         # Then navigate up to get the extension root directory
         EXTENSION_ROOT = pathlib.Path(__file__).parent.parent.parent
         # Get the extension name (the directory name)
-        EXTENSION_NAME = EXTENSION_ROOT.name
-        logging.info(f"Detected extension name: {EXTENSION_NAME}")
+        extension_name = EXTENSION_ROOT.name
+        logging.info(f"Detected extension name: {extension_name}")
     except Exception as e:
-        logging.warning(f"Failed to get extension name dynamically: {e}")
-        # Fallback to the hardcoded name
-        EXTENSION_NAME = "comfystream"
-    
-    # Add static route for Next.js build files using the dynamic extension name
+        logging.warning(f"Failed to get extension name dynamically: {e}, using fallback '{extension_name}'")
+        # Fallback name is already set by the initial local default
+
+    # Define module-level constants AFTER determination
+    EXTENSION_NAME = extension_name
     STATIC_ROUTE = f"/extensions/{EXTENSION_NAME}/static"
+
+    # Add static route for Next.js build files using the dynamic extension name
     logging.info(f"Setting up static route: {STATIC_ROUTE} -> {STATIC_DIR}")
     routes.static(STATIC_ROUTE, str(STATIC_DIR), append_version=False, follow_symlinks=True)
-    
+
+    # Add the cache control middleware to the app
+    if hasattr(PromptServer.instance, 'app'):
+        PromptServer.instance.app.middlewares.append(cache_control_middleware)
+        logging.info(f"Added ComfyStream cache control middleware for {STATIC_ROUTE}/index.html")
+    else:
+        logging.warning("Could not add ComfyStream cache control middleware: PromptServer.instance.app not found.")
+
     # Create server manager instance
     server_manager = LocalComfyStreamServer()
     
@@ -214,4 +236,3 @@ if hasattr(PromptServer.instance, 'routes') and hasattr(PromptServer.instance.ro
         except Exception as e:
             logging.error(f"Error managing configuration: {str(e)}")
             return web.json_response({"error": str(e)}, status=500)
-

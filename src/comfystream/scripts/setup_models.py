@@ -14,21 +14,36 @@ def parse_args():
     return parser.parse_args()
 
 def download_file(url, destination, description=None):
-    """Download a file with progress bar"""
-    response = requests.get(url, stream=True)
-    total_size = int(response.headers.get('content-length', 0))
+    """Download a file with progress bar, follow redirects, and detect LFS pointer files"""
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
-    desc = description or os.path.basename(destination)
-    progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True, desc=desc)
+    with requests.get(url, stream=True, headers=headers, allow_redirects=True) as response:
+        response.raise_for_status()
+        total_size = int(response.headers.get('content-length', 0))
 
-    destination = Path(destination)
-    destination.parent.mkdir(parents=True, exist_ok=True)
+        desc = description or os.path.basename(destination)
+        progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True, desc=desc)
 
-    with open(destination, 'wb') as file:
-        for data in response.iter_content(chunk_size=1024):
-            size = file.write(data)
-            progress_bar.update(size)
-    progress_bar.close()
+        destination = Path(destination)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(destination, 'wb') as file:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    file.write(chunk)
+                    progress_bar.update(len(chunk))
+        progress_bar.close()
+
+    # Verify that we didn't just write a Git LFS pointer
+    if destination.stat().st_size < 100:
+        with open(destination, 'r', errors='ignore') as f:
+            content = f.read()
+            if 'git-lfs' in content.lower():
+                print(f"❌ LFS pointer detected in {destination}. Deleting.")
+                destination.unlink()
+                raise ValueError(f"LFS pointer detected. Failed to download: {url}")
 
 def setup_model_files(workspace_dir, config_path=None):
     """Download and setup required model files based on configuration"""
