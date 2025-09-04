@@ -9,7 +9,7 @@ version = "0.1.4"
 license = { file = "LICENSE" }
 dependencies = [
     "asyncio",
-    "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@ce3583ad42c024b8f060d0002cbe20c265da6dc8",
+    "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git",
     "aiortc",
     "aiohttp",
     "aiohttp_cors",

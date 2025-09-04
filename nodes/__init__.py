@@ -1,8 +1,9 @@
 """ComfyStream nodes package"""
-
-from .audio_utils import *
-from .tensor_utils import *
-from .video_stream_utils import *
+from comfy_compatibility.imports import ImportContext, SITE_PACKAGES, MAIN_PY
+with ImportContext("comfy", "comfy_extras", order=[SITE_PACKAGES, MAIN_PY]):
+    from .audio_utils import *
+    from .tensor_utils import *
+    from .video_stream_utils import *
 from .api import *
 from .web import *
 
