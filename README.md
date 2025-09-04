@@ -64,7 +64,7 @@ A separate environment can be used to avoid any dependency issues with an existi
 Create the environment:
 
 ```bash
-conda create -n comfystream python=3.11
+conda create -n comfystream python=3.12
 ```
 
 Activate the environment:

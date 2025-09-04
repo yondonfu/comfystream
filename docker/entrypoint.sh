@@ -176,7 +176,7 @@ if [ "$1" = "--opencv-cuda" ]; then
     libswscale-dev
 
   # Remove existing cv2 package
-  SITE_PACKAGES_DIR="/workspace/miniconda3/envs/comfystream/lib/python3.11/site-packages"
+  SITE_PACKAGES_DIR="/workspace/miniconda3/envs/comfystream/lib/python3.12/site-packages"
   rm -rf "${SITE_PACKAGES_DIR}/cv2"*
 
   # Copy new cv2 package
