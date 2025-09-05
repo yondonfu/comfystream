@@ -10,22 +10,22 @@
             "request": "launch",
             "cwd": "/workspace/ComfyUI",
             "program": "main.py",
-            "purpose": ["debug-in-terminal"],
-            "env": {
-                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
-            },
+            "console": "integratedTerminal",
             "args": [
                 "--listen",
-                "--disable-cuda-malloc"
+                "--disable-cuda-malloc",
+                "--front-end-version", "Comfy-Org/ComfyUI_frontend@v1.24.2"
             ],
-            "python": "/workspace/miniconda3/envs/comfystream/bin/python"
+            "python": "/workspace/miniconda3/envs/comfystream/bin/python",
+            "justMyCode": true
         },
         {
             "name": "Run ComfyStream",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/workspace/comfystream/server",
-            "program": "app.py",
+            "cwd": "/workspace/ComfyUI",
+            "program": "/workspace/comfystream/server/app.py",
+            "console": "integratedTerminal",
             "args": [
                 "--workspace=/workspace/ComfyUI",
                 "--media-ports=5678",
@@ -33,7 +33,8 @@
                 "--port=8889",
                 "--log-level=DEBUG",
             ],
-            "python": "/workspace/miniconda3/envs/comfystream/bin/python"
+            "python": "/workspace/miniconda3/envs/comfystream/bin/python",
+            "justMyCode": true
         },
         {
             "name": "Run ComfyStream UI (Node.js)",
@@ -44,15 +45,16 @@
             "runtimeExecutable": "npm",
             "runtimeArgs": [
                 "run",
-                "dev:https"
+                "dev"
             ],
             "serverReadyAction": {
                 "pattern": "listening on",
                 "uriFormat": "http://localhost:3000",
                 "action": "openExternally"
             }
-        },
-    ], "compounds": [
+        }
+    ],
+    "compounds": [
         {
             "name": "Run ComfyStream and UI",
             "type": "composite",

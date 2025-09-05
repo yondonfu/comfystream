@@ -82,9 +82,6 @@ ENV CACHEBUST=${CACHEBUST}
 # Run setup_nodes
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
 
-# Setup opencv with CUDA support
-RUN conda run -n comfystream --no-capture-output bash /workspace/comfystream/docker/entrypoint.sh --opencv-cuda
-
 RUN conda run -n comfystream --no-capture-output pip install "numpy<2.0.0"
 
 RUN conda run -n comfystream --no-capture-output pip install --no-cache-dir xformers==0.0.30 --no-deps
