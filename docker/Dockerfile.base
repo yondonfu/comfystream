@@ -56,7 +56,7 @@ COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
 COPY ./configs /workspace/comfystream/configs
 
 # Clone ComfyUI
-RUN git clone --branch v0.3.27 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+RUN git clone --branch v0.3.56 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
 
 # Copy ComfyStream files into ComfyUI
 COPY . /workspace/comfystream
