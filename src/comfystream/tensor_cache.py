@@ -12,3 +12,5 @@ image_outputs: AsyncQueue[Union[torch.Tensor, np.ndarray]] = AsyncQueue()
 
 audio_inputs: Queue[Union[torch.Tensor, np.ndarray]] = Queue()
 audio_outputs: AsyncQueue[Union[torch.Tensor, np.ndarray]] = AsyncQueue()
+
+text_outputs: AsyncQueue[str] = AsyncQueue()

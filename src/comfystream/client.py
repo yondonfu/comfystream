@@ -20,9 +20,12 @@ class ComfyStreamClient:
         self.current_prompts = []
         self._cleanup_lock = asyncio.Lock()
         self._prompt_update_lock = asyncio.Lock()
+        self._stop_event = asyncio.Event()
 
     async def set_prompts(self, prompts: List[PromptDictInput]):
         await self.cancel_running_prompts()
+        # Reset stop event for new prompts
+        self._stop_event.clear()
         self.current_prompts = [convert_prompt(prompt) for prompt in prompts]
         for idx in range(len(self.current_prompts)):
             task = asyncio.create_task(self.run_prompt(idx))
@@ -45,7 +48,7 @@ class ComfyStreamClient:
                     raise Exception(f"Prompt update failed: {str(e)}") from e
 
     async def run_prompt(self, prompt_index: int):
-        while True:
+        while not self._stop_event.is_set():
             async with self._prompt_update_lock:
                 try:
                     await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
@@ -57,6 +60,9 @@ class ComfyStreamClient:
                     raise
 
     async def cleanup(self):
+        # Set stop event to signal prompt loops to exit
+        self._stop_event.set()
+        
         await self.cancel_running_prompts()
         async with self._cleanup_lock:
             if self.comfy_client.is_running:
@@ -93,6 +99,9 @@ class ComfyStreamClient:
         while not tensor_cache.audio_outputs.empty():
             await tensor_cache.audio_outputs.get()
 
+        while not tensor_cache.text_outputs.empty():
+            await tensor_cache.text_outputs.get()
+
     def put_video_input(self, frame):
         if tensor_cache.image_inputs.full():
             tensor_cache.image_inputs.get(block=True)
@@ -106,6 +115,9 @@ class ComfyStreamClient:
     
     async def get_audio_output(self):
         return await tensor_cache.audio_outputs.get()
+    
+    async def get_text_output(self):
+        return await tensor_cache.text_outputs.get()
 
     async def get_available_nodes(self):
         """Get metadata and available nodes info in a single pass"""

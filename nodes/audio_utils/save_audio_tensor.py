@@ -22,4 +22,3 @@ class SaveAudioTensor:
     def execute(self, audio):
         tensor_cache.audio_outputs.put_nowait(audio)
         return (audio,)
-

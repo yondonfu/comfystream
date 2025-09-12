@@ -4,6 +4,7 @@ import { PeerConnector } from "@/components/peer";
 import { StreamConfig, StreamSettings, DEFAULT_CONFIG } from "@/components/settings";
 import { Webcam } from "@/components/webcam";
 import { usePeerContext } from "@/context/peer-context";
+import { Prompt } from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ControlPanelsContainer } from "@/components/control-panels-container";
 import { StreamControl } from "@/components/stream-control";
+import { TextOutputViewer } from "@/components/text-output-viewer";
 import fixWebmDuration from 'webm-duration-fix';
 import { set, get, del, keys } from 'idb-keyval';
 import { Drawer, DrawerContent, DrawerTitle } from "./ui/drawer";
@@ -51,6 +53,18 @@ function useToast() {
   }, []);
   
   return { showToast, dismissToast, toastId: toastIdRef };
+}
+
+// Wrapper component to access peer context
+function TranscriptionViewerWrapper() {
+  const peer = usePeerContext();
+  
+  return (
+    <TextOutputViewer 
+      isConnected={!!peer?.peerConnection && peer.peerConnection.connectionState === 'connected'}
+      textOutputData={peer?.textOutputData || undefined}
+    />
+  );
 }
 
 interface MediaStreamPlayerProps {
@@ -166,15 +180,19 @@ interface StageProps {
   resolution: { width: number; height: number };
   backendUrl: string;
   onOutputStreamReady: (stream: MediaStream | null) => void;
+  prompts: Prompt[] | null;
 }
 
-function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUrl, onOutputStreamReady }: StageProps) {
+function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUrl, onOutputStreamReady, prompts }: StageProps) {
   const { remoteStream, peerConnection } = usePeerContext();
   const [frameRate, setFrameRate] = useState<number>(0);
   // Add state and refs for tracking frames
   const [isComfyUIReady, setIsComfyUIReady] = useState<boolean>(false);
   const frameCountRef = useRef<number>(0);
   const frameReadyReported = useRef<boolean>(false);
+  
+  // Check if we're in noop mode by looking at the prompts prop
+  const isNoopMode = !prompts || prompts.length === 0;
   
   // The number of frames to wait before considering ComfyUI ready
   // WARMUP_RUNS is 5, we add a small buffer
@@ -211,6 +229,13 @@ function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUr
       console.log('[Stage] Calling onOutputStreamReady with', remoteStream);
       onOutputStreamReady(remoteStream);
     }
+    
+    // In noop mode, immediately set ComfyUI as ready since there's no actual ComfyUI processing
+    if (isNoopMode && !isComfyUIReady) {
+      console.log('[Stage] Noop mode detected - setting ComfyUI ready immediately');
+      setIsComfyUIReady(true);
+      onComfyUIReady();
+    }
 
     // Track frame rate with getStats API
     const interval = setInterval(() => {
@@ -229,21 +254,19 @@ function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUr
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [connected, remoteStream, peerConnection, onStreamReady, onOutputStreamReady]);
+  }, [connected, remoteStream, peerConnection, onStreamReady, onOutputStreamReady, isNoopMode, isComfyUIReady, onComfyUIReady]);
 
   if (!connected || !remoteStream) {
     return (
-      <>
-        <video 
-          className="w-full h-full object-cover" 
-          autoPlay 
-          loop 
-          playsInline
-          style={{ aspectRatio: `${resolution.width}/${resolution.height}` }}
-        >
-          <source src="/loading.mp4" type="video/mp4" />
-        </video>
-      </>
+      <div 
+        className="relative w-full h-full flex items-center justify-center bg-black"
+        style={{ aspectRatio: `${resolution.width}/${resolution.height}` }}
+      >
+        <div className="flex flex-col items-center space-y-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
+          <p className="text-white text-center opacity-80">Waiting for stream...</p>
+        </div>
+      </div>
     );
   }
 
@@ -265,7 +288,11 @@ function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUr
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
           <div className="flex flex-col items-center space-y-3 bg-black/50 p-4 rounded-lg">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
-            <p className="text-white text-center">ComfyUI is warming up...<br/>This may take a few minutes</p>
+            <p className="text-white text-center">
+              {isNoopMode 
+                ? "Initializing noop stream..." 
+                : "ComfyUI is warming up...\nThis may take a few minutes"}
+            </p>
           </div>
         </div>
       )}
@@ -314,13 +341,16 @@ export const Room = () => {
   const inputChunksRef = useRef<Blob[]>([]);
   const outputChunksRef = useRef<Blob[]>([]);
   const [isRecordingsPanelOpen, setIsRecordingsPanelOpen] = useState(false);
+  
+  // Transcription state
+  const [isTranscriptionPanelOpen, setIsTranscriptionPanelOpen] = useState(true);
 
   // Helper to get timestamped filenames
-  const getFilename = (type: 'input' | 'output') => {
+  const getFilename = (type: 'input' | 'output', extension: string) => {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    return `recording_${type}_${ts}.mp4`;
+    return `recording_${type}_${ts}.${extension}`;
   };
 
   const [config, setConfig] = useState<StreamConfig>({
@@ -390,16 +420,41 @@ export const Room = () => {
     showToast("Stream disconnected", "error");
   }, [showToast]);
 
-  // Helper to get a supported mimeType for MediaRecorder
-  function getSupportedMimeType() {
-    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-      return 'video/webm;codecs=vp8';
-    } else if (MediaRecorder.isTypeSupported('video/webm')) {
-      return 'video/webm';
-    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-      return 'video/mp4';
+  // Helper to choose a supported mimeType for a given stream
+  function chooseMimeForStream(stream: MediaStream): { mimeType: string | undefined; extension: string } {
+    const hasAudio = stream.getAudioTracks().length > 0;
+    const hasVideo = stream.getVideoTracks().length > 0;
+
+    // Try best combinations first
+    const candidates: { mimeType: string; extension: string }[] = [];
+
+    if (hasAudio && hasVideo) {
+      candidates.push(
+        { mimeType: 'video/webm;codecs=vp9,opus', extension: 'webm' },
+        { mimeType: 'video/webm;codecs=vp8,opus', extension: 'webm' },
+        { mimeType: 'video/webm', extension: 'webm' }
+      );
+    } else if (hasVideo) {
+      candidates.push(
+        { mimeType: 'video/webm;codecs=vp9', extension: 'webm' },
+        { mimeType: 'video/webm;codecs=vp8', extension: 'webm' },
+        { mimeType: 'video/webm', extension: 'webm' }
+      );
+    } else if (hasAudio) {
+      candidates.push(
+        { mimeType: 'audio/webm;codecs=opus', extension: 'webm' },
+        { mimeType: 'audio/webm', extension: 'webm' }
+      );
     }
-    return '';
+
+    for (const { mimeType, extension } of candidates) {
+      if ((window as any).MediaRecorder && MediaRecorder.isTypeSupported(mimeType)) {
+        return { mimeType, extension };
+      }
+    }
+
+    // Fallback: let browser choose default; pick a sensible extension
+    return { mimeType: undefined, extension: hasAudio && !hasVideo ? 'webm' : 'webm' };
   }
 
   // Helper to generate a unique ID
@@ -454,15 +509,17 @@ export const Room = () => {
   // Start recording both streams
   const startRecording = () => {
     if (isRecording) return;
-    const mimeType = getSupportedMimeType();
     if (localStream) {
+      const { mimeType, extension } = chooseMimeForStream(localStream);
       inputChunksRef.current = [];
       const inputRecorder = new MediaRecorder(localStream, mimeType ? { mimeType } : undefined);
       inputRecorder.ondataavailable = (e) => e.data.size && inputChunksRef.current.push(e.data);
       inputRecorder.onstop = () => {
-        const filename = getFilename('input');
-        const blob = new Blob(inputChunksRef.current, { type: mimeType });
-        fixWebmDuration(blob).then(fixedBlob => {
+        const filename = getFilename('input', extension);
+        const finalType = mimeType ?? (extension === 'webm' ? 'video/webm' : 'application/octet-stream');
+        const blob = new Blob(inputChunksRef.current, { type: finalType });
+        const maybeFix = extension === 'webm' ? fixWebmDuration(blob) : Promise.resolve(blob);
+        maybeFix.then(fixedBlob => {
           saveRecording('input', filename, fixedBlob);
         });
       };
@@ -470,13 +527,16 @@ export const Room = () => {
       inputRecorderRef.current = inputRecorder;
     }
     if (outputStream) {
+      const { mimeType, extension } = chooseMimeForStream(outputStream);
       outputChunksRef.current = [];
       const outputRecorder = new MediaRecorder(outputStream, mimeType ? { mimeType } : undefined);
       outputRecorder.ondataavailable = (e) => e.data.size && outputChunksRef.current.push(e.data);
       outputRecorder.onstop = () => {
-        const filename = getFilename('output');
-        const blob = new Blob(outputChunksRef.current, { type: mimeType });
-        fixWebmDuration(blob).then(fixedBlob => {
+        const filename = getFilename('output', extension);
+        const finalType = mimeType ?? (extension === 'webm' ? 'video/webm' : 'application/octet-stream');
+        const blob = new Blob(outputChunksRef.current, { type: finalType });
+        const maybeFix = extension === 'webm' ? fixWebmDuration(blob) : Promise.resolve(blob);
+        maybeFix.then(fixedBlob => {
           saveRecording('output', filename, fixedBlob);
         });
       };
@@ -542,6 +602,7 @@ export const Room = () => {
                   onComfyUIReady={onComfyUIReady}
                   resolution={config.resolution}
                   onOutputStreamReady={setOutputStream}
+                  prompts={config.prompts || null}
                 />
                 {/* Thumbnail (mobile) */}
                 <div className="absolute bottom-[8px] right-[8px] w-[70px] h-[70px] sm:w-[90px] sm:h-[90px] bg-slate-800 block md:hidden overflow-hidden">
@@ -570,6 +631,43 @@ export const Room = () => {
                 />
               </div>
             </div>
+
+            {/* Text Output toggle under videos */}
+            {isConnected && (
+              <div className="w-full flex justify-center mt-4">
+                <button
+                  onClick={() => setIsTranscriptionPanelOpen(!isTranscriptionPanelOpen)}
+                  className={`h-10 px-4 rounded-full shadow-lg flex items-center justify-center transition-colors ${
+                    isTranscriptionPanelOpen 
+                      ? 'bg-green-600 text-white hover:bg-green-700' 
+                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                  }`}
+                  title={isTranscriptionPanelOpen ? 'Hide Text Output' : 'Show Text Output'}
+                >
+                  {isTranscriptionPanelOpen ? (
+                    // eye-off icon
+                    <span className="flex items-center gap-2">
+                      <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye-off">
+                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.86-1.99 2.28-3.73 4-5.05"></path>
+                        <path d="M10.58 10.58a2 2 0 0 0 2.84 2.84"></path>
+                        <path d="M16 12a4 4 0 0 0-4-4"></path>
+                        <path d="M1 1l22 22"></path>
+                      </svg>
+                      <span>Hide Text Output</span>
+                    </span>
+                  ) : (
+                    // eye icon
+                    <span className="flex items-center gap-2">
+                      <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <span>Show Text Output</span>
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* Button group: Record, Show Recordings, Gear */}
             <div className="fixed top-4 right-4 flex flex-row items-end space-x-4 z-50">
@@ -611,6 +709,7 @@ export const Room = () => {
                   )}
                 </button>
               )}
+              {/* Text Output toggle removed from here */}
               {/* Show Recordings button (always rightmost) */}
               <button
                 onClick={() => setIsRecordingsPanelOpen(true)}
@@ -620,6 +719,15 @@ export const Room = () => {
                 <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-film"><rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect><path d="M6 7V5M6 19v-2M18 7V5M18 19v-2"></path></svg>
               </button>
             </div>
+            {/* Text Output Panel (below videos) - kept mounted to preserve content */}
+            {isConnected && (
+              <div className={`w-full flex justify-center px-4 mt-4 ${isTranscriptionPanelOpen ? '' : 'hidden'}`}>
+                <div className="w-full max-w-[1040px]">
+                  <TranscriptionViewerWrapper />
+                </div>
+              </div>
+            )}
+            
             {/* Recordings Side Panel */}
             {isRecordingsPanelOpen && (
               <div className="fixed inset-0 z-50 flex justify-end">
