@@ -75,15 +75,19 @@ Start ComfyUI:
 ```sh
 cd /workspace/ComfyUI
 conda activate comfyui
-python main.py --listen
+python main.py --listen --front-end-version Comfy-Org/ComfyUI_frontend@v1.24.2
 ```
+
+> [!NOTE]
+> The `--front-end-version Comfy-Org/ComfyUI_frontend@v1.24.2` flag is necessary because v1.24.2 is the latest version of the ComfyUI frontend that works reliably with ComfyStream.
+
 
 When using TensorRT engine enabled workflows, you should include the `---disable-cuda-malloc` flag as shown below:
 
 ```sh
 cd /workspace/ComfyUI
 conda activate comfyui
-python main.py --listen --disable-cuda-malloc
+python main.py --listen --disable-cuda-malloc --front-end-version Comfy-Org/ComfyUI_frontend@v1.24.2
 ```
 
 ### Starting ComfyStream

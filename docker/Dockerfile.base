@@ -1,6 +1,6 @@
 ARG BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04 \
     CONDA_VERSION=latest \
-    PYTHON_VERSION=3.11
+    PYTHON_VERSION=3.12
 
 FROM "${BASE_IMAGE}"
 
@@ -56,7 +56,7 @@ COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
 COPY ./configs /workspace/comfystream/configs
 
 # Clone ComfyUI
-RUN git clone --branch v0.3.27 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+RUN git clone --branch v0.3.56 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
 
 # Copy ComfyStream files into ComfyUI
 COPY . /workspace/comfystream
@@ -81,9 +81,6 @@ ENV CACHEBUST=${CACHEBUST}
 
 # Run setup_nodes
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
-
-# Setup opencv with CUDA support
-RUN conda run -n comfystream --no-capture-output bash /workspace/comfystream/docker/entrypoint.sh --opencv-cuda
 
 RUN conda run -n comfystream --no-capture-output pip install "numpy<2.0.0"
 

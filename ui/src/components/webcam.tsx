@@ -52,7 +52,9 @@ function StreamCanvas({
     // Add audio tracks from the original stream if they exist
     if (stream.getAudioTracks().length > 0) {
       stream.getAudioTracks().forEach(track => {
-        canvasStream.addTrack(track);
+        // Clone the audio track to avoid conflicts between streams
+        const clonedTrack = track.clone();
+        canvasStream.addTrack(clonedTrack);
       });
     }
 
@@ -61,7 +63,10 @@ function StreamCanvas({
 
     return () => {
       if (canvasStreamRef.current) {
-        canvasStreamRef.current.getTracks().forEach(track => track.stop());
+        canvasStreamRef.current.getTracks().forEach(track => {
+          // Stop all tracks since audio tracks are now cloned (not shared)
+          track.stop();
+        });
       }
     };
   }, [stream, frameRate, width, height, onStreamReady]);
@@ -259,11 +264,11 @@ export function Webcam({
         audio:
           selectedAudioDeviceId === "none"
             ? false
+            : selectedAudioDeviceId === ""
+            ? true  // Use browser default audio with no constraints
             : {
-                deviceId: { exact: selectedAudioDeviceId },
-                sampleRate: 48000,
-                channelCount: 2,
-                sampleSize: 16,
+                deviceId: { ideal: selectedAudioDeviceId }, // Use ideal instead of exact
+                // Remove strict audio constraints that might cause failures
                 echoCancellation: false,
                 noiseSuppression: false,
                 autoGainControl: false,
@@ -271,7 +276,8 @@ export function Webcam({
       };
 
       try {
-        return await navigator.mediaDevices.getUserMedia(constraints);
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        return stream;
       } catch (exactError) {
         console.log("Could not get exact resolution, falling back to ideal constraints", exactError);
         
@@ -290,18 +296,19 @@ export function Webcam({
           audio:
             selectedAudioDeviceId === "none"
               ? false
+              : selectedAudioDeviceId === ""
+              ? true  // Use browser default audio with no constraints
               : {
-                  deviceId: { exact: selectedAudioDeviceId },
-                  sampleRate: 48000,
-                  channelCount: 2,
-                  sampleSize: 16,
+                  deviceId: { ideal: selectedAudioDeviceId }, // Use ideal instead of exact
+                  // Remove strict audio constraints that might cause failures
                   echoCancellation: false,
                   noiseSuppression: false,
                   autoGainControl: false,
                 },
         };
         
-        return await navigator.mediaDevices.getUserMedia(idealConstraints);
+        const fallbackStream = await navigator.mediaDevices.getUserMedia(idealConstraints);
+        return fallbackStream;
       }
     } catch (error) {
       console.error("Error accessing media devices.", error);

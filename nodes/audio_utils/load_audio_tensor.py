@@ -5,6 +5,7 @@ from comfystream import tensor_cache
 class LoadAudioTensor:
     CATEGORY = "audio_utils"
     RETURN_TYPES = ("WAVEFORM", "INT")
+    RETURN_NAMES = ("audio", "sample_rate")
     FUNCTION = "execute"
     
     def __init__(self):

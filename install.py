@@ -9,6 +9,7 @@ import tempfile
 import urllib.request
 import toml
 import zipfile
+from comfy_compatibility.workspace import auto_patch_workspace_and_restart
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -23,30 +24,6 @@ def get_project_version(workspace: str) -> str:
     except Exception as e:
         logger.error(f"Failed to read version from pyproject.toml: {e}")
         return "unknown"
-    
-def ensure_init_files(workspace: str):
-    """Create __init__.py files in comfy/ and comfy_extras/ directories if they don't exist"""
-    base_dirs = ['comfy', 'comfy_extras']
-    for base_dir in base_dirs:
-        base_path = os.path.join(workspace, base_dir)
-        if not os.path.exists(base_path):
-            continue
-            
-        # Create __init__.py in the root of base_dir first
-        root_init = os.path.join(base_path, "__init__.py")
-        if not os.path.exists(root_init):
-            logger.info(f"Creating {root_init}")
-            with open(root_init, 'w') as f:
-                f.write("")
-                
-        # Then walk subdirectories
-        for root, dirs, files in os.walk(base_path):
-            init_path = os.path.join(root, "__init__.py")
-            if not os.path.exists(init_path):
-                logger.info(f"Creating {init_path}")
-                with open(init_path, 'w') as f:
-                    f.write("")
-
 
 def download_and_extract_ui_files(version: str):
     """Download and extract UI files to the workspace"""
@@ -112,14 +89,15 @@ if __name__ == "__main__":
                 break
             current = os.path.dirname(current)
 
+    logger.info("Installing comfystream package...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "."])
+
     if workspace is None:
         logger.warning("No ComfyUI workspace found. Please specify a valid workspace path to fully install")
     
     if workspace is not None:
-        logger.info("Ensuring __init__.py files exist in ComfyUI directories...")
-        ensure_init_files(workspace)
-        logger.info("Installing custom node requirements...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "."])
+        logger.info("Patching ComfyUI workspace...")
+        auto_patch_workspace_and_restart(workspace)
     
     logger.info("Downloading and extracting UI files...")
     version = get_project_version(os.getcwd())

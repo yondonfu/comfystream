@@ -19,27 +19,6 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 if COMFYUI_DIR not in sys.path:
     sys.path.insert(0, COMFYUI_DIR)
-    
-comfy_dirs = [
-    "/workspace/ComfyUI/",
-    "/workspace/ComfyUI/comfy",
-    "/workspace/ComfyUI/comfy_extras"
-]
-
-for comfy_dir in comfy_dirs:
-    init_file_path = os.path.join(comfy_dir, "__init__.py")
-
-    # Check if the __init__.py file exists
-    if not os.path.exists(init_file_path):
-        try:
-            # Create the __init__.py file
-            with open(init_file_path, "w") as init_file:
-                init_file.write("# This file ensures comfy is treated as a package\n")
-            print(f"Created __init__.py at {init_file_path}")
-        except Exception as e:
-            print(f"Error creating __init__.py: {e}")
-    else:
-        print(f"__init__.py already exists at {init_file_path}")
 
 import comfy
 import comfy.model_management

@@ -14,14 +14,20 @@ def prompt_invalid_num_inputs():
     return {
         "1": {"inputs": {}, "class_type": "LoadImage"},
         "2": {"inputs": {}, "class_type": "LoadImage"},
+        "3": {"inputs": {}, "class_type": "LoadAudioTensor"},
     }
 
 
 @pytest.fixture
 def prompt_invalid_num_outputs():
     return {
-        "1": {"inputs": {}, "class_type": "PreviewImage"},
-        "2": {"inputs": {}, "class_type": "SaveImage"},
+        # include a valid input node
+        "1": {"inputs": {}, "class_type": "LoadImage"},
+        # four output nodes to exceed the limit of three
+        "2": {"inputs": {}, "class_type": "PreviewImage"},
+        "3": {"inputs": {}, "class_type": "SaveAudioTensor"},
+        "4": {"inputs": {}, "class_type": "PreviewImage"},
+        "5": {"inputs": {}, "class_type": "SaveTextTensor"},
     }
 
 

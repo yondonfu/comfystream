@@ -1,0 +1,59 @@
+{
+  "10": {
+    "inputs": {
+      "sample_rate": 16000,
+      "transcription_interval": 2,
+      "accumulation_duration": 3,
+      "whisper_model": "base",
+      "language": "auto",
+      "enable_vad": true,
+      "output_format": "json_segments",
+      "audio": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "AudioTranscriptionNode",
+    "_meta": {
+      "title": "Audio Transcription (Real-time)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "buffer_size": 500
+    },
+    "class_type": "LoadAudioTensor",
+    "_meta": {
+      "title": "LoadAudioTensor"
+    }
+  },
+  "12": {
+    "inputs": {
+      "transcription_data": [
+        "10",
+        0
+      ],
+      "segment_start_time": 0,
+      "segment_duration": 3,
+      "use_absolute_time": false,
+      "minimum_duration": 1
+    },
+    "class_type": "SRTGeneratorNode",
+    "_meta": {
+      "title": "SRT Generator"
+    }
+  },
+  "13": {
+    "inputs": {
+      "data": [
+        "12",
+        0
+      ],
+      "remove_linebreaks": true
+    },
+    "class_type": "SaveTextTensor",
+    "_meta": {
+      "title": "SaveTextTensor"
+    }
+  }
+}
