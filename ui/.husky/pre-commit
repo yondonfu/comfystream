@@ -1,1 +1,8 @@
+# Throw warnings if npm is not installed
+if ! command -v npm >/dev/null 2>&1; then
+  echo "Error: npm is not installed. Please install npm to run lint-staged."
+  echo "You can use 'git commit --no-verify' to skip pre-commit checks (not recommended)."
+  exit 1
+fi
+
 npx lint-staged
