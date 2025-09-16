@@ -1,8 +1,9 @@
 # comfystream
 
-> ⚠️ **NOTICE:** Active development of this project has moved to [the Livepeer fork](https://github.com/livepeer/comfystream).
+> [!IMPORTANT]
+> This repository serves as the stable upstream for the ComfyStream project. Active development has moved to the [Livepeer fork](https://github.com/livepeer/comfystream), though stable versions are still merged here.
 
-comfystream is a package for running img2img [Comfy](https://www.comfy.org/) workflows on video streams.
+ComfyStream is a package for running img2img [Comfy](https://www.comfy.org/) workflows on video streams.
 
 This repo also includes a WebRTC server and UI that uses comfystream to support streaming from a webcam and processing the stream with a workflow JSON file (API format) created in ComfyUI. If you have an existing ComfyUI installation, the same custom nodes used to create the workflow in ComfyUI will be re-used when processing the video stream.
 
