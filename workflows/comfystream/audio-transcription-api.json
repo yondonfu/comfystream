@@ -1,7 +1,10 @@
 {
   "10": {
     "inputs": {
-      "sample_rate": 16000,
+      "sample_rate": [
+        "11",
+        1
+      ],
       "transcription_interval": 2,
       "accumulation_duration": 3,
       "whisper_model": "base",
