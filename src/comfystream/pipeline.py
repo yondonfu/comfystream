@@ -79,7 +79,7 @@ class Pipeline:
             return
             
         dummy_frame = av.AudioFrame()
-        dummy_frame.side_data.input = np.random.randint(-32768, 32767, int(48000 * 0.5), dtype=np.int16)   # TODO: adds a lot of delay if it doesn't match the buffer size, is warmup needed?
+        dummy_frame.side_data.input = np.random.randint(-32768, 32768, int(48000 * 0.5), dtype=np.int16)
         dummy_frame.sample_rate = 48000
 
         for _ in range(WARMUP_RUNS):
@@ -144,7 +144,7 @@ class Pipeline:
         self.client.put_video_input(frame)
         await self.video_incoming_frames.put(frame)
 
-    async def put_audio_frame(self, frame: av.AudioFrame):
+    async def put_audio_frame(self, frame: av.AudioFrame, preprocess: bool = True):
         """Queue an audio frame for processing.
         
         Args:
@@ -159,14 +159,14 @@ class Pipeline:
             return
 
         # Process and send to client when input is accepted
-        frame.side_data.input = self.audio_preprocess(frame)
+        frame.side_data.input = self.audio_preprocess(frame) if preprocess else frame.to_ndarray()
         frame.side_data.skipped = True
         # Mark passthrough based on whether workflow produces audio output
         frame.side_data.passthrough = not self.produces_audio_output()
         self.client.put_audio_input(frame)
         await self.audio_incoming_frames.put(frame)
 
-    def video_preprocess(self, frame: av.VideoFrame) -> Union[torch.Tensor, np.ndarray]:
+    def video_preprocess(self, frame: av.VideoFrame) -> torch.Tensor:
         """Preprocess a video frame before processing.
         
         Args:
@@ -178,16 +178,39 @@ class Pipeline:
         frame_np = frame.to_ndarray(format="rgb24").astype(np.float32) / 255.0
         return torch.from_numpy(frame_np).unsqueeze(0)
     
-    def audio_preprocess(self, frame: av.AudioFrame) -> Union[torch.Tensor, np.ndarray]:
+    def audio_preprocess(self, frame: av.AudioFrame) -> np.ndarray:
         """Preprocess an audio frame before processing.
         
         Args:
             frame: The audio frame to preprocess
             
         Returns:
-            The preprocessed frame as a tensor or numpy array
+            The preprocessed frame as a numpy array with int16 dtype
         """
-        return frame.to_ndarray().ravel().reshape(-1, 2).mean(axis=1).astype(np.int16)
+        audio_data = frame.to_ndarray()
+        
+        # Handle multi-dimensional audio data
+        if audio_data.ndim == 2 and audio_data.shape[0] == 1 and audio_data.shape[0] <= audio_data.shape[1]:
+            audio_data = audio_data.ravel().reshape(-1, 2).mean(axis=1)
+        elif audio_data.ndim > 1:
+            audio_data = audio_data.mean(axis=0)
+        
+        # Ensure we always return int16 data
+        if audio_data.dtype in [np.float32, np.float64]:
+            # Check if data is normalized (-1.0 to 1.0 range)
+            max_abs_val = np.abs(audio_data).max()
+            if max_abs_val <= 1.0:
+                # Normalized float input - scale to int16 range
+                audio_data = np.clip(audio_data, -1.0, 1.0)
+                audio_data = (audio_data * 32767).astype(np.int16)
+            else:
+                # Large float values - clip and convert directly
+                audio_data = np.clip(audio_data, -32768, 32767).astype(np.int16)
+        else:
+            # Already integer data - ensure it's int16
+            audio_data = audio_data.astype(np.int16)
+        
+        return audio_data
     
     def video_postprocess(self, output: Union[torch.Tensor, np.ndarray]) -> av.VideoFrame:
         """Postprocess a video frame after processing.
@@ -280,7 +303,7 @@ class Pipeline:
         
         return processed_frame
     
-    async def get_text_output(self) -> str:
+    async def get_text_output(self) -> str | None:
         """Get the next text output from the pipeline.
         
         Returns:
@@ -288,10 +311,11 @@ class Pipeline:
         """
         # If workflow doesn't produce text output, return empty string immediately
         if not self.produces_text_output():
-            return ""
+            return None
             
         async with temporary_log_level("comfy", self._comfyui_inference_log_level):
             out_text = await self.client.get_text_output()
+            
         return out_text
     
     async def get_nodes_info(self) -> Dict[str, Any]:

@@ -1,11 +1,12 @@
 import numpy as np
+import torch
 
 from comfystream import tensor_cache
 
 class LoadAudioTensor:
     CATEGORY = "audio_utils"
-    RETURN_TYPES = ("WAVEFORM", "INT")
-    RETURN_NAMES = ("audio", "sample_rate")
+    RETURN_TYPES = ("AUDIO",)
+    RETURN_NAMES = ("audio",)
     FUNCTION = "execute"
     
     def __init__(self):
@@ -22,7 +23,7 @@ class LoadAudioTensor:
         }
     
     @classmethod
-    def IS_CHANGED():
+    def IS_CHANGED(**kwargs):
         return float("nan")
     
     def execute(self, buffer_size):
@@ -50,4 +51,21 @@ class LoadAudioTensor:
             buffered_audio = self.leftover[:self.buffer_samples]
             self.leftover = self.leftover[self.buffer_samples:]
                 
-        return buffered_audio, self.sample_rate
+        # Convert numpy array to torch tensor and normalize int16 to float32
+        waveform_tensor = torch.from_numpy(buffered_audio.astype(np.float32) / 32768.0)
+        
+        # Ensure proper tensor shape: (batch, channels, samples)
+        if waveform_tensor.dim() == 1:
+            # Mono: (samples,) -> (1, 1, samples)
+            waveform_tensor = waveform_tensor.unsqueeze(0).unsqueeze(0)
+        elif waveform_tensor.dim() == 2:
+            # Assume (channels, samples) and add batch dimension
+            waveform_tensor = waveform_tensor.unsqueeze(0)
+        
+        # Return AUDIO dictionary format
+        audio_dict = {
+            "waveform": waveform_tensor,
+            "sample_rate": self.sample_rate
+        }
+        
+        return (audio_dict,)

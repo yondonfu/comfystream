@@ -31,10 +31,40 @@
                 "--media-ports=5678",
                 "--host=0.0.0.0",
                 "--port=8889",
-                "--log-level=DEBUG",
+                "--log-level=INFO",
+                "--comfyui-inference-log-level=DEBUG",
             ],
-            "python": "/workspace/miniconda3/envs/comfystream/bin/python",
-            "justMyCode": true
+            "justMyCode": true,
+            "python": "${command:python.interpreterPath}"
+        },
+        {
+            "name": "Run ComfyStream BYOC",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/workspace/ComfyUI",
+            "program": "/workspace/comfystream/server/byoc.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--workspace=/workspace/ComfyUI",
+                "--host=0.0.0.0",
+                "--port=8000",
+                "--log-level=INFO",
+                "--comfyui-inference-log-level=DEBUG",
+                "--width=512",
+                "--height=512"
+            ],            
+            "env": {
+                "ORCH_URL": "https://172.17.0.1:9995",
+                "ORCH_SECRET": "orch-secret",
+                "CAPABILITY_NAME": "comfystream-byoc-processor",
+                "CAPABILITY_DESCRIPTION": "ComfyUI streaming processor for BYOC mode",
+                "CAPABILITY_URL": "http://172.17.0.1:8000",
+                "CAPABILITY_PRICE_PER_UNIT": "0",
+                "CAPABILITY_PRICE_SCALING": "1",
+                "CAPABILITY_CAPACITY": "1"
+            },
+            "justMyCode": true,
+            "python": "${command:python.interpreterPath}"
         },
         {
             "name": "Run ComfyStream UI (Node.js)",

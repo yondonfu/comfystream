@@ -40,6 +40,7 @@ logging.getLogger("aiortc.rtcrtpreceiver").setLevel(logging.WARNING)
 
 MAX_BITRATE = 2000000
 MIN_BITRATE = 2000000
+TEXT_POLL_INTERVAL = 0.25  # Interval in seconds to poll for text outputs
 
 
 class VideoStreamTrack(MediaStreamTrack):
@@ -390,11 +391,11 @@ async def offer(request):
                         try:
                             while channel.readyState == "open":
                                 try:
-                                    # Use timeout to prevent indefinite blocking
-                                    text = await asyncio.wait_for(
-                                        pipeline.get_text_output(), 
-                                        timeout=1.0  # Check every second if channel is still open
-                                    )
+                                    # Non-blocking poll; sleep if no text to avoid tight loop
+                                    text = await pipeline.get_text_output()
+                                    if text is None or text.strip() == "":
+                                        await asyncio.sleep(TEXT_POLL_INTERVAL)
+                                        continue
                                     if channel.readyState == "open":
                                         # Send as JSON string for extensibility
                                         try:
@@ -402,9 +403,6 @@ async def offer(request):
                                         except Exception as e:
                                             logger.debug(f"[TextChannel] Send failed, stopping forwarder: {e}")
                                             break
-                                except asyncio.TimeoutError:
-                                    # No text available, continue checking
-                                    continue
                                 except asyncio.CancelledError:
                                     logger.debug("[TextChannel] Forward text task cancelled")
                                     break
