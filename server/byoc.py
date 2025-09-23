@@ -14,6 +14,7 @@ from pytrickle.stream_processor import StreamProcessor
 from pytrickle.utils.register import RegisterCapability
 from pytrickle.frame_skipper import FrameSkipConfig
 from frame_processor import ComfyStreamFrameProcessor
+from comfystream.server.utils import ComfyStreamTimeoutFilter
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,10 @@ def main():
     if args.comfyui_log_level:
         log_level = logging._nameToLevel.get(args.comfyui_log_level.upper())
         logging.getLogger("comfy").setLevel(log_level)
+    
+    # Add ComfyStream timeout filter to suppress verbose execution logging
+    logging.getLogger("comfy.cmd.execution").addFilter(ComfyStreamTimeoutFilter())
+    logging.getLogger("comfy").addFilter(ComfyStreamTimeoutFilter())
 
     def force_print(*args, **kwargs):
         print(*args, **kwargs, flush=True)

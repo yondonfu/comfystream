@@ -157,28 +157,21 @@ class ComfyStreamFrameProcessor(FrameProcessor):
             )
 
     async def warmup(self):
-        """Public warmup method that triggers pipeline warmup."""
+        """Warm up the pipeline."""
         if not self.pipeline:
             logger.warning("Warmup requested before pipeline initialization")
             return
         
         logger.info("Running pipeline warmup...")
-        """Run pipeline warmup."""
         try:
             capabilities = self.pipeline.get_workflow_io_capabilities()
-            logger.info(f"Detected I/O capabilities for warmup: {capabilities}")
+            logger.info(f"Detected I/O capabilities: {capabilities}")
             
-            # Warm video if there are video inputs or outputs
             if capabilities.get("video", {}).get("input") or capabilities.get("video", {}).get("output"):
-                logger.info("Running video warmup...")
                 await self.pipeline.warm_video()
-                logger.info("Video warmup completed")
             
-            # Warm audio if there are audio inputs or outputs  
             if capabilities.get("audio", {}).get("input") or capabilities.get("audio", {}).get("output"):
-                logger.info("Running audio warmup...")
                 await self.pipeline.warm_audio()
-                logger.info("Audio warmup completed")
                 
         except Exception as e:
             logger.error(f"Warmup failed: {e}")
@@ -265,7 +258,7 @@ class ComfyStreamFrameProcessor(FrameProcessor):
         """Process and set prompts in the pipeline."""
         try:
             converted = convert_prompt(prompts, return_dict=True)
-            
+                 
             # Set prompts in pipeline
             await self.pipeline.set_prompts([converted])
             logger.info(f"Prompts set successfully: {list(prompts.keys())}")

@@ -4,6 +4,7 @@ import logging
 
 from comfystream import tensor_cache
 from comfystream.utils import convert_prompt
+from comfystream.exceptions import ComfyStreamInputTimeoutError
 
 from comfy.api.components.schema.prompt import PromptDictInput
 from comfy.cli_args_types import Configuration
@@ -68,6 +69,9 @@ class ComfyStreamClient:
                     await self.comfy_client.queue_prompt(self.current_prompts[prompt_index])
                 except asyncio.CancelledError:
                     raise
+                except ComfyStreamInputTimeoutError:
+                    # Timeout errors are expected during stream switching - just continue
+                    continue
                 except Exception as e:
                     await self.cleanup()
                     logger.error(f"Error running prompt: {str(e)}")

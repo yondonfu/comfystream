@@ -29,7 +29,7 @@ from aiortc.codecs import h264
 from aiortc.rtcrtpsender import RTCRtpSender
 from comfystream.pipeline import Pipeline
 from twilio.rest import Client
-from comfystream.server.utils import patch_loop_datagram, add_prefix_to_app_routes, FPSMeter
+from comfystream.server.utils import patch_loop_datagram, add_prefix_to_app_routes, FPSMeter, ComfyStreamTimeoutFilter
 from comfystream.server.metrics import MetricsManager, StreamStatsManager
 import time
 
@@ -694,6 +694,10 @@ if __name__ == "__main__":
     if args.comfyui_log_level:
         log_level = logging._nameToLevel.get(args.comfyui_log_level.upper())
         logging.getLogger("comfy").setLevel(log_level)
+    
+    # Add ComfyStream timeout filter to suppress verbose execution logging
+    logging.getLogger("comfy.cmd.execution").addFilter(ComfyStreamTimeoutFilter())
+    logging.getLogger("comfy").addFilter(ComfyStreamTimeoutFilter())
     if args.comfyui_inference_log_level:
         app["comfui_inference_log_level"] = args.comfyui_inference_log_level
 

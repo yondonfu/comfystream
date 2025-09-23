@@ -73,6 +73,7 @@ def convert_prompt(prompt: PromptDictInput, return_dict: bool = False) -> Prompt
     for key in convertible_keys["PreviewImage"] + convertible_keys["SaveImage"]:
         node = prompt[key]
         prompt[key] = create_save_tensor_node(node["inputs"])
+    
 
     # Return dict if requested (for downstream components that expect plain dicts)
     if return_dict:
