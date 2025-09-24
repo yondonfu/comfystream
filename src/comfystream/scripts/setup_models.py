@@ -126,4 +126,11 @@ def setup_models():
     setup_directories(workspace_dir)
     setup_model_files(workspace_dir)
 
-setup_models()
+
+def main():
+    """Entry point for command line usage."""
+    setup_models()
+
+
+if __name__ == "__main__":
+    main()

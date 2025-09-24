@@ -54,11 +54,13 @@ def install_custom_nodes(workspace_dir, config_path=None, pull_branches=False):
     custom_nodes_path.mkdir(parents=True, exist_ok=True)
     os.chdir(custom_nodes_path)
 
-    # Get the absolute path to constraints.txt
-    constraints_path = Path(__file__).parent / "constraints.txt"
-    if not constraints_path.exists():
-        print(f"Warning: constraints.txt not found at {constraints_path}")
-        constraints_path = None
+    # Get the absolute path to overrides.txt and set UV_OVERRIDES env var
+    overrides_path = Path(__file__).parent / "overrides.txt"
+    if overrides_path.exists():
+        os.environ["UV_OVERRIDES"] = str(overrides_path)
+        print(f"Set UV_OVERRIDES to {overrides_path}")
+    else:
+        print(f"Warning: overrides.txt not found at {overrides_path}")
 
     try:
         for _, node_info in config["nodes"].items():
@@ -90,25 +92,20 @@ def install_custom_nodes(workspace_dir, config_path=None, pull_branches=False):
             # Install requirements if present
             requirements_file = node_path / "requirements.txt"
             if requirements_file.exists():
-                pip_cmd = [
-                    sys.executable,
-                    "-m",
+                uv_cmd = [
+                    "uv",
                     "pip",
                     "install",
                     "-r",
                     str(requirements_file),
                 ]
-                if constraints_path and constraints_path.exists():
-                    pip_cmd.extend(["-c", str(constraints_path)])
-                subprocess.run(pip_cmd, check=True)
+                subprocess.run(uv_cmd, check=True)
 
             # Install additional dependencies if specified
             if "dependencies" in node_info:
                 for dep in node_info["dependencies"]:
-                    pip_cmd = [sys.executable, "-m", "pip", "install", dep]
-                    if constraints_path and constraints_path.exists():
-                        pip_cmd.extend(["-c", str(constraints_path)])
-                    subprocess.run(pip_cmd, check=True)
+                    uv_cmd = ["uv", "pip", "install", dep]
+                    subprocess.run(uv_cmd, check=True)
 
             print(f"Installed {node_info['name']}")
     except Exception as e:
@@ -125,5 +122,9 @@ def setup_nodes():
     install_custom_nodes(workspace_dir, pull_branches=args.pull_branches)
 
 
-if __name__ == "__main__":
+def main():
+    """Entry point for command line usage."""
     setup_nodes()
+
+if __name__ == "__main__":
+    main()

@@ -1,21 +1,25 @@
 ARG BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04 \
-    CONDA_VERSION=latest \
     PYTHON_VERSION=3.12
 
 FROM "${BASE_IMAGE}"
 
-ARG CONDA_VERSION \
-    PYTHON_VERSION
+ARG PYTHON_VERSION
+
+# Set Bash as the default shell
+SHELL ["/bin/bash", "-c"]
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    CONDA_VERSION="${CONDA_VERSION}" \
-    PATH="/workspace/miniconda3/bin:${PATH}" \
-    PYTHON_VERSION="${PYTHON_VERSION}"
+    PATH="/workspace/.venv/bin:/root/.local/bin:/usr/local/bin:${PATH}" \
+    PYTHON_VERSION="${PYTHON_VERSION}" \
+    VIRTUAL_ENV="/workspace/.venv" \
+    PYTHONPATH="/workspace/.venv/lib/python3.12/site-packages" \
+    SHELL="/bin/bash"
 
 # System dependencies
 RUN apt update && apt install -yqq --no-install-recommends \
     git \
     wget \
+    curl \
     nano \
     socat \
     libsndfile1 \
@@ -27,6 +31,11 @@ RUN apt update && apt install -yqq --no-install-recommends \
     swig \
     libprotobuf-dev \
     protobuf-compiler \
+    ffmpeg \
+    python3 \
+    python3-pip \
+    python3-venv \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 #enable opengl support with nvidia gpu
@@ -38,59 +47,63 @@ RUN printf '%s\n' \
   '    }' \
   '}' > /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
-# Conda setup
+# Python setup and uv installation
 RUN mkdir -p /workspace/comfystream && \
-    wget "https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_VERSION}-Linux-x86_64.sh" -O /tmp/miniconda.sh && \
-    bash /tmp/miniconda.sh -b -p /workspace/miniconda3 && \
-    eval "$(/workspace/miniconda3/bin/conda shell.bash hook)" && \
-    /workspace/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
-    /workspace/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
-    conda create -n comfystream python="${PYTHON_VERSION}" ffmpeg=6 -c conda-forge -y && \
-    rm /tmp/miniconda.sh && echo 'export LD_LIBRARY_PATH=/workspace/miniconda3/envs/comfystream/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+    python3 -m pip install --upgrade pip uv && \
+    cd /workspace && \
+    uv venv .venv && \
+    echo 'activate_venv() { if [ -f ".venv/bin/activate" ] && [ "$VIRTUAL_ENV" != "$(pwd)/.venv" ]; then . ".venv/bin/activate"; fi; };' >> ~/.bashrc && \
+    echo 'PROMPT_COMMAND="activate_venv; $PROMPT_COMMAND"' >> ~/.bashrc
 
-RUN conda run -n comfystream --no-capture-output pip install --upgrade pip && \
-conda run -n comfystream --no-capture-output pip install wheel
+# Ensure pip exists inside the venv for tools that shell out to `python -m pip`
+RUN /workspace/.venv/bin/python -m ensurepip --upgrade && \
+    /workspace/.venv/bin/python -m pip install -U pip setuptools wheel && \
+    /workspace/.venv/bin/python -m pip --version
+
+# Install comfy-cli using uv
+RUN uv pip install comfy-cli
 
 # Copy only files needed for setup
 COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
 COPY ./configs /workspace/comfystream/configs
 
-# Clone ComfyUI
-RUN git clone --branch v0.3.56 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+RUN mkdir -p /workspace
+
+# Install ComfyUI using comfy-cli
+RUN comfy --skip-prompt --workspace /workspace/ComfyUI install --skip-torch-or-directml --nvidia
 
 # Copy ComfyStream files into ComfyUI
 COPY . /workspace/comfystream
 
-RUN conda run -n comfystream --cwd /workspace/comfystream --no-capture-output pip install -r ./src/comfystream/scripts/constraints.txt
+RUN cd /workspace/comfystream && uv pip install -r ./src/comfystream/scripts/overrides.txt
 
 # Copy comfystream and example workflows to ComfyUI
 COPY ./workflows/comfyui/* /workspace/ComfyUI/user/default/workflows/
 COPY ./test/example-512x512.png /workspace/ComfyUI/input
 
-# Install ComfyUI requirements
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip install -r requirements.txt --root-user-action=ignore
+# Install ComfyUI requirements (probably not needed)
+# RUN cd /workspace/ComfyUI && uv pip install -r requirements.txt
 
 # Install ComfyStream requirements
 RUN ln -s /workspace/comfystream /workspace/ComfyUI/custom_nodes/comfystream
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install -e . --root-user-action=ignore
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python install.py --workspace /workspace/ComfyUI
+RUN cd /workspace/comfystream && uv pip install -e .
+RUN cd /workspace/comfystream && python install.py --workspace /workspace/ComfyUI
 
 # Accept a build-arg that lets CI force-invalidate setup_nodes.py
 ARG CACHEBUST=static
 ENV CACHEBUST=${CACHEBUST}
 
-# Run setup_nodes
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
+# Run setup_nodes (removing to promote user node installation)
+#RUN cd /workspace/comfystream && python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
 
-RUN conda run -n comfystream --no-capture-output pip install "numpy<2.0.0"
+#RUN uv pip install "numpy<2.0.0"
+#RUN uv pip install --no-cache-dir xformers==0.0.30 --no-deps
 
-RUN conda run -n comfystream --no-capture-output pip install --no-cache-dir xformers==0.0.30 --no-deps
+# Set default Python environment with auto-uv-env and ensure .bashrc is sourced
+RUN echo 'source ~/.bashrc' >> ~/.bash_profile && \
+    echo 'if [ -f ~/.bashrc ]; then source ~/.bashrc; fi' >> ~/.profile
 
-# Configure no environment activation by default
-RUN conda config --set auto_activate_base false && \
-    conda init bash
-
-# Set comfystream environment as default
-RUN echo "conda activate comfystream" >> ~/.bashrc
+# Ensure bash is used by default for interactive shells
+ENV BASH_ENV=/root/.bashrc
 
 WORKDIR /workspace/comfystream

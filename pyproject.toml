@@ -7,21 +7,14 @@ name = "comfystream"
 description = "Build Live AI Video with ComfyUI"
 version = "0.1.5"
 license = { file = "LICENSE" }
-dependencies = [
-    "asyncio",
-    "pytrickle @ git+https://github.com/livepeer/pytrickle.git@de37bea74679fa5db46b656a83c9b7240fc597b6",
-    "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@58622c7e91cb5cc2bca985d713db55e5681ff316",
-    "aiortc",
-    "aiohttp",
-    "aiohttp_cors",
-    "toml",
-    "twilio",
-    "prometheus_client",
-    "librosa"
-]
+dynamic = ["dependencies"]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov"]
+
+[project.scripts]
+setup-nodes = "comfystream.scripts.setup_nodes:setup_nodes"
+setup-models = "comfystream.scripts.setup_models:setup_models"
 
 [project.urls]
 Repository = "https://github.com/yondonfu/comfystream"

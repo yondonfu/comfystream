@@ -2,9 +2,15 @@ ARG	BASE_IMAGE=livepeer/comfyui-base:latest
 
 FROM	${BASE_IMAGE}
 
-ENV	PATH="/workspace/miniconda3/bin:${PATH}" \
+# Ensure Bash is the default shell (inherited from base)
+SHELL ["/bin/bash", "-c"]
+
+ENV	PATH="/workspace/.venv/bin:/root/.local/bin:${PATH}" \
 	NVM_DIR=/root/.nvm \
-	NODE_VERSION=18.18.0
+	NODE_VERSION=18.18.0 \
+	VIRTUAL_ENV="/workspace/.venv" \
+	PYTHONPATH="/workspace/.venv/lib/python3.12/site-packages" \
+	SHELL="/bin/bash"
 
 RUN	echo "Using base image: ${BASE_IMAGE}" && \
 	apt update && \

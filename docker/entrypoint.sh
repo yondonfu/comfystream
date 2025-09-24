@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -e
-eval "$(conda shell.bash hook)"
 
 # Add help command to show usage
 show_help() {
@@ -76,8 +75,7 @@ fi
 
 if [ "$1" = "--download-models" ]; then
   cd /workspace/comfystream
-  conda activate comfystream
-  python src/comfystream/scripts/setup_models.py --workspace /workspace/ComfyUI
+  uv run setup-models --workspace /workspace/ComfyUI
   shift
 fi
 
@@ -89,19 +87,18 @@ FASTERLIVEPORTRAIT_DIR="/workspace/ComfyUI/models/liveportrait_onnx"
 
 if [ "$1" = "--build-engines" ]; then
   cd /workspace/comfystream
-  conda activate comfystream
 
   # Build Static Engine for Dreamshaper - Square (512x512)
-  python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/output/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-512-w-512_00001_.engine --width 512 --height 512
+  uv run python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/output/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-512-w-512_00001_.engine --width 512 --height 512
 
   # Build Static Engine for Dreamshaper - Portrait (384x704)
-  python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/output/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-704-w-384_00001_.engine --width 384 --height 704
+  uv run python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/output/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-704-w-384_00001_.engine --width 384 --height 704
 
   # Build Static Engine for Dreamshaper - Landscape (704x384)
-  python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/output/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-384-w-704_00001_.engine --width 704 --height 384
+  uv run python src/comfystream/scripts/build_trt.py --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors --out-engine /workspace/ComfyUI/output/tensorrt/static-dreamshaper8_SD15_\$stat-b-1-h-384-w-704_00001_.engine --width 704 --height 384
 
   # Build Dynamic Engine for Dreamshaper
-  python src/comfystream/scripts/build_trt.py \
+  uv run python src/comfystream/scripts/build_trt.py \
                 --model /workspace/ComfyUI/models/unet/dreamshaper-8-dmd-1kstep.safetensors \
                 --out-engine /workspace/ComfyUI/output/tensorrt/dynamic-dreamshaper8_SD15_\$dyn-b-1-4-2-h-512-704-w-320-384-448_00001_.engine \
                 --width 384 \
@@ -117,7 +114,7 @@ if [ "$1" = "--build-engines" ]; then
       mkdir -p "$DEPTH_ANYTHING_DIR"
     fi
     cd "$DEPTH_ANYTHING_DIR"
-    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
+    uv run python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py
   else
     echo "Engine for DepthAnything2 already exists at ${DEPTH_ANYTHING_DIR}/${DEPTH_ANYTHING_ENGINE}, skipping..."
   fi
@@ -125,7 +122,7 @@ if [ "$1" = "--build-engines" ]; then
   # Build Engine for Depth Anything2 (large)
   if [ ! -f "$DEPTH_ANYTHING_DIR/$DEPTH_ANYTHING_ENGINE_LARGE" ]; then
     cd "$DEPTH_ANYTHING_DIR"
-    python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py --trt-path "${DEPTH_ANYTHING_DIR}/${DEPTH_ANYTHING_ENGINE_LARGE}" --onnx-path "${DEPTH_ANYTHING_DIR}/depth_anything_v2_vitl.onnx"
+    uv run python /workspace/ComfyUI/custom_nodes/ComfyUI-Depth-Anything-Tensorrt/export_trt.py --trt-path "${DEPTH_ANYTHING_DIR}/${DEPTH_ANYTHING_ENGINE_LARGE}" --onnx-path "${DEPTH_ANYTHING_DIR}/depth_anything_v2_vitl.onnx"
   else
     echo "Engine for DepthAnything2 (large) already exists at ${DEPTH_ANYTHING_DIR}/${DEPTH_ANYTHING_ENGINE_LARGE}, skipping..."
   fi
@@ -138,7 +135,7 @@ if [ "$1" = "--build-engines" ]; then
     for model in $MODELS; do
       for timestep in $TIMESTEPS; do
         echo "Building model=$model with timestep=$timestep"
-        python build_tensorrt.py \
+        uv run python build_tensorrt.py \
           --model-id "$model" \
           --timesteps "$timestep" \
           --engine-dir $TENSORRT_DIR/StreamDiffusion-engines
@@ -152,8 +149,7 @@ fi
 
 if [ "$1" = "--opencv-cuda" ]; then
   cd /workspace/comfystream
-  conda activate comfystream
-  
+
   # Check if OpenCV CUDA build already exists
   if [ ! -f "/workspace/comfystream/opencv-cuda-release.tar.gz" ]; then
     # Download and extract OpenCV CUDA build
@@ -176,18 +172,18 @@ if [ "$1" = "--opencv-cuda" ]; then
     libswscale-dev
 
   # Remove existing cv2 package
-  SITE_PACKAGES_DIR="/workspace/miniconda3/envs/comfystream/lib/python3.12/site-packages"
+  SITE_PACKAGES_DIR="$(uv python dir --bin)/lib/python3.12/site-packages"
   rm -rf "${SITE_PACKAGES_DIR}/cv2"*
 
   # Copy new cv2 package
   cp -r /workspace/comfystream/cv2 "${SITE_PACKAGES_DIR}/"
 
   # Handle library dependencies
-  CONDA_ENV_LIB="/workspace/miniconda3/envs/comfystream/lib"
-  
+  UV_ENV_LIB="$(uv python dir --bin)/lib"
+
   # Remove existing libstdc++ and copy system one
-  rm -f "${CONDA_ENV_LIB}/libstdc++.so"*
-  cp /usr/lib/x86_64-linux-gnu/libstdc++.so* "${CONDA_ENV_LIB}/"
+  rm -f "${UV_ENV_LIB}/libstdc++.so"*
+  cp /usr/lib/x86_64-linux-gnu/libstdc++.so* "${UV_ENV_LIB}/"
 
   # Copy OpenCV libraries
   cp /workspace/comfystream/opencv/build/lib/libopencv_* /usr/lib/x86_64-linux-gnu/
