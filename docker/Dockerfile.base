@@ -39,6 +39,12 @@ RUN apt update && apt install -yqq --no-install-recommends \
     python3-pip \
     python3-venv \
     curl \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libgdk-pixbuf2.0-dev \
+    libffi-dev \
+    libgirepository1.0-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 #enable opengl support with nvidia gpu
