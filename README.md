@@ -77,13 +77,33 @@ Make sure you have [PyTorch](https://pytorch.org/get-started/locally/) installed
 
 Install `comfystream`:
 
+**Option 1: Using pip (standard method)**
+
 ```bash
 pip install git+https://github.com/livepeer/comfystream.git
 
-# This can be used to install from a local repo
-# pip install .
-# This can be used to install from a local repo in edit mode
-# pip install -e .
+# For local development:
+# pip install .                    # Install from local repo
+# pip install -e .                 # Install in edit mode for development
+```
+
+**Option 2: Using uv (faster, recommended for development)**
+
+If you want faster dependency resolution and better handling of Git dependencies, install `uv` first:
+
+```bash
+pip install uv
+```
+
+Then install comfystream:
+
+```bash
+uv pip install git+https://github.com/livepeer/comfystream.git
+
+# For local development:
+# uv pip install .                 # Install from local repo  
+# uv pip install -e .              # Install in edit mode for development
+# uv sync                          # Install all dependencies including dev dependencies
 ```
 
 ### Custom Nodes
@@ -112,8 +132,14 @@ See `example.py`.
 
 Install dev dependencies:
 
+**Using pip:**
 ```bash
 pip install .[dev]
+```
+
+**Using uv (recommended):**
+```bash
+uv sync  # Installs all dependencies including dev dependencies
 ```
 
 Run tests:
@@ -126,8 +152,14 @@ pytest
 
 Install dependencies:
 
+**Using pip:**
 ```bash
-pip install -r requirements.txt
+pip install -e .  # Install comfystream and its dependencies
+```
+
+**Using uv:**
+```bash
+uv sync  # Install all dependencies from uv.lock
 ```
 
 If you have existing custom nodes in your ComfyUI workspace, you will need to install their requirements in your current environment:

@@ -1,0 +1,82 @@
+FROM nvcr.io/nvidia/pytorch:25.03-py3
+
+# Environment setup
+ENV TZ="Etc/UTC"
+ENV PYTORCH_CUDA_ALLOC_CONF="backend:cudaMallocAsync,expandable_segments:True"
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_NO_CACHE=1
+ENV UV_SYSTEM_PYTHON=1
+# ENV UV_OVERRIDE=/workspace/constraints.txt
+# COPY src/comfystream/scripts/constraints.txt /workspace/constraints.txt
+ENV UV_BREAK_SYSTEM_PACKAGES=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_NO_CACHE_DIR=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install system dependencies and uv
+RUN pip install uv && uv --version && \
+    apt-get update && apt-get install --no-install-recommends ffmpeg libsm6 libxext6 git -y && \
+    uv pip uninstall --system $(pip list --format=freeze | grep opencv) && \
+    rm -rf /usr/local/lib/python3.12/dist-packages/cv2/ && \
+    uv pip install wheel && \
+    uv pip install --no-build-isolation "opencv-contrib-python-headless!=4.11.0.86" && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install torchaudio with the correct version
+RUN <<-EOF
+python -c 'import torch, re, subprocess
+torch_version_full = torch.__version__
+torch_ver_match = re.match(r"(\d+\.\d+\.\d+)", torch_version_full)
+if not torch_ver_match:
+    raise ValueError(f"Could not parse torch version from {torch_version_full}")
+torch_ver = torch_ver_match.group(1)
+cuda_ver_tag = f"cu{torch.version.cuda.replace(".", "")}"
+command = [
+    "uv", "pip", "install", "--no-deps",
+    f"torchaudio=={torch_ver}+{cuda_ver_tag}",
+    "--extra-index-url", f"https://download.pytorch.org/whl/{cuda_ver_tag}",
+]
+subprocess.run(command, check=True)'
+EOF
+# RUN mkdir -p /workspace/ComfyUI
+# Create mount point for user's ComfyUI workspace
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+RUN git clone https://github.com/Comfy-Org/ComfyUI-Manager.git /workspace/ComfyUI/custom_nodes/ComfyUI-Manager
+
+# Create venv in ComfyUI workspace and set uv enc default to it
+WORKDIR /workspace/ComfyUI
+RUN uv venv .venv
+ENV VIRTUAL_ENV=/workspace/ComfyUI/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Install comfy-cli
+RUN uv pip install comfy-cli
+
+#RUN comfy --here --skip-prompt install --skip-torch-or-directml
+RUN uv pip install --torch-backend=auto "comfyui@git+https://github.com/hiddenswitch/ComfyUI.git"
+RUN uv pip install -r /workspace/ComfyUI/custom_nodes/ComfyUI-Manager/requirements.txt
+RUN comfy --skip-prompt set-default /workspace/ComfyUI
+RUN comfy node install comfystream
+
+# Set working directory to the mount point
+WORKDIR /workspace/ComfyUI
+
+# Copy and set up entrypoint script
+COPY docker/entrypoint-byow.sh /usr/local/bin/comfyui-entrypoint.sh
+RUN chmod +x /usr/local/bin/comfyui-entrypoint.sh
+
+
+# Set the entrypoint
+ENTRYPOINT ["/usr/local/bin/comfyui-entrypoint.sh"]
+
+# Default command (can be overridden)
+CMD []
+
+# Expose ComfyUI port
+EXPOSE 8188
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8188/system_stats || exit 1
