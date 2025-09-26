@@ -62,7 +62,8 @@ COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
 COPY ./configs /workspace/comfystream/configs
 
 # Clone ComfyUI
-RUN git clone --branch v0.3.56 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+RUN git clone --branch v0.3.60 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+RUN git clone https://github.com/Comfy-Org/ComfyUI-Manager.git /workspace/ComfyUI/custom_nodes/ComfyUI-Manager
 
 # Copy ComfyStream files into ComfyUI
 COPY . /workspace/comfystream
@@ -75,6 +76,7 @@ COPY ./test/example-512x512.png /workspace/ComfyUI/input
 
 # Install ComfyUI requirements
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip install -r requirements.txt --root-user-action=ignore
+RUN cd /workspace/ComfyUI/custom_nodes/ComfyUI-Manager && pip install -r requirements.txt
 
 # Install ComfyStream requirements
 RUN ln -s /workspace/comfystream /workspace/ComfyUI/custom_nodes/comfystream
