@@ -113,6 +113,14 @@ class ComfyStreamFrameProcessor(FrameProcessor):
         # Set stop event to signal all background tasks to stop
         self._stop_event.set()
 
+        # Stop the ComfyStream client's prompt execution
+        if self.pipeline and self.pipeline.client:
+            logger.info("Stopping ComfyStream client prompt execution")
+            try:
+                await self.pipeline.client.cleanup()
+            except Exception as e:
+                logger.error(f"Error stopping ComfyStream client: {e}")
+
         # Stop text forwarder
         await self._stop_text_forwarder()
 

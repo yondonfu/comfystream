@@ -56,7 +56,7 @@
             "env": {
                 "ORCH_URL": "https://172.17.0.1:9995",
                 "ORCH_SECRET": "orch-secret",
-                "CAPABILITY_NAME": "comfystream-byoc-processor",
+                "CAPABILITY_NAME": "comfystream",
                 "CAPABILITY_DESCRIPTION": "ComfyUI streaming processor for BYOC mode",
                 "CAPABILITY_URL": "http://172.17.0.1:8000",
                 "CAPABILITY_PRICE_PER_UNIT": "0",
