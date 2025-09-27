@@ -9,6 +9,7 @@ ARG PYTHON_VERSION
 SHELL ["/bin/bash", "-c"]
 
 ENV DEBIAN_FRONTEND=noninteractive \
+    TensorRT_ROOT=/opt/TensorRT-10.12.0.36 \
     PYTHON_VERSION="${PYTHON_VERSION}" \
     SHELL="/bin/bash" \
     UV_PYTHON="${PYTHON_VERSION}" \
@@ -17,40 +18,17 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PATH="/workspace/.venv/bin:/root/.local/bin:/usr/local/bin:${PATH}" \
     VIRTUAL_ENV="/workspace/.venv" \
     PYTHONPATH="/workspace/.venv/lib/python${PYTHON_VERSION}/site-packages"
-
+    
 # System dependencies
 RUN apt update && apt install -yqq --no-install-recommends \
-    git \
-    wget \
-    curl \
-    nano \
-    socat \
-    libsndfile1 \
-    build-essential \
-    llvm \
-    tk-dev \
-    libglvnd-dev \
-    cmake \
-    swig \
-    libprotobuf-dev \
-    protobuf-compiler \
-    ffmpeg \
-    python3 \
-    python3-pip \
-    python3-venv \
-    curl \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libgdk-pixbuf2.0-dev \
-    libffi-dev \
-    libgirepository1.0-dev \
-    pkg-config \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libgdk-pixbuf2.0-dev \
-    libffi-dev \
-    libgirepository1.0-dev \
-    pkg-config \
+    git wget nano socat \
+    libsndfile1 build-essential llvm tk-dev \
+    libglvnd-dev cmake swig libprotobuf-dev \
+    protobuf-compiler libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev \
+    libffi-dev libgirepository1.0-dev pkg-config libgflags-dev \
+    libgoogle-glog-dev libjpeg-dev libavcodec-dev libavformat-dev \
+    libavutil-dev libswscale-dev ffmpeg python3 \
+    python3-pip python3-venv curl \
     && rm -rf /var/lib/apt/lists/*
 
 #enable opengl support with nvidia gpu
@@ -83,6 +61,21 @@ RUN uv pip install comfy-cli
 COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
 COPY ./configs /workspace/comfystream/configs
 
+# TensorRT SDK
+WORKDIR /opt
+RUN wget --progress=dot:giga \
+    https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.12.0/tars/TensorRT-10.12.0.36.Linux.x86_64-gnu.cuda-12.9.tar.gz \
+    && tar -xzf TensorRT-10.12.0.36.Linux.x86_64-gnu.cuda-12.9.tar.gz \
+    && rm TensorRT-10.12.0.36.Linux.x86_64-gnu.cuda-12.9.tar.gz
+
+# Link libraries and update linker cache
+RUN echo "${TensorRT_ROOT}/lib" > /etc/ld.so.conf.d/tensorrt.conf \
+    && ldconfig
+
+# Install matching TensorRT Python bindings for CPython 3.12
+RUN conda run -n comfystream pip install --no-cache-dir \
+    ${TensorRT_ROOT}/python/tensorrt-10.12.0.36-cp312-none-linux_x86_64.whl
+
 RUN mkdir -p /workspace
 
 # Install ComfyUI using comfy-cli
@@ -96,6 +89,13 @@ RUN cd /workspace/comfystream && uv pip install -r ./src/comfystream/scripts/ove
 # Copy comfystream and example workflows to ComfyUI
 COPY ./workflows/comfyui/* /workspace/ComfyUI/user/default/workflows/
 COPY ./test/example-512x512.png /workspace/ComfyUI/input
+COPY ./docker/entrypoint.sh /workspace/comfystream/docker/entrypoint.sh
+
+# Install OpenCV CUDA
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream --no-capture-output docker/entrypoint.sh --opencv-cuda
+
+# Install ComfyUI requirements
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip install -r requirements.txt --root-user-action=ignore
 
 # Install ComfyStream requirements
 RUN ln -s /workspace/comfystream /workspace/ComfyUI/custom_nodes/comfystream
