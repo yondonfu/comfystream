@@ -1,0 +1,124 @@
+ARG BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04 \
+    CONDA_VERSION=latest \
+    PYTHON_VERSION=3.12 \
+    CUDA_VERSION=12.8
+
+FROM "${BASE_IMAGE}"
+
+ARG CONDA_VERSION \
+    PYTHON_VERSION \
+    CUDA_VERSION
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    CONDA_VERSION="${CONDA_VERSION}" \
+    PATH="/workspace/miniconda3/bin:${PATH}" \
+    PYTHON_VERSION="${PYTHON_VERSION}" \
+    CUDA_VERSION="${CUDA_VERSION}"
+
+# System dependencies
+RUN apt update && apt install -yqq \
+    git \
+    wget \
+    nano \
+    socat \
+    libsndfile1 \
+    build-essential \
+    llvm \
+    tk-dev \
+    cmake \
+    libgflags-dev \
+    libgoogle-glog-dev \
+    libjpeg-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /workspace/comfystream && \
+    wget "https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_VERSION}-Linux-x86_64.sh" -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p /workspace/miniconda3 && \
+    eval "$(/workspace/miniconda3/bin/conda shell.bash hook)" && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
+    conda create -n comfystream python="${PYTHON_VERSION}" -c conda-forge -y && \
+    rm /tmp/miniconda.sh && \
+    conda run -n comfystream --no-capture-output pip install numpy==1.26.4 aiortc aiohttp requests tqdm pyyaml --root-user-action=ignore
+
+# Clone ComfyUI
+ADD --link https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+
+# OpenCV with CUDA support
+WORKDIR /workspace
+
+# Clone OpenCV repositories
+RUN git clone --depth 1 --branch 4.11.0 https://github.com/opencv/opencv.git && \
+    git clone --depth 1 --branch 4.11.0 https://github.com/opencv/opencv_contrib.git
+
+# Create build directory
+RUN mkdir -p /workspace/opencv/build
+
+# Create a toolchain file with absolute path
+RUN echo '# Custom toolchain file to exclude Conda paths\n\
+\n\
+# Set system compilers\n\
+set(CMAKE_C_COMPILER "/usr/bin/gcc")\n\
+set(CMAKE_CXX_COMPILER "/usr/bin/g++")\n\
+\n\
+# Set system root directories\n\
+set(CMAKE_FIND_ROOT_PATH "/usr")\n\
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)\n\
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)\n\
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)\n\
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)\n\
+\n\
+# Explicitly exclude Conda paths\n\
+list(APPEND CMAKE_IGNORE_PATH \n\
+    "/workspace/miniconda3"\n\
+    "/workspace/miniconda3/envs"\n\
+    "/workspace/miniconda3/envs/comfystream"\n\
+    "/workspace/miniconda3/envs/comfystream/lib"\n\
+)\n\
+\n\
+# Set RPATH settings\n\
+set(CMAKE_SKIP_BUILD_RPATH FALSE)\n\
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)\n\
+set(CMAKE_INSTALL_RPATH "/usr/local/lib:/usr/lib/x86_64-linux-gnu")\n\
+set(PYTHON_LIBRARY "/workspace/miniconda3/envs/comfystream/lib/")\n\
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)' > /workspace/custom_toolchain.cmake
+
+# Set environment variables for OpenCV
+RUN echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' >> /root/.bashrc
+
+# Build and install OpenCV with CUDA support
+RUN cd /workspace/opencv/build && \
+    # Build OpenCV
+    cmake \
+      -D CMAKE_TOOLCHAIN_FILE=/workspace/custom_toolchain.cmake \
+      -D CMAKE_BUILD_TYPE=RELEASE \
+      -D CMAKE_INSTALL_PREFIX=/usr/local \
+      -D WITH_CUDA=ON \
+      -D WITH_CUDNN=ON \
+      -D WITH_CUBLAS=ON \
+      -D WITH_TBB=ON \
+      -D CUDA_ARCH_LIST="8.0+PTX" \
+      -D OPENCV_DNN_CUDA=ON \
+      -D OPENCV_ENABLE_NONFREE=ON \
+      -D CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda \
+      -D OPENCV_EXTRA_MODULES_PATH=/workspace/opencv_contrib/modules \
+      -D PYTHON3_EXECUTABLE=/workspace/miniconda3/envs/comfystream/bin/python3.12 \
+      -D PYTHON_INCLUDE_DIR=/workspace/miniconda3/envs/comfystream/include/python3.12 \
+      -D PYTHON_LIBRARY=/workspace/miniconda3/envs/comfystream/lib/libpython3.12.so \
+      -D HAVE_opencv_python3=ON \
+      -D WITH_NVCUVID=OFF \
+      -D WITH_NVCUVENC=OFF \
+      .. && \  
+    make -j$(nproc) && \
+    make install && \
+    ldconfig
+
+# Configure no environment activation by default
+RUN conda config --set auto_activate_base false && \
+    conda init bash
+
+WORKDIR /workspace/comfystream
