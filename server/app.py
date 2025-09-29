@@ -12,9 +12,6 @@ import torch
 if torch.cuda.is_available():
     torch.cuda.init()
 
-
-from aiohttp import web, MultipartWriter
-from aiohttp_cors import setup as setup_cors, ResourceOptions
 from aiohttp import web
 from aiortc import (
     MediaStreamTrack,
@@ -24,7 +21,6 @@ from aiortc import (
     RTCSessionDescription,
 )
 # Import HTTP streaming modules
-from http_streaming.routes import setup_routes
 from aiortc.codecs import h264
 from aiortc.rtcrtpsender import RTCRtpSender
 from comfystream.pipeline import Pipeline
@@ -111,15 +107,6 @@ class VideoStreamTrack(MediaStreamTrack):
         count for FPS calculation and return the processed frame to the client.
         """
         processed_frame = await self.pipeline.get_processed_video_frame()
-
-                # Update the frame buffer with the processed frame
-        try:
-            from frame_buffer import FrameBuffer
-            frame_buffer = FrameBuffer.get_instance()
-            frame_buffer.update_frame(processed_frame)
-        except Exception as e:
-            # Don't let frame buffer errors affect the main pipeline
-            print(f"Error updating frame buffer: {e}")
 
         # Increment the frame count to calculate FPS.
         await self.fps_meter.increment_frame_count()
@@ -637,16 +624,6 @@ if __name__ == "__main__":
     app = web.Application()
     app["media_ports"] = args.media_ports.split(",") if args.media_ports else None
     app["workspace"] = args.workspace
-    
-    # Setup CORS
-    cors = setup_cors(app, defaults={
-        "*": ResourceOptions(
-            allow_credentials=True,
-            expose_headers="*",
-            allow_headers="*",
-            allow_methods=["GET", "POST", "OPTIONS"]
-        )
-    })
 
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
@@ -658,12 +635,6 @@ if __name__ == "__main__":
     app.router.add_post("/offer", offer)
     app.router.add_post("/prompt", set_prompt)
     
-    # Setup HTTP streaming routes
-    setup_routes(app, cors)
-    
-    # Serve static files from the public directory
-    app.router.add_static("/", path=os.path.join(os.path.dirname(__file__), "public"), name="static")
-
     # Add routes for getting stream statistics.
     stream_stats_manager = StreamStatsManager(app)
     app.router.add_get(
