@@ -1,18 +1,6 @@
 name: Build OpenCV CUDA Artifact
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'docker/Dockerfile.opencv'
-      - 'docker/Dockerfile.base'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'docker/Dockerfile.opencv'
-      - 'docker/Dockerfile.base'
   workflow_dispatch:
     inputs:
       python_version:
