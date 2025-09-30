@@ -5,11 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "comfystream"
 description = "Build Live AI Video with ComfyUI"
-version = "0.1.5"
+version = "0.1.6"
 license = { file = "LICENSE" }
 dependencies = [
     "asyncio",
-    "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@58622c7e91cb5cc2bca985d713db55e5681ff316",
+    "pytrickle @ git+https://github.com/livepeer/pytrickle.git@v0.1.4",
+    "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@e62df3a8811d8c652a195d4669f4fb27f6c9a9ba",
     "aiortc",
     "aiohttp",
     "aiohttp_cors",

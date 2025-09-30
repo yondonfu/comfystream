@@ -2,6 +2,7 @@
 --extra-index-url https://pypi.nvidia.com
 numpy<2.0.0
 torch==2.7.1+cu128
+cuda-python<13.0
 torchvision==0.22.1+cu128
 torchaudio==2.7.1+cu128
 tensorrt==10.12.0.36

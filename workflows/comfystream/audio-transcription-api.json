@@ -1,7 +1,6 @@
 {
   "10": {
     "inputs": {
-      "sample_rate": 16000,
       "transcription_interval": 2,
       "accumulation_duration": 3,
       "whisper_model": "base",
@@ -43,7 +42,7 @@
       "title": "SRT Generator"
     }
   },
-  "13": {
+  "26": {
     "inputs": {
       "data": [
         "12",

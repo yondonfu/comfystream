@@ -178,12 +178,11 @@ interface StageProps {
   onStreamReady: () => void;
   onComfyUIReady: () => void;
   resolution: { width: number; height: number };
-  backendUrl: string;
   onOutputStreamReady: (stream: MediaStream | null) => void;
   prompts: Prompt[] | null;
 }
 
-function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUrl, onOutputStreamReady, prompts }: StageProps) {
+function Stage({ connected, onStreamReady, onComfyUIReady, resolution, onOutputStreamReady, prompts }: StageProps) {
   const { remoteStream, peerConnection } = usePeerContext();
   const [frameRate, setFrameRate] = useState<number>(0);
   // Add state and refs for tracking frames
@@ -310,7 +309,7 @@ function Stage({ connected, onStreamReady, onComfyUIReady, resolution, backendUr
         </div>
       )}
       {/* Add StreamControlIcon at the bottom right corner of the video box */}
-      <StreamControl backendUrl={backendUrl} />
+  <StreamControl />
     </div>
   );
 }
@@ -598,7 +597,6 @@ export const Room = () => {
                 <Stage
                   connected={isConnected}
                   onStreamReady={onRemoteStreamReady}
-                  backendUrl={config.streamUrl || ""}
                   onComfyUIReady={onComfyUIReady}
                   resolution={config.resolution}
                   onOutputStreamReady={setOutputStream}

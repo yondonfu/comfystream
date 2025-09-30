@@ -170,7 +170,14 @@ export function usePeer(props: PeerProps): Peer {
 
       pc.ontrack = (event) => {
         if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0]);
+          const inbound = event.streams[0];
+            // Only update if different (avoid overwriting during renegotiation repeats)
+          setRemoteStream(inbound);
+          try {
+            (window as any).__comfystreamRemoteStream = inbound;
+          } catch (e) {
+            console.warn("Failed to set global remote stream", e);
+          }
         }
       };
 
@@ -186,7 +193,16 @@ export function usePeer(props: PeerProps): Peer {
       };
 
       pc.onconnectionstatechange = () => {
-        handleConnectionStateChange(pc.connectionState);
+        const state = pc.connectionState;
+        handleConnectionStateChange(state);
+        if (state === 'failed' || state === 'disconnected' || state === 'closed') {
+          // Clear global reference so preview popups know stream has ended.
+          try {
+            if ((window as any).__comfystreamRemoteStream) {
+              delete (window as any).__comfystreamRemoteStream;
+            }
+          } catch { /* noop */ }
+        }
       };
 
       const createOffer = async () => {
@@ -206,6 +222,12 @@ export function usePeer(props: PeerProps): Peer {
       setDataChannel(null);
       setRemoteStream(null);
       setPeerConnection(null);
+      // Also clear global on explicit disconnect.
+      try {
+        if ((window as any).__comfystreamRemoteStream) {
+          delete (window as any).__comfystreamRemoteStream;
+        }
+      } catch { /* noop */ }
     }
   }, [
     connect,

@@ -18,7 +18,7 @@ class SaveTextTensor:
         }
 
     @classmethod
-    def IS_CHANGED(s):
+    def IS_CHANGED(s, **kwargs):
         return float("nan")
 
     def execute(self, data, remove_linebreaks=True):

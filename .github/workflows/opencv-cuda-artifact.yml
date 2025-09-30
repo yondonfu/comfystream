@@ -1,0 +1,184 @@
+name: Build OpenCV CUDA Artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: 'Python version to build'
+        required: false
+        default: '3.12'
+        type: string
+      cuda_version:
+        description: 'CUDA version to build'
+        required: false
+        default: '12.8'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: ${{ github.event.inputs.python_version || '3.12' }}
+  CUDA_VERSION: ${{ github.event.inputs.cuda_version || '12.8' }}
+
+jobs:
+  build-opencv-artifact:
+    name: Build OpenCV CUDA Artifact
+    runs-on: [self-hosted, linux, gpu]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build OpenCV CUDA Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.opencv
+          build-args: |
+            BASE_IMAGE=nvidia/cuda:${{ env.CUDA_VERSION }}.1-cudnn-devel-ubuntu22.04
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            CUDA_VERSION=${{ env.CUDA_VERSION }}
+          tags: opencv-cuda-artifact:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract OpenCV libraries from Docker container
+        run: |
+          echo "Creating temporary container..."
+          docker create --name opencv-extract opencv-cuda-artifact:latest
+          
+          echo "Creating workspace directory..."
+          mkdir -p ./opencv-artifacts
+          
+          # Try to copy from system installation
+          docker cp opencv-extract:/usr/local/lib/python${{ env.PYTHON_VERSION }}/site-packages/cv2 ./opencv-artifacts/cv2 || echo "cv2 not found in system site-packages"
+          
+          echo "Copying OpenCV source directories..."
+          # Copy opencv and opencv_contrib source directories  
+          docker cp opencv-extract:/workspace/opencv ./opencv-artifacts/ || echo "opencv source not found"
+          docker cp opencv-extract:/workspace/opencv_contrib ./opencv-artifacts/ || echo "opencv_contrib source not found"
+          
+          echo "Cleaning up container..."
+          docker rm opencv-extract
+          
+          echo "Contents of opencv-artifacts:"
+          ls -la ./opencv-artifacts/
+
+      - name: Create tarball artifact
+        run: |
+          echo "Creating opencv-cuda-release.tar.gz..."
+          cd ./opencv-artifacts
+          tar -czf ../opencv-cuda-release.tar.gz . || echo "Failed to create tarball"
+          cd ..
+          
+          echo "Generating checksums..."
+          sha256sum opencv-cuda-release.tar.gz > opencv-cuda-release.tar.gz.sha256
+          md5sum opencv-cuda-release.tar.gz > opencv-cuda-release.tar.gz.md5
+          
+          echo "Verifying archive contents..."
+          echo "Archive size: $(ls -lh opencv-cuda-release.tar.gz | awk '{print $5}')"
+          echo "First 20 files in archive:"
+          tar -tzf opencv-cuda-release.tar.gz | head -20
+
+      - name: Extract and verify tarball
+        run: |
+          echo "Testing tarball extraction..."
+          mkdir -p test-extract
+          cd test-extract
+          tar -xzf ../opencv-cuda-release.tar.gz
+          echo "Extracted contents:"
+          find . -maxdepth 2 -type d | sort
+          cd ..
+          rm -rf test-extract
+
+      - name: Upload OpenCV CUDA Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencv-cuda-release-python${{ env.PYTHON_VERSION }}-cuda${{ env.CUDA_VERSION }}-${{ github.sha }}
+          path: |
+            opencv-cuda-release.tar.gz
+            opencv-cuda-release.tar.gz.sha256
+            opencv-cuda-release.tar.gz.md5
+          retention-days: 30
+
+      - name: Create Release Notes
+        run: |
+          cat > release-info.txt << EOF
+          OpenCV CUDA Release Artifact
+          
+          Build Details:
+          - Python Version: ${{ env.PYTHON_VERSION }}
+          - CUDA Version: ${{ env.CUDA_VERSION }}
+          - OpenCV Version: 4.11.0
+          - Built on: $(date -u)
+          - Commit SHA: ${{ github.sha }}
+          
+          Contents:
+          - cv2: Python OpenCV module with CUDA support
+          - opencv: OpenCV source code
+          - opencv_contrib: OpenCV contrib modules source  
+          - lib: Compiled OpenCV libraries
+          - include: OpenCV header files
+          
+          Installation:
+          1. Download opencv-cuda-release.tar.gz
+          2. Extract: tar -xzf opencv-cuda-release.tar.gz
+          3. Copy cv2 to your Python environment's site-packages
+          4. Ensure CUDA libraries are in your system PATH
+          
+          Checksums:
+          SHA256: $(cat opencv-cuda-release.tar.gz.sha256)
+          MD5: $(cat opencv-cuda-release.tar.gz.md5)
+          EOF
+
+      - name: Upload Release Info
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-info-python${{ env.PYTHON_VERSION }}-cuda${{ env.CUDA_VERSION }}-${{ github.sha }}
+          path: release-info.txt
+          retention-days: 30
+
+  create-release-draft:
+    name: Create Release Draft
+    needs: build-opencv-artifact
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: opencv-cuda-release-python${{ env.PYTHON_VERSION }}-cuda${{ env.CUDA_VERSION }}-${{ github.sha }}
+          path: ./artifacts
+
+      - name: Download release info
+        uses: actions/download-artifact@v4
+        with:
+          name: release-info-python${{ env.PYTHON_VERSION }}-cuda${{ env.CUDA_VERSION }}-${{ github.sha }}
+          path: ./artifacts
+
+      - name: Create Release Draft
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: opencv-cuda-v${{ env.PYTHON_VERSION }}-${{ env.CUDA_VERSION }}-${{ github.run_number }}
+          name: OpenCV CUDA Release - Python ${{ env.PYTHON_VERSION }} CUDA ${{ env.CUDA_VERSION }}
+          body_path: ./artifacts/release-info.txt
+          draft: true
+          files: |
+            ./artifacts/opencv-cuda-release.tar.gz
+            ./artifacts/opencv-cuda-release.tar.gz.sha256
+            ./artifacts/opencv-cuda-release.tar.gz.md5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
