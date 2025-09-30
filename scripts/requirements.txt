@@ -8,4 +8,4 @@ bcrypt
 rich
 # Profiler
 psutil
-pynvml
+nvidia-ml-py
