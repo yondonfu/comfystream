@@ -16,7 +16,7 @@ jobs:
   codeql:
     name: Perform CodeQL analysis
     if: ${{ github.repository == 'livepeer/comfystream' }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -56,7 +56,7 @@ jobs:
 
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - name: Check out code
         uses: actions/checkout@v6
