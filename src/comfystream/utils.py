@@ -4,7 +4,6 @@ import json
 from typing import Any, Dict
 
 from comfy.api.components.schema.prompt import Prompt, PromptDictInput
-from pytrickle.api import StreamParamsUpdateRequest
 
 from .modalities import (
     get_convertible_node_keys,
@@ -84,66 +83,6 @@ def convert_prompt(prompt: PromptDictInput, return_dict: bool = False) -> Prompt
 
     # Validate the processed prompt and return Pydantic object
     return Prompt.validate(prompt)
-
-
-class ComfyStreamParamsUpdateRequest(StreamParamsUpdateRequest):
-    """ComfyStream parameter validation."""
-
-    def __init__(self, **data):
-        # Handle prompts parameter
-        if "prompts" in data:
-            prompts = data["prompts"]
-
-            # Parse JSON string if needed
-            if isinstance(prompts, str) and prompts.strip():
-                try:
-                    prompts = json.loads(prompts)
-                except json.JSONDecodeError:
-                    data.pop("prompts")
-
-            # Handle list - use first valid dict
-            elif isinstance(prompts, list):
-                prompts = next((p for p in prompts if isinstance(p, dict)), None)
-                if not prompts:
-                    data.pop("prompts")
-
-            # Validate prompts
-            if "prompts" in data and isinstance(prompts, dict):
-                try:
-                    data["prompts"] = convert_prompt(prompts, return_dict=True)
-                except Exception:
-                    data.pop("prompts")
-
-        # Call parent constructor
-        super().__init__(**data)
-
-    @classmethod
-    def model_validate(cls, obj):
-        return cls(**obj)
-
-    def model_dump(self):
-        return super().model_dump()
-
-
-def normalize_stream_params(params: Any) -> Dict[str, Any]:
-    """Normalize stream parameters from various formats to a dict.
-
-    Args:
-        params: Parameters in dict, list, or other format
-
-    Returns:
-        Dict containing normalized parameters, empty dict if invalid
-    """
-    if params is None:
-        return {}
-    if isinstance(params, dict):
-        return dict(params)
-    if isinstance(params, list):
-        for candidate in params:
-            if isinstance(candidate, dict):
-                return dict(candidate)
-        return {}
-    return {}
 
 
 def get_default_workflow() -> dict:

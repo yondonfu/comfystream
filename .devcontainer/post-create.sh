@@ -5,7 +5,7 @@ cd /workspace/comfystream
 
 # Install Comfystream in editable mode.
 echo -e "\e[32mInstalling Comfystream in editable mode...\e[0m"
-/workspace/miniconda3/envs/comfystream/bin/python3 -m pip install -e . -c src/comfystream/scripts/constraints.txt --root-user-action=ignore > /dev/null
+/workspace/miniconda3/envs/comfystream/bin/python3 -m pip install -e .[server] -c src/comfystream/scripts/constraints.txt --root-user-action=ignore > /dev/null
 
 # Install npm packages if needed
 if [ ! -d "/workspace/comfystream/ui/node_modules" ]; then

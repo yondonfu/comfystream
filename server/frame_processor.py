@@ -7,14 +7,11 @@ from typing import Any, Dict, List, Optional, Union
 from pytrickle.frame_processor import FrameProcessor
 from pytrickle.frames import AudioFrame, VideoFrame
 from pytrickle.stream_processor import VideoProcessingResult
+from utils_byoc import ComfyStreamParamsUpdateRequest, normalize_stream_params
 
 from comfystream.pipeline import Pipeline
 from comfystream.pipeline_state import PipelineState
-from comfystream.utils import (
-    ComfyStreamParamsUpdateRequest,
-    convert_prompt,
-    normalize_stream_params,
-)
+from comfystream.utils import convert_prompt
 
 logger = logging.getLogger(__name__)
 
