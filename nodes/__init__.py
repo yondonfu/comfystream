@@ -1,5 +1,7 @@
 """ComfyStream nodes package"""
-from comfy_compatibility.imports import ImportContext, SITE_PACKAGES, MAIN_PY
+
+from comfy_compatibility.imports import MAIN_PY, SITE_PACKAGES, ImportContext
+
 with ImportContext("comfy", "comfy_extras", order=[SITE_PACKAGES, MAIN_PY]):
     from .audio_utils import *
     from .tensor_utils import *
@@ -13,15 +15,16 @@ NODE_DISPLAY_NAME_MAPPINGS = {}
 
 # Import and update mappings from submodules
 for module in [audio_utils, tensor_utils, video_stream_utils, api, web]:
-    if hasattr(module, 'NODE_CLASS_MAPPINGS'):
+    if hasattr(module, "NODE_CLASS_MAPPINGS"):
         NODE_CLASS_MAPPINGS.update(module.NODE_CLASS_MAPPINGS)
-    if hasattr(module, 'NODE_DISPLAY_NAME_MAPPINGS'):
+    if hasattr(module, "NODE_DISPLAY_NAME_MAPPINGS"):
         NODE_DISPLAY_NAME_MAPPINGS.update(module.NODE_DISPLAY_NAME_MAPPINGS)
 
 # Web directory for UI components
 import os
+
 WEB_DIRECTORY = os.path.join(os.path.dirname(os.path.realpath(__file__)), "web")
 
 NODE_DISPLAY_NAME_MAPPINGS["ComfyStreamLauncher"] = "Launch ComfyStream 🚀"
 
-__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

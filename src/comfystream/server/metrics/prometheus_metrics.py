@@ -1,8 +1,9 @@
 """Prometheus metrics utilities."""
 
-from prometheus_client import Gauge, generate_latest
-from aiohttp import web
 from typing import Optional
+
+from aiohttp import web
+from prometheus_client import Gauge, generate_latest
 
 
 class MetricsManager:
@@ -18,9 +19,7 @@ class MetricsManager:
         self._include_stream_id = include_stream_id
 
         base_labels = ["stream_id"] if include_stream_id else []
-        self._fps_gauge = Gauge(
-            "stream_fps", "Frames per second of the stream", base_labels
-        )
+        self._fps_gauge = Gauge("stream_fps", "Frames per second of the stream", base_labels)
 
     def enable(self):
         """Enable Prometheus metrics collection."""

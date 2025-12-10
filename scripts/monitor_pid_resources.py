@@ -1,15 +1,16 @@
 """A Python script to monitor system resources for a given PID and optionally create
 a py-spy profiler report."""
 
-import psutil
-import pynvml
-import time
-import subprocess
-import click
-import threading
 import csv
+import subprocess
+import threading
+import time
 from pathlib import Path
 from typing import List
+
+import click
+import psutil
+import pynvml
 
 
 def is_running_inside_container():
@@ -131,30 +132,20 @@ def find_pid_by_name(name: str) -> int:
     for proc in psutil.process_iter(["pid", "name", "cmdline"]):
         if proc.info["cmdline"] and name in proc.info["cmdline"]:
             found_pid = proc.info["pid"]
-            click.echo(
-                click.style(f"Found process '{name}' with PID {found_pid}.", fg="green")
-            )
+            click.echo(click.style(f"Found process '{name}' with PID {found_pid}.", fg="green"))
             return found_pid
     click.echo(click.style(f"Error: Process with name '{name}' not found.", fg="red"))
     return None
 
 
 @click.command()
-@click.option(
-    "--pid", type=str, default="auto", help='Process ID or "auto" to find by name'
-)
-@click.option(
-    "--name", type=str, default="app.py", help="Process name (default: app.py)"
-)
+@click.option("--pid", type=str, default="auto", help='Process ID or "auto" to find by name')
+@click.option("--name", type=str, default="app.py", help="Process name (default: app.py)")
 @click.option("--interval", type=int, default=2, help="Monitoring interval (seconds)")
-@click.option(
-    "--duration", type=int, default=30, help="Total monitoring duration (seconds)"
-)
+@click.option("--duration", type=int, default=30, help="Total monitoring duration (seconds)")
 @click.option("--output", type=str, default=None, help="File to save logs (optional)")
 @click.option("--spy", is_flag=True, help="Enable py-spy profiling")
-@click.option(
-    "--spy-output", type=str, default="pyspy_profile.svg", help="Py-Spy output file"
-)
+@click.option("--spy-output", type=str, default="pyspy_profile.svg", help="Py-Spy output file")
 @click.option(
     "--host-pid",
     type=int,
@@ -213,21 +204,15 @@ def monitor_resources(
         click.echo(click.style(f"Error: Process with PID {pid} not found.", fg="red"))
         return
 
-    click.echo(
-        click.style(f"Monitoring PID {pid} for {duration} seconds...", fg="green")
-    )
+    click.echo(click.style(f"Monitoring PID {pid} for {duration} seconds...", fg="green"))
 
     def run_py_spy():
         """Run py-spy profiler for deep profiling."""
         click.echo(click.style("Running py-spy for deep profiling...", fg="green"))
         spy_cmd = f"py-spy record -o {spy_output} --pid {pid} --duration {duration}"
         try:
-            subprocess.run(
-                spy_cmd, shell=True, check=True, capture_output=True, text=True
-            )
-            click.echo(
-                click.style(f"Py-Spy flame graph saved to {spy_output}", fg="green")
-            )
+            subprocess.run(spy_cmd, shell=True, check=True, capture_output=True, text=True)
+            click.echo(click.style(f"Py-Spy flame graph saved to {spy_output}", fg="green"))
         except subprocess.CalledProcessError as e:
             click.echo(click.style(f"Error running py-spy: {e.stderr}", fg="red"))
 

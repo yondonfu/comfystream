@@ -1,7 +1,8 @@
 """Handles real-time video stream statistics (non-Prometheus, JSON API)."""
 
-from typing import Any, Dict
 import json
+from typing import Any, Dict
+
 from aiohttp import web
 from aiortc import MediaStreamTrack
 
@@ -17,9 +18,7 @@ class StreamStatsManager:
         """
         self._app = app
 
-    async def collect_video_metrics(
-        self, video_track: MediaStreamTrack
-    ) -> Dict[str, Any]:
+    async def collect_video_metrics(self, video_track: MediaStreamTrack) -> Dict[str, Any]:
         """Collects real-time statistics for a video track.
 
         Args:

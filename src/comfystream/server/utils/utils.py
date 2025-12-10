@@ -1,12 +1,13 @@
 """General utility functions."""
 
 import asyncio
+import logging
 import random
 import types
-import logging
-from aiohttp import web
-from typing import List, Tuple
 from contextlib import asynccontextmanager
+from typing import List, Tuple
+
+from aiohttp import web
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,7 @@ def patch_loop_datagram(local_ports: List[int]):
                 protocol_factory, local_addr=local_addr, **kwargs
             )
         if local_addr is None:
-            return await old_create_datagram_endpoint(
-                protocol_factory, local_addr=None, **kwargs
-            )
+            return await old_create_datagram_endpoint(protocol_factory, local_addr=None, **kwargs)
         # if port is not specified make it use our range
         ports = list(local_ports)
         random.shuffle(ports)
@@ -83,4 +82,3 @@ async def temporary_log_level(logger_name: str, level: int):
     finally:
         if level is not None:
             logger.setLevel(original_level)
-

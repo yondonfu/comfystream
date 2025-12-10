@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 from collections import deque
+
 from comfystream.server.metrics import MetricsManager
 
 logger = logging.getLogger(__name__)
@@ -35,11 +36,7 @@ class FPSMeter:
                 current_time = time.monotonic()
                 if self._last_fps_calculation_time is not None:
                     time_diff = current_time - self._last_fps_calculation_time
-                    self._fps = (
-                        self._fps_interval_frame_count / time_diff
-                        if time_diff > 0
-                        else 0.0
-                    )
+                    self._fps = self._fps_interval_frame_count / time_diff if time_diff > 0 else 0.0
                     self._fps_measurements.append(
                         {
                             "timestamp": current_time - self._fps_loop_start_time,
@@ -92,8 +89,7 @@ class FPSMeter:
         """
         async with self._lock:
             return (
-                sum(m["fps"] for m in self._fps_measurements)
-                / len(self._fps_measurements)
+                sum(m["fps"] for m in self._fps_measurements) / len(self._fps_measurements)
                 if self._fps_measurements
                 else self._fps
             )
@@ -106,9 +102,6 @@ class FPSMeter:
             The elapsed time in seconds since the last FPS calculation.
         """
         async with self._lock:
-            if (
-                self._last_fps_calculation_time is None
-                or self._fps_loop_start_time is None
-            ):
+            if self._last_fps_calculation_time is None or self._fps_loop_start_time is None:
                 return 0.0
             return self._last_fps_calculation_time - self._fps_loop_start_time

@@ -12,7 +12,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     CONDA_VERSION="${CONDA_VERSION}" \
     PATH="/workspace/miniconda3/bin:${PATH}" \
     PYTHON_VERSION="${PYTHON_VERSION}"
-    
+
 # System dependencies
 RUN apt update && apt install -yqq --no-install-recommends \
     git wget nano socat \
@@ -46,6 +46,18 @@ RUN mkdir -p /workspace/comfystream && \
 RUN conda run -n comfystream --no-capture-output pip install --upgrade pip && \
 conda run -n comfystream --no-capture-output pip install wheel
 
+RUN apt-get remove --purge -y libcudnn9-cuda-12 libcudnn9-dev-cuda-12 || true && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install numpy<2.0.0 first
+# to ensure numpy 2.0 is not installed automatically by another package
+RUN conda run -n comfystream --no-capture-output pip install "numpy<2.0.0"
+
+# Install cuDNN 9.8 via conda to match base system version
+# Caution: Mixed versions installed in environment (system/python) can cause CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH errors
+RUN conda install -n comfystream -y -c nvidia -c conda-forge cudnn=9.8 cuda-version=12.8
+
 # Copy only files needed for setup
 COPY ./src/comfystream/scripts /workspace/comfystream/src/comfystream/scripts
 COPY ./configs /workspace/comfystream/configs
@@ -66,29 +78,25 @@ RUN conda run -n comfystream pip install --no-cache-dir \
     ${TensorRT_ROOT}/python/tensorrt-10.12.0.36-cp312-none-linux_x86_64.whl
 
 # Clone ComfyUI
-RUN git clone --branch v0.3.60 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
+RUN git clone --branch v0.3.76 --depth 1 https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
 RUN git clone https://github.com/Comfy-Org/ComfyUI-Manager.git /workspace/ComfyUI/custom_nodes/ComfyUI-Manager
 
 # Copy ComfyStream files into ComfyUI
 COPY . /workspace/comfystream
 
-RUN conda run -n comfystream --cwd /workspace/comfystream --no-capture-output pip install -r ./src/comfystream/scripts/constraints.txt
+RUN conda run -n comfystream --cwd /workspace/comfystream --no-capture-output pip install -r src/comfystream/scripts/constraints.txt
 
 # Copy comfystream and example workflows to ComfyUI
 COPY ./workflows/comfyui/* /workspace/ComfyUI/user/default/workflows/
 COPY ./test/example-512x512.png /workspace/ComfyUI/input
 COPY ./docker/entrypoint.sh /workspace/comfystream/docker/entrypoint.sh
 
-# Install OpenCV CUDA
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream --no-capture-output docker/entrypoint.sh --opencv-cuda
-
 # Install ComfyUI requirements
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip install -r requirements.txt --root-user-action=ignore
-RUN cd /workspace/ComfyUI/custom_nodes/ComfyUI-Manager && pip install -r requirements.txt
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/ComfyUI pip install -r requirements.txt --constraint /workspace/comfystream/src/comfystream/scripts/constraints.txt --root-user-action=ignore
 
 # Install ComfyStream requirements
 RUN ln -s /workspace/comfystream /workspace/ComfyUI/custom_nodes/comfystream
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install -e . --root-user-action=ignore
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream pip install -e .[server] --constraint src/comfystream/scripts/constraints.txt --root-user-action=ignore
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python install.py --workspace /workspace/ComfyUI
 
 # Accept a build-arg that lets CI force-invalidate setup_nodes.py
@@ -98,9 +106,8 @@ ENV CACHEBUST=${CACHEBUST}
 # Run setup_nodes
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
 
-RUN conda run -n comfystream --no-capture-output pip install "numpy<2.0.0"
-
-RUN conda run -n comfystream --no-capture-output pip install --no-cache-dir xformers==0.0.30 --no-deps
+# Setup opencv with CUDA support
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream --no-capture-output docker/entrypoint.sh --opencv-cuda
 
 # Configure no environment activation by default
 RUN conda config --set auto_activate_base false && \
@@ -110,3 +117,8 @@ RUN conda config --set auto_activate_base false && \
 RUN echo "conda activate comfystream" >> ~/.bashrc
 
 WORKDIR /workspace/comfystream
+
+# Run ComfyStream BYOC server from /workspace/ComfyUI within the comfystream conda env
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "comfystream", "--cwd", "/workspace/ComfyUI", "python", "/workspace/comfystream/server/byoc.py"]
+# Default args; can be overridden/appended at runtime
+CMD ["--workspace", "/workspace/ComfyUI", "--host", "0.0.0.0", "--port", "8000"]

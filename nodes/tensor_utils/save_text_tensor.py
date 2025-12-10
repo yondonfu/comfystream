@@ -1,5 +1,6 @@
 from comfystream import tensor_cache
 
+
 class SaveTextTensor:
     CATEGORY = "text_utils"
     RETURN_TYPES = ()
@@ -13,8 +14,11 @@ class SaveTextTensor:
                 "data": ("STRING",),  # Accept text string as input.
             },
             "optional": {
-                "remove_linebreaks": ("BOOLEAN", {"default": True}),  # Remove whitespace and line breaks
-            }
+                "remove_linebreaks": (
+                    "BOOLEAN",
+                    {"default": True},
+                ),  # Remove whitespace and line breaks
+            },
         }
 
     @classmethod
@@ -23,7 +27,7 @@ class SaveTextTensor:
 
     def execute(self, data, remove_linebreaks=True):
         if remove_linebreaks:
-            result_text = data.replace('\n', '').replace('\r', '')
+            result_text = data.replace("\n", "").replace("\r", "")
         else:
             result_text = data
         tensor_cache.text_outputs.put_nowait(result_text)

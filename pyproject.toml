@@ -1,16 +1,15 @@
 [build-system]
-requires = ["setuptools>=64.0.0", "wheel"]
+requires = ["setuptools>=64.0.0,<81", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "comfystream"
 description = "Build Live AI Video with ComfyUI"
-version = "0.1.6"
+version = "0.1.8"
 license = { file = "LICENSE" }
 dependencies = [
     "asyncio",
-    "pytrickle @ git+https://github.com/livepeer/pytrickle.git@v0.1.4",
-    "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@e62df3a8811d8c652a195d4669f4fb27f6c9a9ba",
+    "comfyui @ git+https://github.com/hiddenswitch/ComfyUI.git@7259c252ad745c12dd2412cc67f8e8163d0bbad1",
     "aiortc",
     "aiohttp",
     "aiohttp_cors",
@@ -21,7 +20,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov"]
+dev = ["pytest", "pytest-cov", "ruff"]
+server = [
+    "pytrickle @ git+https://github.com/livepeer/pytrickle.git@v0.1.5"
+]
 
 [project.urls]
 Repository = "https://github.com/yondonfu/comfystream"
@@ -35,5 +37,22 @@ Icon = "https://raw.githubusercontent.com/livepeer/comfystream-docs/main/logo/ic
 package-dir = {"" = "src"}
 packages = {find = {where = ["src", "nodes"]}}
 
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = [
+    "E501",  # let the formatter handle long lines
+    "E402",  # module level import not at top (required for ComfyUI)
+    "E722",  # bare except (existing code patterns)
+    "F401",  # imported but unused (many re-exports)
+    "F403",  # star imports (ComfyUI pattern)
+    "F405",  # may be undefined from star imports
+    "F841",  # assigned but never used (temporary)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

@@ -56,8 +56,20 @@ function useToast() {
 }
 
 // Wrapper component to access peer context
-function TranscriptionViewerWrapper() {
+function TranscriptionViewerWrapper({ onFirstTextOutput }: { onFirstTextOutput: () => void }) {
   const peer = usePeerContext();
+  const hasNotifiedRef = useRef(false);
+  
+  // Watch for first text output and notify parent
+  useEffect(() => {
+    if (peer?.textOutputData && peer.textOutputData.trim() && !hasNotifiedRef.current) {
+      // Check if it's not a warmup message
+      if (!peer.textOutputData.includes('__WARMUP_SENTINEL__')) {
+        hasNotifiedRef.current = true;
+        onFirstTextOutput();
+      }
+    }
+  }, [peer?.textOutputData, onFirstTextOutput]);
   
   return (
     <TextOutputViewer 
@@ -342,7 +354,8 @@ export const Room = () => {
   const [isRecordingsPanelOpen, setIsRecordingsPanelOpen] = useState(false);
   
   // Transcription state
-  const [isTranscriptionPanelOpen, setIsTranscriptionPanelOpen] = useState(true);
+  const [isTranscriptionPanelOpen, setIsTranscriptionPanelOpen] = useState(false);
+  const [hasReceivedTextOutput, setHasReceivedTextOutput] = useState(false);
 
   // Helper to get timestamped filenames
   const getFilename = (type: 'input' | 'output', extension: string) => {
@@ -416,6 +429,7 @@ export const Room = () => {
   const handleDisconnected = useCallback(() => {
     setIsConnected(false);
     setIsComfyUIReady(false);
+    setHasReceivedTextOutput(false); // Reset text output state
     showToast("Stream disconnected", "error");
   }, [showToast]);
 
@@ -569,6 +583,14 @@ export const Room = () => {
 
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false);
 
+  // Callback to handle first text output received
+  const handleFirstTextOutput = useCallback(() => {
+    if (!hasReceivedTextOutput && !isTranscriptionPanelOpen) {
+      setHasReceivedTextOutput(true);
+      setIsTranscriptionPanelOpen(true);
+    }
+  }, [hasReceivedTextOutput, isTranscriptionPanelOpen]);
+
   return (
     <main className="fixed inset-0 overflow-hidden overscroll-none">
       <meta
@@ -721,7 +743,7 @@ export const Room = () => {
             {isConnected && (
               <div className={`w-full flex justify-center px-4 mt-4 ${isTranscriptionPanelOpen ? '' : 'hidden'}`}>
                 <div className="w-full max-w-[1040px]">
-                  <TranscriptionViewerWrapper />
+                  <TranscriptionViewerWrapper onFirstTextOutput={handleFirstTextOutput} />
                 </div>
               </div>
             )}
