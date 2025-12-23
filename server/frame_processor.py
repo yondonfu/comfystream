@@ -11,7 +11,10 @@ from utils_byoc import ComfyStreamParamsUpdateRequest, normalize_stream_params
 
 from comfystream.pipeline import Pipeline
 from comfystream.pipeline_state import PipelineState
-from comfystream.utils import convert_prompt
+from comfystream.utils import (
+    convert_prompt,
+    get_default_workflow,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +154,49 @@ class ComfyStreamFrameProcessor(FrameProcessor):
         except Exception:
             logger.warning("Failed to set up text monitoring", exc_info=True)
 
+    def _set_loading_overlay(self, enabled: bool) -> bool:
+        """Toggle the StreamProcessor loading overlay if available."""
+        processor = self._stream_processor
+        if not processor:
+            return False
+        try:
+            processor.set_loading_overlay(enabled)
+            logger.debug("Set loading overlay to %s", enabled)
+            return True
+        except Exception:
+            logger.warning("Failed to update loading overlay state", exc_info=True)
+            return False
+
+    def _schedule_overlay_reset_on_ingest_enabled(self) -> None:
+        """Disable the loading overlay after pipeline ingest resumes."""
+        if not self.pipeline:
+            self._set_loading_overlay(False)
+            return
+
+        if self.pipeline.is_ingest_enabled():
+            self._set_loading_overlay(False)
+            return
+
+        async def _wait_for_ingest_enable():
+            try:
+                while True:
+                    if self._stop_event.is_set():
+                        break
+                    if not self.pipeline:
+                        break
+                    if self.pipeline.is_ingest_enabled():
+                        break
+                    await asyncio.sleep(0.05)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.debug("Loading overlay watcher error", exc_info=True)
+            finally:
+                self._set_loading_overlay(False)
+
+        task = asyncio.create_task(_wait_for_ingest_enable())
+        self._background_tasks.append(task)
+
     async def _stop_text_forwarder(self) -> None:
         """Stop the background text forwarder task if running."""
         task = self._text_forward_task
@@ -212,15 +258,26 @@ class ComfyStreamFrameProcessor(FrameProcessor):
         logger.info("Stream starting")
         self._reset_stop_event()
         logger.info(f"Stream start params: {params}")
+        overlay_managed = False
 
         if not self.pipeline:
             logger.debug("Stream start requested before pipeline initialization")
             return
 
         stream_params = normalize_stream_params(params)
+        stream_width = stream_params.get("width")
+        stream_height = stream_params.get("height")
+        stream_width = int(stream_width) if stream_width is not None else None
+        stream_height = int(stream_height) if stream_height is not None else None
         prompt_payload = stream_params.pop("prompts", None)
         if prompt_payload is None:
             prompt_payload = stream_params.pop("prompt", None)
+
+        if not prompt_payload and not self.pipeline.state_manager.is_initialized():
+            logger.info(
+                "No prompts provided for new stream; applying default workflow for initialization"
+            )
+            prompt_payload = get_default_workflow()
 
         if prompt_payload:
             try:
@@ -239,6 +296,19 @@ class ComfyStreamFrameProcessor(FrameProcessor):
             except Exception:
                 logger.exception("Failed to process stream start parameters")
                 return
+
+        overlay_managed = self._set_loading_overlay(True)
+
+        try:
+            await self.pipeline.ensure_warmup(stream_width, stream_height)
+        except Exception:
+            if overlay_managed:
+                self._set_loading_overlay(False)
+            logger.exception("Failed to ensure pipeline warmup during stream start")
+            return
+
+        if overlay_managed:
+            self._schedule_overlay_reset_on_ingest_enabled()
 
         try:
             if (
@@ -312,6 +382,12 @@ class ComfyStreamFrameProcessor(FrameProcessor):
             if not self.pipeline:
                 return frame
 
+            # TODO: Do we really need this here?
+            await self.pipeline.ensure_warmup()
+
+            if not self.pipeline.state_manager.is_initialized():
+                return VideoProcessingResult.WITHHELD
+
             # If pipeline ingestion is paused, withhold frame so pytrickle renders the overlay
             if not self.pipeline.is_ingest_enabled():
                 return VideoProcessingResult.WITHHELD
@@ -324,18 +400,9 @@ class ComfyStreamFrameProcessor(FrameProcessor):
             # Process through pipeline
             await self.pipeline.put_video_frame(av_frame)
 
-            # Try to get processed frame with short timeout
-            try:
-                processed_av_frame = await asyncio.wait_for(
-                    self.pipeline.get_processed_video_frame(),
-                    timeout=self._stream_processor.overlay_config.auto_timeout_seconds,
-                )
-                processed_frame = VideoFrame.from_av_frame_with_timing(processed_av_frame, frame)
-                return processed_frame
-
-            except asyncio.TimeoutError:
-                # No frame ready yet - return withheld sentinel to trigger overlay
-                return VideoProcessingResult.WITHHELD
+            processed_av_frame = await self.pipeline.get_processed_video_frame()
+            processed_frame = VideoFrame.from_av_frame_with_timing(processed_av_frame, frame)
+            return processed_frame
 
         except Exception as e:
             logger.error(f"Video processing failed: {e}")

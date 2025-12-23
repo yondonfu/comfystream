@@ -21,6 +21,11 @@ def parse_args():
         default=False,
         help="Update existing nodes to their specified branches",
     )
+    parser.add_argument(
+        "--config",
+        default=None,
+        help="Path to custom nodes config file (default: configs/nodes.yaml). Can be a filename (searches in configs/), or an absolute/relative path.",
+    )
     return parser.parse_args()
 
 
@@ -122,10 +127,21 @@ def install_custom_nodes(workspace_dir, config_path=None, pull_branches=False):
 def setup_nodes():
     args = parse_args()
     workspace_dir = Path(args.workspace)
+    
+    # Resolve config path if provided
+    config_path = None
+    if args.config:
+        config_path = Path(args.config)
+        # If it's just a filename, look in configs directory
+        if not config_path.is_absolute() and "/" not in str(config_path):
+            config_path = Path("configs") / config_path
+        if not config_path.exists():
+            print(f"Error: Config file not found at {config_path}")
+            sys.exit(1)
 
     setup_environment(workspace_dir)
     setup_directories(workspace_dir)
-    install_custom_nodes(workspace_dir, pull_branches=args.pull_branches)
+    install_custom_nodes(workspace_dir, config_path=config_path, pull_branches=args.pull_branches)
 
 
 if __name__ == "__main__":

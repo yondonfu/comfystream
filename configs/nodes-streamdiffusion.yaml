@@ -1,0 +1,36 @@
+nodes:
+  # Minimal node configuration for faster builds
+  comfyui-tensorrt:
+    name: "ComfyUI TensorRT"
+    url: "https://github.com/yondonfu/ComfyUI_TensorRT.git"
+    branch: "quantization_with_controlnet_fixes"
+    type: "tensorrt"
+    dependencies:
+      - "tensorrt==10.12.0.36"
+
+  comfyui-streamdiffusion:
+    name: "ComfyUI StreamDiffusion"
+    url: "https://github.com/muxionlabs/ComfyUI-StreamDiffusion"
+    branch: "main"
+    type: "tensorrt"
+
+  comfyui-torch-compile:
+    name: "ComfyUI Torch Compile"
+    url: "https://github.com/yondonfu/ComfyUI-Torch-Compile"
+    type: "tensorrt"
+  
+  comfyui_controlnet_aux:
+    name: "ComfyUI ControlNet Auxiliary"
+    url: "https://github.com/Fannovel16/comfyui_controlnet_aux"
+    type: "controlnet"
+
+  comfyui-stream-pack:
+    name: "ComfyUI Stream Pack"
+    url: "https://github.com/livepeer/ComfyUI-Stream-Pack"
+    branch: "main"
+    type: "utility"
+
+  rgthree-comfy:
+    name: "rgthree Comfy"
+    url: "https://github.com/rgthree/rgthree-comfy.git"
+    type: "utility"

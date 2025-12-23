@@ -1,11 +1,13 @@
 ARG BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04 \
     CONDA_VERSION=latest \
-    PYTHON_VERSION=3.12
+    PYTHON_VERSION=3.12 \
+    NODES_CONFIG=nodes.yaml
 
 FROM "${BASE_IMAGE}"
 
 ARG CONDA_VERSION \
-    PYTHON_VERSION
+    PYTHON_VERSION \
+    NODES_CONFIG
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TensorRT_ROOT=/opt/TensorRT-10.12.0.36 \
@@ -103,8 +105,8 @@ RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream py
 ARG CACHEBUST=static
 ENV CACHEBUST=${CACHEBUST}
 
-# Run setup_nodes
-RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI
+# Run setup_nodes with custom config if specified
+RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream python src/comfystream/scripts/setup_nodes.py --workspace /workspace/ComfyUI --config ${NODES_CONFIG}
 
 # Setup opencv with CUDA support
 RUN conda run -n comfystream --no-capture-output --cwd /workspace/comfystream --no-capture-output docker/entrypoint.sh --opencv-cuda

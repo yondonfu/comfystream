@@ -1,0 +1,44 @@
+models:
+  # Example: IP-Adapter setup with directory download
+  
+  # Single file download (regular)
+  ip-adapter-plus-sd15:
+    name: "IP Adapter SD15"
+    url: "https://huggingface.co/h94/IP-Adapter/resolve/main/models/ip-adapter-plus_sd15.safetensors"
+    path: "ipadapter/ip-adapter-plus_sd15.safetensors"
+    type: "ipadapter"
+    extra_files:
+      - url: "https://huggingface.co/h94/IP-Adapter/resolve/main/models/ip-adapter-plus_sd15.bin"
+        path: "ipadapter/ip-adapter-plus_sd15.bin"
+
+  clip-image-encoder:
+    name: "CLIP Image Encoder"
+    url: "https://huggingface.co/h94/IP-Adapter/resolve/main/models/image_encoder/model.safetensors"
+    path: "ipadapter/image_encoder/model.safetensors"
+    type: "image_encoder"
+    extra_files:
+      - url: "https://huggingface.co/h94/IP-Adapter/resolve/main/models/image_encoder/config.json"
+        path: "ipadapter/image_encoder/config.json"
+
+  # Base model
+  sd-turbo:
+    name: "SD-Turbo"
+    url: "https://huggingface.co/stabilityai/sd-turbo/resolve/main/sd_turbo.safetensors"
+    path: "checkpoints/SD1.5/sd_turbo.safetensors"
+    type: "checkpoint"
+
+  PixelArtRedmond15V-PixelArt-PIXARFK.safetensors:
+    name: "PixelArtRedmond15V-PixelArt-PIXARFK"
+    url: "https://huggingface.co/artificialguybr/pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5/resolve/ab43d9e2cf8c9240189f01e9cdc4ca341362500c/PixelArtRedmond15V-PixelArt-PIXARFK.safetensors"
+    path: "loras/SD1.5/PixelArt.safetensors"
+    type: "lora"
+
+  # TAESD for fast VAE
+  taesd:
+    name: "TAESD"
+    url: "https://huggingface.co/madebyollin/taesd/resolve/main/taesd_decoder.safetensors"
+    path: "vae_approx/taesd_decoder.safetensors"
+    type: "vae_approx"
+    extra_files:
+      - url: "https://huggingface.co/madebyollin/taesd/resolve/main/taesd_encoder.safetensors"
+        path: "vae_approx/taesd_encoder.safetensors"

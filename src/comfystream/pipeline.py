@@ -72,6 +72,10 @@ class Pipeline:
         self._initialize_lock = asyncio.Lock()
         self._ingest_enabled = True
         self._prompt_update_lock = asyncio.Lock()
+        self._warmup_lock = asyncio.Lock()
+        self._warmup_task: Optional[asyncio.Task] = None
+        self._warmup_completed = False
+        self._last_warmup_resolution: Optional[tuple[int, int]] = None
 
     @property
     def state(self) -> PipelineState:
@@ -155,6 +159,10 @@ class Pipeline:
             await self.state_manager.transition_to(PipelineState.ERROR)
             raise
         finally:
+            if warmup_successful:
+                self._warmup_completed = True
+                self._last_warmup_resolution = (self.width, self.height)
+
             if transitioned and warmup_successful:
                 try:
                     await self.state_manager.transition_to(PipelineState.READY)
@@ -167,6 +175,63 @@ class Pipeline:
                     await self.state_manager.transition_to(PipelineState.STREAMING)
                 except Exception:
                     logger.exception("Failed to restore STREAMING state after warmup")
+
+    async def ensure_warmup(self, width: Optional[int] = None, height: Optional[int] = None):
+        """Ensure the pipeline has been warmed up for the given resolution."""
+        if width and width > 0:
+            self.width = int(width)
+        if height and height > 0:
+            self.height = int(height)
+
+        if self._warmup_completed and self._last_warmup_resolution:
+            if (self.width, self.height) != self._last_warmup_resolution:
+                self._warmup_completed = False
+
+        if self._warmup_completed:
+            return
+
+        if not self.state_manager.is_initialized():
+            logger.debug("Skipping warmup scheduling - pipeline not initialized")
+            return
+
+        async with self._warmup_lock:
+            if self._warmup_completed:
+                return
+            if not self.state_manager.is_initialized():
+                return
+            if self._warmup_task and not self._warmup_task.done():
+                return
+
+            logger.info("Scheduling pipeline warmup for %sx%s", self.width, self.height)
+            self.disable_ingest()
+            self._warmup_task = asyncio.create_task(self._run_background_warmup())
+
+    async def _run_background_warmup(self):
+        try:
+            await self.warmup()
+        except asyncio.CancelledError:
+            logger.debug("Pipeline warmup task cancelled")
+            raise
+        except Exception:
+            logger.exception("Pipeline warmup failed")
+        finally:
+            self.enable_ingest()
+            self._warmup_task = None
+
+    async def _reset_warmup_state(self):
+        """Reset warmup bookkeeping and cancel any in-flight warmup tasks."""
+        async with self._warmup_lock:
+            if self._warmup_task and not self._warmup_task.done():
+                self._warmup_task.cancel()
+                try:
+                    await self._warmup_task
+                except asyncio.CancelledError:
+                    pass
+                except Exception:
+                    logger.debug("Warmup task raised during cancellation", exc_info=True)
+            self._warmup_task = None
+            self._warmup_completed = False
+            self._last_warmup_resolution = None
 
     async def _run_warmup(
         self,
@@ -266,6 +331,8 @@ class Pipeline:
             skip_warmup: Skip automatic warmup even if auto_warmup is enabled
         """
         try:
+            await self._reset_warmup_state()
+
             prompt_list = prompts if isinstance(prompts, list) else [prompts]
             await self.client.set_prompts(prompt_list)
 
@@ -311,6 +378,8 @@ class Pipeline:
         try:
             if was_streaming and should_warmup:
                 await self.state_manager.transition_to(PipelineState.READY)
+
+            await self._reset_warmup_state()
 
             prompt_list = prompts if isinstance(prompts, list) else [prompts]
             await self.client.update_prompts(prompt_list)
@@ -775,6 +844,7 @@ class Pipeline:
         # Clear cached modalities and I/O capabilities since we're resetting
         self._cached_modalities = None
         self._cached_io_capabilities = None
+        await self._reset_warmup_state()
 
         # Clear pipeline queues
         await self._clear_pipeline_queues()

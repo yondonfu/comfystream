@@ -22,7 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "ruff"]
 server = [
-    "pytrickle @ git+https://github.com/livepeer/pytrickle.git@v0.1.5"
+    "pytrickle @ git+https://github.com/livepeer/pytrickle.git@v0.1.7"
 ]
 
 [project.urls]

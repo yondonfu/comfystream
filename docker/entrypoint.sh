@@ -138,23 +138,17 @@ if [ "$1" = "--build-engines" ]; then
     echo "Engines for FasterLivePortrait already exists, skipping..."
   fi
 
-  # Build Engine for StreamDiffusion
-  if [ ! -f "$TENSORRT_DIR/StreamDiffusion-engines/stabilityai/sd-turbo--lcm_lora-True--tiny_vae-True--max_batch-3--min_batch-3--mode-img2img/unet.engine.opt.onnx" ]; then
-    cd /workspace/ComfyUI/custom_nodes/ComfyUI-StreamDiffusion
-    MODELS="stabilityai/sd-turbo KBlueLeaf/kohaku-v2.1"
-    TIMESTEPS="3"
-    for model in $MODELS; do
-      for timestep in $TIMESTEPS; do
-        echo "Building model=$model with timestep=$timestep"
-        python build_tensorrt.py \
-          --model-id "$model" \
-          --timesteps "$timestep" \
-          --engine-dir $TENSORRT_DIR/StreamDiffusion-engines
-      done
-    done
-  else
-    echo "Engine for StreamDiffusion already exists, skipping..."
-  fi
+  # Build Engine for StreamDiffusion using trt script and config
+  ENGINE_SCRIPT="/workspace/ComfyUI/custom_nodes/ComfyUI-StreamDiffusion/scripts/build_tensorrt_engines.py"
+  CONFIGS=(
+    "/workspace/ComfyUI/custom_nodes/ComfyUI-StreamDiffusion/configs/sd15_singlecontrol.yaml"
+    "/workspace/ComfyUI/custom_nodes/ComfyUI-StreamDiffusion/configs/sdturbo_multicontrol.yaml"
+  )
+  cd /workspace/ComfyUI/custom_nodes/ComfyUI-StreamDiffusion/scripts
+  for ENGINE_CONFIG in "${CONFIGS[@]}"; do
+    echo "Building StreamDiffusion TensorRT engines using config: $ENGINE_CONFIG"
+    python "$ENGINE_SCRIPT" --config "$ENGINE_CONFIG"
+  done
   shift
 fi
 
